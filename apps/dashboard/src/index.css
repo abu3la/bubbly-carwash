@@ -1,0 +1,147 @@
+/* Bubbly Ops shell. Token variables come from @bubbly/ui-web's tokenCss,
+   injected in main.tsx before this sheet applies. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bb-foam);
+  color: var(--bb-ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--bb-font-body);
+  line-height: 1.55;
+}
+
+#root {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* sidebar */
+.nav {
+  background: var(--bb-ink);
+  color: var(--bb-foam);
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-links a {
+  color: var(--bb-foam);
+  opacity: 0.62;
+  text-decoration: none;
+  padding: 9px 10px;
+  border-radius: var(--bb-radius-sm);
+  font-weight: 500;
+  transition: opacity 140ms ease, background 140ms ease;
+}
+.nav-links a:hover {
+  opacity: 0.9;
+}
+.nav-links a.active {
+  opacity: 1;
+  font-weight: 650;
+  background: color-mix(in srgb, var(--bb-foam) 9%, transparent);
+}
+.nav-foot {
+  margin-top: auto;
+  font-size: var(--bb-font-caption);
+  opacity: 0.45;
+}
+
+/* content */
+.content {
+  padding: 36px 40px 64px;
+  max-width: 1040px;
+}
+.content > header {
+  margin-bottom: 28px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bb-surface);
+  border: 1px solid color-mix(in srgb, var(--bb-ink) 9%, transparent);
+  border-radius: var(--bb-radius-md);
+  overflow: hidden;
+}
+table.data th {
+  text-align: left;
+  font-size: var(--bb-font-caption);
+  font-weight: 600;
+  color: var(--bb-ink-soft);
+  padding: 12px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--bb-ink) 9%, transparent);
+}
+table.data td {
+  padding: 13px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--bb-ink) 5%, transparent);
+  vertical-align: middle;
+}
+table.data tr:last-child td {
+  border-bottom: none;
+}
+td.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+th.num {
+  text-align: right;
+}
+.cell-main {
+  font-weight: 600;
+}
+.cell-sub {
+  color: var(--bb-ink-soft);
+  font-size: var(--bb-font-caption);
+  margin-top: 1px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.filter-row button {
+  font: 500 var(--bb-font-caption) / 1 system-ui;
+  color: var(--bb-ink-soft);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--bb-ink) 14%, transparent);
+  border-radius: var(--bb-radius-sm);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.filter-row button.on {
+  color: var(--bb-surface);
+  background: var(--bb-ink);
+  border-color: var(--bb-ink);
+}
+
+.state-note {
+  color: var(--bb-ink-soft);
+  padding: 32px 0;
+}

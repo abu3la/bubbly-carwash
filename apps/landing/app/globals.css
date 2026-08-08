@@ -1,0 +1,149 @@
+/* Bubbly landing — one composed viewport on the petrol night ground. */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --night: #0d1c1f;
+  --night-raised: #182e33;
+  --foam: #d9e9e7;
+  --muted: #93aeac;
+  --aqua: #52c2d0;
+  --aqua-deep: #0d7e8f;
+}
+
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--foam);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+}
+
+.stage {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* nav: contained, deliberate */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26px clamp(24px, 6vw, 72px);
+}
+.top .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--foam);
+}
+.top a.ops {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 140ms ease;
+}
+.top a.ops:hover {
+  color: var(--foam);
+}
+
+/* hero copy sits low-left; the bubble field owns the right */
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 clamp(24px, 6vw, 72px);
+  max-width: 720px;
+}
+.hero h1 {
+  margin: 0 0 18px;
+  font-size: clamp(40px, 7vw, 76px);
+  line-height: 1.04;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--aqua);
+}
+.hero p {
+  margin: 0 0 30px;
+  color: var(--muted);
+  font-size: clamp(16px, 1.6vw, 19px);
+  max-width: 44ch;
+}
+.hero .cta {
+  align-self: flex-start;
+  font: 600 16px/1 system-ui;
+  color: var(--night);
+  background: var(--aqua);
+  border: none;
+  border-radius: 8px;
+  padding: 15px 26px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 140ms ease;
+}
+.hero .cta:hover {
+  background: var(--foam);
+}
+.hero .cta:focus-visible {
+  outline: 2px solid var(--foam);
+  outline-offset: 3px;
+}
+
+/* the bubble field — always visible, motion is additive */
+.bubbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bubbles circle {
+  fill: none;
+  stroke: var(--aqua);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bubbles g {
+    animation: rise 16s linear infinite;
+  }
+  .bubbles g:nth-child(2) {
+    animation-duration: 22s;
+    animation-delay: -8s;
+  }
+  .bubbles g:nth-child(3) {
+    animation-duration: 28s;
+    animation-delay: -15s;
+  }
+  @keyframes rise {
+    from {
+      transform: translateY(6%);
+    }
+    to {
+      transform: translateY(-14%);
+    }
+  }
+}
+
+/* signature wordmark: flush to the bottom, bleeding off the edge, on top */
+.wordmark {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 clamp(24px, 6vw, 72px);
+  font-size: clamp(96px, 19vw, 280px);
+  line-height: 0.72;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--night-raised);
+  user-select: none;
+  transform: translateY(0.06em);
+}

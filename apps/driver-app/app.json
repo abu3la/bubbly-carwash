@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Bubbly Driver",
+    "slug": "bubbly-driver",
+    "scheme": "bubblydriver",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.bubbly.driver",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.bubbly.driver"
+    },
+    "plugins": ["expo-router"]
+  }
+}

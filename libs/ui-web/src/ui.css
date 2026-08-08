@@ -1,0 +1,80 @@
+/* Bubbly web UI. Consumes the design-token custom properties; apps inject
+   them once at the root via tokenCss from @bubbly/ui-web. */
+
+.bb-button {
+  font: 600 var(--bb-font-body) / 1 inherit;
+  font-family: inherit;
+  color: var(--bb-foam);
+  background: var(--bb-aqua-deep);
+  border: none;
+  border-radius: var(--bb-radius-sm);
+  padding: 11px 18px;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.bb-button:hover {
+  background: var(--bb-aqua);
+}
+.bb-button:focus-visible {
+  outline: 2px solid var(--bb-aqua);
+  outline-offset: 2px;
+}
+.bb-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.bb-button--quiet {
+  background: transparent;
+  color: var(--bb-aqua-deep);
+  padding: 11px 10px;
+}
+.bb-button--quiet:hover {
+  background: color-mix(in srgb, var(--bb-aqua) 12%, transparent);
+}
+
+.bb-card {
+  background: var(--bb-surface);
+  border: 1px solid color-mix(in srgb, var(--bb-ink) 9%, transparent);
+  border-radius: var(--bb-radius-md);
+  padding: var(--bb-space-lg);
+}
+
+.bb-status {
+  display: inline-block;
+  font-size: var(--bb-font-caption);
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: var(--bb-radius-sm);
+  color: var(--bb-surface);
+}
+
+.bb-heading {
+  margin: 0;
+  font-size: var(--bb-font-title);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--bb-ink);
+}
+.bb-heading-meta {
+  margin: 4px 0 0;
+  font-size: var(--bb-font-body);
+  color: var(--bb-ink-soft);
+}
+
+.bb-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bb-stat b {
+  font-size: var(--bb-font-display);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--bb-ink);
+  font-variant-numeric: tabular-nums;
+}
+.bb-stat span {
+  font-size: var(--bb-font-caption);
+  color: var(--bb-ink-soft);
+}

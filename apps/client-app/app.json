@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Bubbly",
+    "slug": "bubbly-client",
+    "scheme": "bubbly",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.bubbly.client",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.bubbly.client"
+    },
+    "plugins": ["expo-router"]
+  }
+}

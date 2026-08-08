@@ -1,0 +1,28 @@
+{
+  "name": "@bubbly/ui-native",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bubbly/design-tokens": "workspace:*",
+    "@bubbly/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-native": ">=0.76"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "eslint": "^9.34.0",
+    "typescript": "^5.9.2"
+  }
+}
