@@ -1,4 +1,8 @@
-import { cssVariables } from '@bubbly/design-tokens';
+import { themeCss } from '@bubbly/design-tokens';
 
-/** `:root { … }` block apps inject once (style tag or global stylesheet). */
-export const tokenCss = `:root {\n${cssVariables()}\n}`;
+/**
+ * Full theme stylesheet apps inject once (style tag or global stylesheet):
+ * light on :root, night via prefers-color-scheme, and data-theme stamps for
+ * an explicit in-app toggle.
+ */
+export const tokenCss = themeCss();

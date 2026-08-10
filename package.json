@@ -19,5 +19,10 @@
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
     "typescript-eslint": "^8.40.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react-dom": "19.1.0"
+    }
   }
 }

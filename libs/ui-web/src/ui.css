@@ -1,6 +1,12 @@
 /* Bubbly web UI. Consumes the design-token custom properties; apps inject
    them once at the root via tokenCss from @bubbly/ui-web. */
 
+body {
+  font-family: var(--bb-font-body-family);
+  color: var(--bb-ink);
+  background: var(--bb-surface);
+}
+
 .bb-button {
   font: 600 var(--bb-font-body) / 1 inherit;
   font-family: inherit;
@@ -10,7 +16,7 @@
   border-radius: var(--bb-radius-sm);
   padding: 11px 18px;
   cursor: pointer;
-  transition: background 140ms ease;
+  transition: background var(--bb-duration-fast) var(--bb-easing);
 }
 .bb-button:hover {
   background: var(--bb-aqua);
@@ -34,7 +40,7 @@
 
 .bb-card {
   background: var(--bb-surface);
-  border: 1px solid color-mix(in srgb, var(--bb-ink) 9%, transparent);
+  border: 1px solid var(--bb-border-subtle);
   border-radius: var(--bb-radius-md);
   padding: var(--bb-space-lg);
 }
@@ -51,6 +57,7 @@
 
 .bb-heading {
   margin: 0;
+  font-family: var(--bb-font-display-family);
   font-size: var(--bb-font-title);
   font-weight: 650;
   letter-spacing: -0.01em;
@@ -68,6 +75,7 @@
   gap: 4px;
 }
 .bb-stat b {
+  font-family: var(--bb-font-display-family);
   font-size: var(--bb-font-display);
   font-weight: 650;
   letter-spacing: -0.015em;
@@ -77,4 +85,28 @@
 .bb-stat span {
   font-size: var(--bb-font-caption);
   color: var(--bb-ink-soft);
+}
+
+.bb-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--bb-space-md);
+  padding: 6px 0;
+  font-size: var(--bb-font-body);
+  color: var(--bb-ink);
+}
+.bb-ledger-row--muted {
+  color: var(--bb-ink-soft);
+}
+.bb-ledger-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bb-ledger-total {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bb-border-subtle);
+  font-size: var(--bb-font-emphasis);
+  font-weight: 600;
 }

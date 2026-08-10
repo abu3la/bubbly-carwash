@@ -1,0 +1,13 @@
+{
+  "projectId": "46942702-7b56-43d3-adc8-78f48cdc11d8",
+  "shape": "package",
+  "pkg": "@bubbly/ui-web",
+  "globalName": "BubblyUI",
+  "tokensGlob": "tokens.css",
+  "componentSrcMap": {
+    "LedgerTotal": "src/LedgerRow.tsx"
+  },
+  "tokensPkg": "@bubbly/design-tokens",
+  "cssEntry": "src/ui.css",
+  "readmeHeader": ".design-sync/conventions.md"
+}

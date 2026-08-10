@@ -1,5 +1,4 @@
 import type { BookingStatus } from '@bubbly/types';
-import { statusColor } from '@bubbly/design-tokens';
 
 const LABELS: Record<BookingStatus, string> = {
   pending: 'Pending',
@@ -11,8 +10,11 @@ const LABELS: Record<BookingStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: BookingStatus }) {
+  // CSS variable (not the JS statusColor map) so night grounds get the
+  // lightened status set automatically.
+  const varName = `--bb-status-${status.replace('_', '-')}`;
   return (
-    <span className="bb-status" style={{ background: statusColor[status] }}>
+    <span className="bb-status" style={{ background: `var(${varName})` }}>
       {LABELS[status]}
     </span>
   );

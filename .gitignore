@@ -26,3 +26,10 @@ build/
 .DS_Store
 *.log
 coverage/
+
+# design-sync (machine state; .design-sync durable files ARE committed)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
