@@ -1,9 +1,8 @@
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bell, ChevronDown, Clock, Droplets, Layers, MapPin, MessageSquare, ShieldCheck } from 'lucide-react-native';
+import { Bell, ChevronDown, Clock, Droplets, MapPin, MessageSquare, ShieldCheck } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import {
-  Badge,
   BeatIcon,
   BookingTicket,
   Button,
@@ -13,7 +12,7 @@ import {
   Screen,
   Txt,
 } from '@sama/ui-native';
-import { PACKAGES, PROMISE_ICONS, SERVICES } from '../../src/content';
+import { PROMISE_ICONS, SERVICES } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { SectionLabel, Stagger } from '../../src/components/Bits';
 import { useSession } from '../../src/session';
@@ -25,7 +24,7 @@ export default function Home() {
   const router = useRouter();
   const session = useSession();
   const copy = useCopy();
-  const { booking, wallet, club } = session;
+  const { booking, club } = session;
   const cheapest = SERVICES[0];
 
   return (
@@ -95,25 +94,6 @@ export default function Home() {
           </Stagger>
 
           <Stagger index={3}>
-            <Card onPress={() => router.push('/packages')} style={styles.option}>
-              <View style={styles.optionIcon('yellow')}>
-                <Layers size={theme.scale(20)} color={theme.text.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.optionText}>
-                <Txt variant="body" weight="bold">
-                  {copy.home.packages}
-                </Txt>
-                <Txt variant="caption" tone="secondary">
-                  {session.hasCredits
-                    ? copy.home.packagesBalance(wallet.credits, wallet.total, copy.packageExpiry)
-                    : copy.home.packagesTeaser(PACKAGES[2].save)}
-                </Txt>
-              </View>
-              {session.hasCredits ? <Badge tone="yellow">{copy.home.creditsLeft(wallet.credits)}</Badge> : null}
-            </Card>
-          </Stagger>
-
-          <Stagger index={4}>
             <Card variant="dark" onPress={() => router.push('/club')} style={styles.club}>
               <BeatIcon size="md" active={3} />
               <View style={styles.optionText}>
@@ -137,7 +117,7 @@ export default function Home() {
         </View>
       </View>
 
-      <Stagger index={5}>
+      <Stagger index={4}>
         <View style={styles.promises}>
           {PROMISE_ICONS.map((icon) => {
             const Icon = ICONS[icon];

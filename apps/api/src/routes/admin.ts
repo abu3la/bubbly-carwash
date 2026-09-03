@@ -161,9 +161,59 @@ adminRoute.patch('/plans/:id', async (c) => {
 adminRoute.get('/bookings', async (c) => {
   const rows = await db(
     c.env,
-    'bookings?select=*,booking_add_ons(add_on_key,price_minor)&order=scheduled_at.desc&limit=200',
+    'bookings?select=*,teams(name_ar),booking_add_ons(add_on_key,price_minor),' +
+      'booking_media(id,phase,kind,angle,created_at)&order=scheduled_at.desc&limit=200',
   );
   return c.json({ bookings: rows });
+});
+
+/* --------------------------------------------------------------------- teams */
+
+adminRoute.get('/teams', async (c) => {
+  const rows = await db(c.env, 'teams?order=sort');
+  return c.json({ teams: rows });
+});
+
+adminRoute.patch('/teams/:id', async (c) => {
+  const teamId = c.req.param('id');
+  const [existing] = await db(c.env, `teams?id=eq.${teamId}&select=id`);
+  if (!existing) return c.json({ error: { code: 'notFound' } }, 404);
+
+  const b = await c.req.json<{
+    lat?: number;
+    lng?: number;
+    serviceRadiusKm?: number;
+    dailyCapacity?: number;
+    active?: boolean;
+  }>();
+  const patch: Record<string, unknown> = {};
+  if (typeof b.lat === 'number' && Number.isFinite(b.lat) && b.lat >= -90 && b.lat <= 90) patch.lat = b.lat;
+  if (typeof b.lng === 'number' && Number.isFinite(b.lng) && b.lng >= -180 && b.lng <= 180) patch.lng = b.lng;
+  if (typeof b.serviceRadiusKm === 'number' && b.serviceRadiusKm > 0) {
+    patch.service_radius_km = b.serviceRadiusKm;
+  }
+  if (typeof b.dailyCapacity === 'number' && b.dailyCapacity > 0) {
+    patch.daily_capacity = Math.round(b.dailyCapacity);
+  }
+  if (typeof b.active === 'boolean') patch.active = b.active;
+  if (!Object.keys(patch).length) return c.json({ error: { code: 'nothingToUpdate' } }, 400);
+
+  // The trial deliberately runs one team. Activating another team hands the
+  // pilot to it instead of accidentally leaving two teams live.
+  if (b.active) {
+    await db(c.env, `teams?id=neq.${teamId}&active=eq.true`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: { active: false },
+    });
+  }
+
+  const [row] = await db(c.env, `teams?id=eq.${teamId}`, {
+    method: 'PATCH',
+    prefer: 'return=representation',
+    body: patch,
+  });
+  return c.json({ team: row });
 });
 
 /* -------------------------------------------------------------- technicians */

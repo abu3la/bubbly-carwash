@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * customer reads is chosen in one place, and a fix ships without an App Store
  * review.
  */
-const API = 'https://sama-api.samacarwash.workers.dev';
+const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://sama-api-dev.taz2886.workers.dev';
 
 const SESSION_KEY = 'sama.session';
 
@@ -30,7 +30,15 @@ export interface Session {
   expiresAt: number;
 }
 
-async function post(path: string, body: unknown): Promise<Record<string, any>> {
+interface ErrorPayload { error?: { code?: AuthErrorCode } }
+interface VerifyPayload {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+  user?: { id?: string; phone?: string };
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API}${path}`, {
@@ -43,19 +51,19 @@ async function post(path: string, body: unknown): Promise<Record<string, any>> {
     // separating from a rejection, because the customer's fix is different.
     throw new AuthError('offline');
   }
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new AuthError((json?.error?.code as AuthErrorCode) ?? 'unknown');
-  return json;
+  const json: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) throw new AuthError((json as ErrorPayload).error?.code ?? 'unknown');
+  return json as T;
 }
 
 /** Sends the code. For a registered test number no SMS is sent at all. */
 export async function requestOtp(phoneE164: string): Promise<void> {
-  await post('/auth/otp', { phone: phoneE164 });
+  await post<{ sent: boolean }>('/auth/otp', { phone: phoneE164 });
 }
 
 /** Exchanges the code for a session. Throws if the code is wrong or expired. */
 export async function verifyOtp(phoneE164: string, code: string): Promise<Session> {
-  const d = await post('/auth/verify', { phone: phoneE164, code });
+  const d = await post<VerifyPayload>('/auth/verify', { phone: phoneE164, code });
   const session: Session = {
     accessToken: d.accessToken,
     refreshToken: d.refreshToken,

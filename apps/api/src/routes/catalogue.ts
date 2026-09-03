@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { distanceKm } from '@sama/utils';
 import type { Env } from '../env';
 import { db } from '../db';
 
@@ -16,9 +17,44 @@ import { db } from '../db';
  */
 export const catalogueRoute = new Hono<{ Bindings: Env }>();
 
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 interface Named {
   name_ar: string;
   name_en: string;
+}
+
+interface ServiceRow extends Named {
+  key: string;
+  blurb_ar: string;
+  blurb_en: string;
+  price_minor: number;
+  minutes: number;
+}
+interface AddOnRow extends Named { key: string; price_minor: number }
+interface PackageRow {
+  id: number; washes: number; price_minor: number; per_minor: number;
+  save_pct: number; valid_days: number; best: boolean;
+}
+interface PlanRow extends Named {
+  id: string; price_minor: number; credits: number; weekly: number; roll: number; best: boolean;
+}
+interface SlotRow {
+  period: 'morning' | 'afternoon' | 'night';
+  starts_at: string;
+  ends_at: string;
+  priority_only: boolean;
+}
+interface AvailabilityRow {
+  period: 'morning' | 'afternoon' | 'night';
+  starts_at: string;
+  ends_at: string;
+  team_id: string;
+  team_name_ar: string;
+  team_name_en: string;
+  distance_km: number | string;
+  daily_capacity: number;
+  remaining: number;
 }
 
 /** Rows carry both languages; the shape the app wants is `{ ar, en }`. */
@@ -29,27 +65,27 @@ const bilingual = <T extends Named>(row: T) => ({
 
 catalogueRoute.get('/', async (c) => {
   const [services, addOns, packages, plans, slots] = await Promise.all([
-    db(c.env, 'services?active=eq.true&order=sort'),
-    db(c.env, 'add_ons?active=eq.true&order=sort'),
-    db(c.env, 'packages?active=eq.true&order=id'),
-    db(c.env, 'plans?active=eq.true&order=price_minor'),
-    db(c.env, 'slot_templates?active=eq.true&order=starts_at'),
+    db<ServiceRow>(c.env, 'services?active=eq.true&order=sort'),
+    db<AddOnRow>(c.env, 'add_ons?active=eq.true&order=sort'),
+    db<PackageRow>(c.env, 'packages?active=eq.true&order=id'),
+    db<PlanRow>(c.env, 'plans?active=eq.true&order=price_minor'),
+    db<SlotRow>(c.env, 'slot_templates?active=eq.true&order=starts_at'),
   ]);
 
   const body = {
-    services: services.map((s: any) => ({
+    services: services.map((s) => ({
       key: s.key,
       name: bilingual(s),
       blurb: { ar: s.blurb_ar, en: s.blurb_en },
       priceMinor: s.price_minor,
       minutes: s.minutes,
     })),
-    addOns: addOns.map((a: any) => ({
+    addOns: addOns.map((a) => ({
       key: a.key,
       name: bilingual(a),
       priceMinor: a.price_minor,
     })),
-    packages: packages.map((p: any) => ({
+    packages: packages.map((p) => ({
       id: p.id,
       washes: p.washes,
       priceMinor: p.price_minor,
@@ -58,7 +94,7 @@ catalogueRoute.get('/', async (c) => {
       validDays: p.valid_days,
       best: p.best,
     })),
-    plans: plans.map((p: any) => ({
+    plans: plans.map((p) => ({
       id: p.id,
       name: bilingual(p),
       priceMinor: p.price_minor,
@@ -67,10 +103,11 @@ catalogueRoute.get('/', async (c) => {
       roll: p.roll,
       best: p.best,
     })),
-    slots: slots.map((s: any) => ({
+    slots: slots.map((s) => ({
       // "08:00:00" from Postgres; the app shows "08:00".
       startsAt: String(s.starts_at).slice(0, 5),
       endsAt: String(s.ends_at).slice(0, 5),
+      period: s.period,
       // Held for club members. The app needs to know so it can show *why* a
       // slot is unavailable rather than silently hiding it.
       priorityOnly: s.priority_only,
@@ -83,4 +120,69 @@ catalogueRoute.get('/', async (c) => {
   // rather than an empty app.
   c.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400');
   return c.json(body);
+});
+
+/**
+ * Live availability for one car location and service day.
+ *
+ * The generic catalogue says which periods exist; this endpoint says whether
+ * an active team can actually reach the customer's pin and still has room.
+ * Team coordinates themselves never leave the API.
+ */
+catalogueRoute.get('/availability', async (c) => {
+  const lat = Number(c.req.query('lat'));
+  const lng = Number(c.req.query('lng'));
+  const date = c.req.query('date') ?? '';
+
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+    return c.json({ error: { code: 'badCoordinates' } }, 400);
+  }
+  if (!DATE.test(date) || Number.isNaN(Date.parse(`${date}T12:00:00+03:00`))) {
+    return c.json({ error: { code: 'badDate' } }, 400);
+  }
+
+  // Noon in Riyadh cannot cross a UTC date boundary, which makes getUTCDay a
+  // safe way to recognise Friday without depending on the Worker's locale.
+  if (new Date(`${date}T12:00:00+03:00`).getUTCDay() === 5) {
+    c.header('Cache-Control', 'no-store');
+    return c.json({ date, closed: true, reason: 'friday', covered: false, team: null, slots: [] });
+  }
+
+  const [rows, teams] = await Promise.all([
+    db<AvailabilityRow>(c.env, 'rpc/available_slots', {
+      method: 'POST',
+      body: { p_lat: lat, p_lng: lng, p_date: date },
+    }),
+    db<{ id: string; lat: number; lng: number; service_radius_km: number }>(
+      c.env,
+      'teams?active=eq.true&select=id,lat,lng,service_radius_km',
+    ),
+  ]);
+
+  const covered = teams.some(
+    (team) => distanceKm({ lat, lng }, team) <= Number(team.service_radius_km),
+  );
+  const first = rows[0];
+
+  c.header('Cache-Control', 'no-store');
+  return c.json({
+    date,
+    closed: false,
+    reason: covered ? (rows.length ? null : 'full') : 'outsideServiceArea',
+    covered,
+    team: first
+      ? {
+          id: first.team_id,
+          name: { ar: first.team_name_ar, en: first.team_name_en },
+          distanceKm: Math.round(Number(first.distance_km) * 10) / 10,
+          dailyCapacity: first.daily_capacity,
+        }
+      : null,
+    slots: rows.map((row) => ({
+      period: row.period,
+      startsAt: String(row.starts_at).slice(0, 5),
+      endsAt: String(row.ends_at).slice(0, 5),
+      remaining: row.remaining,
+    })),
+  });
 });

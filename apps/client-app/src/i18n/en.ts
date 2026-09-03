@@ -127,7 +127,7 @@ export const en: Copy = {
       `${credits} of ${total} washes left · expires ${expiry}`,
     creditsLeft: (credits) => `${credits} left`,
     club: 'Sama Club',
-    clubTeaser: 'Monthly membership — and priority on 10:00 slots',
+    clubTeaser: 'Two monthly plans: two or three washes',
     clubActive: (plan, renews) => `${plan} · renews ${renews}`,
     clubBalance: (plan, credits, leftThisWeek) =>
       `${plan} · ${credits} washes available · ${leftThisWeek} this week`,
@@ -135,7 +135,7 @@ export const en: Copy = {
     myClub: 'My club',
     promises: {
       onTime: 'Always on time',
-      documented: 'Finished with photo proof',
+      documented: 'Before-and-after photos or 360° video',
       support: 'Fast support',
     },
   },
@@ -163,6 +163,14 @@ export const en: Copy = {
     takenNoteMember: 'Faded slots are booked · the peak slot is open to you as a member.',
     prioritySlot: 'Priority',
     holdNote: 'We hold your slot while you pay.',
+    periods: { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' },
+    fridayOff: 'Teams are off on Friday',
+    checkingAvailability: 'Checking the nearest team…',
+    teamAvailable: (team, distanceKm, capacity) =>
+      `${team} covers your location · ${distanceKm} km away · ${capacity} bookings a day`,
+    outsideTeamArea: 'Your location is outside the active team’s area right now.',
+    dayFull: 'The team is full for this day. Pick another day.',
+    remainingSlots: (count) => `${count} left`,
 
     addOnsSection: 'Optional extras',
     addOnWithPrice: (label, price) => `${label} (+${price})`,
@@ -229,14 +237,14 @@ export const en: Copy = {
   club: {
     title: 'Sama Club',
     blurb: 'A monthly membership — washes scheduled automatically, and priority on slots.',
-    planLine: (credits, weekly, roll) =>
-      `${credits} washes a month · up to ${weekly} a week · ${roll} rolled over`,
+    planLine: (credits, weekly) =>
+      `${credits} washes a month · up to ${weekly} a week`,
     mostPopular: 'Most popular',
     perksSection: 'What you get',
     perks: [
       'Washes scheduled automatically in your preferred slot',
-      'Priority on 10:00 morning slots',
-      'Unused washes roll over (up to two)',
+      'Pick a morning, afternoon or night slot',
+      'Before-and-after vehicle documentation',
       'Pause or cancel any time',
     ],
 
@@ -301,9 +309,9 @@ export const en: Copy = {
     simulateNext: 'Simulate next step',
     replay: 'Replay',
 
-    documentation: 'Photo documentation',
+    documentation: 'Before-and-after documentation',
     documentationNote: (technician) =>
-      `Taken by ${technician} on completion — view only.`,
+      `Photos or 360° video captured by ${technician} before and after the wash — view only.`,
 
     rateTechnician: (technician) => `Rate ${technician}`,
     commentPlaceholder: 'Add a comment (optional)…',
@@ -346,8 +354,8 @@ export const en: Copy = {
 
   services: {
     exterior: {
-      name: 'Full exterior wash',
-      blurb: 'At your door, no hose and no mess — treated water and microfibre towels.',
+      name: 'Single wash',
+      blurb: 'An exterior wash at your car, documented before and after.',
       includes: [
         'Active foam and a full body rinse',
         'Wheels and tyres cleaned',
@@ -368,13 +376,13 @@ export const en: Copy = {
   },
 
   addOns: { wax: 'Protective wax layer', tires: 'Tyre shine' },
-  plans: { basic: 'Basic', plus: 'Plus', max: 'Max' },
+  plans: { basic: 'Basic', plus: 'Super Wash', max: 'Max' },
   packageLabel: { 3: '3-wash package', 5: '5-wash package', 10: '10-wash package' },
 
   beats: {
     arrived: { title: 'Arrived', copy: 'The technician is at your gate.' },
     washed: { title: 'Washed', copy: 'Wash complete — drying now.' },
-    verified: { title: 'Verified', copy: 'Quality checked — a photo has been sent to you.' },
+    verified: { title: 'Verified', copy: 'Quality checked — before-and-after evidence is ready.' },
   },
 
   technicianName: 'Mohammed A.',

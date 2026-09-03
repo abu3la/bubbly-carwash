@@ -1,4 +1,4 @@
-import type { AddOn, Package, Plan, Service } from '../content';
+import type { AddOn, Package, Plan, Service, Slot } from '../content';
 import type { BeatKey } from '@sama/design-tokens';
 
 /**
@@ -172,6 +172,13 @@ export interface Copy {
     takenNoteMember: string;
     prioritySlot: string;
     holdNote: string;
+    periods: Record<Slot['period'], string>;
+    fridayOff: string;
+    checkingAvailability: string;
+    teamAvailable: (team: string, distanceKm: number, capacity: number) => string;
+    outsideTeamArea: string;
+    dayFull: string;
+    remainingSlots: (count: number) => string;
 
     addOnsSection: string;
     addOnWithPrice: (label: string, price: string) => string;

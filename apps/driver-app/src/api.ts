@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * see is decided server-side by `profiles.role`, not by which app is asking —
  * so a customer signing in here reaches nothing.
  */
-const API = 'https://sama-api.samacarwash.workers.dev';
+const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://sama-api-dev.taz2886.workers.dev';
 const SESSION_KEY = 'sama.driver.session';
 
 export type ErrorCode =
@@ -17,6 +17,12 @@ export type ErrorCode =
   | 'alreadyPast'
   | 'cancelled'
   | 'notFound'
+  | 'beforeMediaRequired'
+  | 'afterMediaRequired'
+  | 'mediaWrongStage'
+  | 'badMediaType'
+  | 'badMediaSize'
+  | 'storageUnavailable'
   | 'offline'
   | 'unknown';
 
@@ -24,6 +30,12 @@ export class ApiError extends Error {
   constructor(readonly code: ErrorCode) {
     super(code);
   }
+}
+
+interface ErrorPayload { error?: { code?: ErrorCode } }
+interface VerifyPayload {
+  accessToken: string;
+  user?: { id?: string; phone?: string };
 }
 
 export interface Session {
@@ -55,6 +67,15 @@ export interface Job {
     notes: string;
   } | null;
   booking_add_ons: Array<{ add_on_key: string }>;
+  booking_media: Array<{
+    id: string;
+    phase: 'before' | 'after';
+    kind: 'photo' | 'video';
+    angle: string;
+    content_type: string;
+    byte_size: number;
+    created_at: string;
+  }>;
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -79,7 +100,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     // 403 means signed in but not staff — worth its own message, since the
     // fix is "you have the wrong app", not "try again".
     if (res.status === 403) throw new ApiError('notATechnician');
-    throw new ApiError(((json as any)?.error?.code as ErrorCode) ?? 'unknown');
+    throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
   }
   return json as T;
 }
@@ -91,7 +112,7 @@ export async function requestOtp(phone: string) {
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<Session> {
-  const d = await call<any>('/auth/verify', {
+  const d = await call<VerifyPayload>('/auth/verify', {
     method: 'POST',
     body: JSON.stringify({ phone, code }),
   });
@@ -123,6 +144,51 @@ export const advance = (id: string, stage: Stage, note?: string) =>
     method: 'POST',
     body: JSON.stringify({ stage, note }),
   });
+
+export interface EvidenceAsset {
+  uri: string;
+  mimeType?: string | null;
+  type?: string | null;
+  fileSize?: number;
+}
+
+/** Uploads one private photo or 360 video. The object never receives a public URL. */
+export async function uploadEvidence(
+  id: string,
+  phase: 'before' | 'after',
+  angle: 'general' | '360',
+  asset: EvidenceAsset,
+) {
+  const session = await loadSession();
+  if (!session) throw new ApiError('notATechnician');
+
+  let blob: Blob;
+  try {
+    blob = await (await fetch(asset.uri)).blob();
+  } catch {
+    throw new ApiError('offline');
+  }
+
+  const contentType = asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+  let res: Response;
+  try {
+    res = await fetch(`${API}/driver/jobs/${id}/media?phase=${phase}&angle=${angle}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        'Content-Type': contentType,
+        'X-File-Size': String(asset.fileSize ?? blob.size),
+      },
+      body: blob,
+    });
+  } catch {
+    throw new ApiError('offline');
+  }
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
+  return json as { media: Job['booking_media'][number] };
+}
 
 /** The beat after this one. `null` when the job is finished. */
 export function nextStage(current: Stage): Stage | null {

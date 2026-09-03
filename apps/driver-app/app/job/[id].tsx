@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
 import { Linking, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowRight, Car, MapPin, Sparkles } from 'lucide-react-native';
+import { ArrowRight, Camera, Car, MapPin, Sparkles, Video } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { BeatIcon, Button, Card, Num, Screen, Txt, useToast } from '@sama/ui-native';
-import { ApiError, advance, jobs as fetchJobs, nextStage, type Job } from '../../src/api';
+import { ApiError, advance, jobs as fetchJobs, nextStage, uploadEvidence, type Job } from '../../src/api';
 import { copy } from '../../src/copy';
 
 const LIT: Record<string, 0 | 1 | 2 | 3> = { booked: 0, arrived: 1, washed: 2, verified: 3 };
@@ -17,6 +18,7 @@ export default function JobScreen() {
 
   const [job, setJob] = useState<Job | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // There is no single-job endpoint: a technician has a handful of jobs, so
@@ -56,6 +58,36 @@ export default function JobScreen() {
     }
   };
 
+  const capture = async (mode: 'photo' | 'video') => {
+    if (!job || (job.stage !== 'arrived' && job.stage !== 'washed')) return;
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setError(copy.cameraDenied);
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: mode === 'video' ? ['videos'] : ['images'],
+      allowsEditing: false,
+      quality: 0.85,
+      videoMaxDuration: 60,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    setError(null);
+    setUploading(true);
+    try {
+      const phase = job.stage === 'arrived' ? 'before' : 'after';
+      await uploadEvidence(job.id, phase, mode === 'video' ? '360' : 'general', result.assets[0]);
+      toast.show(copy.evidenceSaved);
+      await load();
+    } catch (e) {
+      setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!job) {
     return (
       <Screen contentStyle={styles.page}>
@@ -70,6 +102,11 @@ export default function JobScreen() {
   const a = job.addresses;
   const next = nextStage(job.stage);
   const extras = job.booking_add_ons ?? [];
+  const media = job.booking_media ?? [];
+  const beforeCount = media.filter((item) => item.phase === 'before').length;
+  const afterCount = media.filter((item) => item.phase === 'after').length;
+  const evidencePhase = job.stage === 'arrived' ? 'before' : job.stage === 'washed' ? 'after' : null;
+  const requiredEvidenceReady = next === 'washed' ? beforeCount > 0 : next === 'verified' ? afterCount > 0 : true;
 
   // Apple Maps by coordinates when we have them, by address text when not.
   const openMaps = () => {
@@ -117,6 +154,38 @@ export default function JobScreen() {
           </Txt>
         </View>
       </Card>
+
+      {evidencePhase ? (
+        <Card variant="booking" style={styles.block}>
+          <Txt variant="body" weight="bold">
+            {evidencePhase === 'before' ? copy.beforeEvidence : copy.afterEvidence}
+          </Txt>
+          <Txt variant="small" tone="secondary">
+            {copy.evidenceInstruction}
+          </Txt>
+          <View style={styles.evidenceActions}>
+            <Button
+              label={uploading ? copy.uploadingEvidence : copy.takePhotos}
+              variant="secondary"
+              fullWidth
+              disabled={uploading}
+              icon={<Camera size={theme.scale(17)} color={theme.text.primary} strokeWidth={2} />}
+              onPress={() => capture('photo')}
+            />
+            <Button
+              label={uploading ? copy.uploadingEvidence : copy.record360}
+              variant="secondary"
+              fullWidth
+              disabled={uploading}
+              icon={<Video size={theme.scale(17)} color={theme.text.primary} strokeWidth={2} />}
+              onPress={() => capture('video')}
+            />
+          </View>
+          <Txt variant="caption" tone={requiredEvidenceReady ? 'action' : 'muted'}>
+            {copy.evidenceCount(beforeCount, afterCount)}
+          </Txt>
+        </Card>
+      ) : null}
 
       <Card style={styles.block}>
         <View style={styles.row}>
@@ -170,7 +239,7 @@ export default function JobScreen() {
           label={busy ? copy.working : copy.actions[next]}
           size="lg"
           fullWidth
-          disabled={busy}
+          disabled={busy || uploading || !requiredEvidenceReady}
           onPress={step}
         />
       ) : (
@@ -196,4 +265,5 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
     backgroundColor: theme.surface.bookingSoft,
   },
+  evidenceActions: { gap: theme.spacing[2] },
 }));

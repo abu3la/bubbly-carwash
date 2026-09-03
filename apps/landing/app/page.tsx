@@ -51,10 +51,10 @@ export default function Home() {
           Your car, washed <em>where it stands.</em>
         </h1>
         <p>
-          Pick a package, drop a pin, and a Bubbly driver comes to you. No queue, no tunnel, no
-          moving your car.
+          A single wash is SAR 40. Drop a pin and the nearest active team opens its morning,
+          afternoon and night availability. Fridays are off.
         </p>
-        <p className="release-note">Customer app in private testing.</p>
+        <p className="release-note">Monthly plans: Basic SAR 199 · Super Wash SAR 299</p>
       </section>
       <p className="wordmark" aria-hidden="true">
         BUBBLY

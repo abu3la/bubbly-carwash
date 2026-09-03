@@ -20,6 +20,9 @@ bookingsRoute.use('*', requireAuth());
 const KNOWN_FAILURES = new Set([
   'vehicleNotYours',
   'addressNotYours',
+  'locationRequired',
+  'outsideServiceArea',
+  'fridayClosed',
   'unknownService',
   'unknownSlot',
   'slotFull',
@@ -47,6 +50,50 @@ bookingsRoute.get('/', async (c) => {
       '&order=scheduled_at.desc',
   );
   return c.json({ bookings: rows });
+});
+
+/** Metadata for the private before/after evidence attached to one booking. */
+bookingsRoute.get('/:id/media', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const [booking] = await db(
+    c.env,
+    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&select=id`,
+  );
+  if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
+
+  const media = await db(
+    c.env,
+    `booking_media?booking_id=eq.${id}` +
+      '&select=id,phase,kind,angle,content_type,byte_size,created_at' +
+      '&order=phase,created_at',
+  );
+  return c.json({ media });
+});
+
+/** Stream one authorised customer's evidence from the private R2 bucket. */
+bookingsRoute.get('/:id/media/:mediaId/content', async (c) => {
+  if (!c.env.MEDIA) return c.json({ error: { code: 'storageUnavailable' } }, 503);
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const mediaId = c.req.param('mediaId');
+  const [media] = await db<{ object_key: string; content_type: string }>(
+    c.env,
+    `booking_media?id=eq.${mediaId}&booking_id=eq.${id}` +
+      `&bookings.profile_id=eq.${caller.id}` +
+      '&select=object_key,content_type,bookings!inner(profile_id)',
+  );
+  if (!media) return c.json({ error: { code: 'notFound' } }, 404);
+
+  const object = await c.env.MEDIA.get(media.object_key);
+  if (!object) return c.json({ error: { code: 'notFound' } }, 404);
+
+  const headers = new Headers({
+    'Content-Type': media.content_type,
+    'Cache-Control': 'private, max-age=300',
+    ETag: object.httpEtag,
+  });
+  return new Response(object.body, { headers });
 });
 
 bookingsRoute.post('/', async (c) => {

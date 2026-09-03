@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { admin, sar } from '../api';
+import { admin, sar, type AdminBooking } from '../api';
 
 const STATUS_AR: Record<string, string> = {
   scheduled: 'مجدول', active: 'جارٍ', done: 'مكتمل', cancelled: 'ملغى',
@@ -10,7 +10,7 @@ const SOURCE_AR: Record<string, string> = {
 
 /** Every customer's bookings — which is the point of a back office. */
 export function Bookings() {
-  const [rows, setRows] = useState<any[] | null>(null);
+  const [rows, setRows] = useState<AdminBooking[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,6 +36,8 @@ export function Bookings() {
                 <th>المرجع</th>
                 <th>الموعد</th>
                 <th>الخدمة</th>
+                <th>الفريق</th>
+                <th>التوثيق</th>
                 <th>الدفع</th>
                 <th>الإجمالي</th>
                 <th>الحالة</th>
@@ -47,7 +49,16 @@ export function Bookings() {
                 <tr key={b.id} className={b.status === 'cancelled' ? 'off' : ''}>
                   <td className="headline num">{b.ref}</td>
                   <td className="num">{String(b.scheduled_at).slice(0, 16).replace('T', ' ')}</td>
-                  <td>{b.service_key === 'exterior' ? 'خارجية' : 'كاملة'}</td>
+                  <td>{b.service_key === 'exterior' ? 'غسلة مفردة' : b.service_key}</td>
+                  <td>{b.teams?.name_ar ?? 'لم يُسند'}</td>
+                  <td className="note">
+                    {(() => {
+                      const media = b.booking_media ?? [];
+                      const before = media.filter((item) => item.phase === 'before').length;
+                      const after = media.filter((item) => item.phase === 'after').length;
+                      return `قبل ${before} · بعد ${after}`;
+                    })()}
+                  </td>
                   <td>{SOURCE_AR[b.source] ?? b.source}</td>
                   <td className="num">{sar(b.total_minor)}</td>
                   <td>{STATUS_AR[b.status] ?? b.status}</td>

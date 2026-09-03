@@ -1,21 +1,92 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Clock } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Num, Screen, Tag, Txt } from '@sama/ui-native';
+import { Button, Num, Screen, Tag, Txt, useLocale } from '@sama/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
-import { SLOTS } from '../../src/content';
+import { BOOKING_LOCATION } from '../../src/content';
+import { fetchAvailability, type Availability } from '../../src/api';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
-import { useSession } from '../../src/session';
+
+const DAY_MS = 86_400_000;
+
+function riyadhDayStart() {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return Date.UTC(Number(value.year), Number(value.month) - 1, Number(value.day));
+}
 
 export default function ChooseSlot() {
   const { theme } = useUnistyles();
+  const { language } = useLocale();
   const router = useRouter();
   const draft = useBookingDraft();
   const copy = useCopy();
-  const { club } = useSession();
+
+  const days = useMemo(() => {
+    const start = riyadhDayStart();
+    return Array.from({ length: 7 }, (_, index) => {
+      const value = new Date(start + index * DAY_MS);
+      return {
+        iso: value.toISOString().slice(0, 10),
+        friday: value.getUTCDay() === 5,
+        label: new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA' : 'en-GB', {
+          weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+        }).format(value),
+      };
+    });
+  }, [language]);
+
+  const [selectedDate, setSelectedDate] = useState(days.find((day) => !day.friday)?.iso ?? days[0].iso);
+  const [availability, setAvailability] = useState<Availability | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const selectedDay = days.find((day) => day.iso === selectedDate) ?? days[0];
+
+  useEffect(() => {
+    draft.setDay(selectedDay.label);
+    draft.setSlot('');
+    if (selectedDay.friday) {
+      setAvailability(null);
+      setLoading(false);
+      setFailed(false);
+      return;
+    }
+
+    let alive = true;
+    setLoading(true);
+    setFailed(false);
+    fetchAvailability(BOOKING_LOCATION.lat, BOOKING_LOCATION.lng, selectedDay.iso)
+      .then((result) => {
+        if (!alive) return;
+        setAvailability(result);
+        const first = result.slots[0];
+        if (first) draft.setSlot(`${first.startsAt}–${first.endsAt}`);
+      })
+      .catch(() => {
+        if (alive) {
+          setAvailability(null);
+          setFailed(true);
+        }
+      })
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [selectedDate, selectedDay.friday, selectedDay.iso, selectedDay.label]);
+
+  const message = selectedDay.friday
+    ? copy.booking.fridayOff
+    : failed
+      ? copy.authErrors.offline
+      : availability?.reason === 'outsideServiceArea'
+        ? copy.booking.outsideTeamArea
+        : availability?.reason === 'full'
+          ? copy.booking.dayFull
+          : null;
 
   return (
     <Screen scroll contentStyle={styles.page}>
@@ -25,9 +96,9 @@ export default function ChooseSlot() {
         <View>
           <SectionLabel>{copy.booking.day}</SectionLabel>
           <View style={styles.days}>
-            {copy.days.map((day) => (
-              <Tag key={day} selected={draft.day === day} onPress={() => draft.setDay(day)}>
-                {day}
+            {days.map((day) => (
+              <Tag key={day.iso} selected={selectedDate === day.iso} onPress={() => setSelectedDate(day.iso)}>
+                {day.friday ? `${day.label} · ${copy.booking.fridayOff}` : day.label}
               </Tag>
             ))}
           </View>
@@ -35,51 +106,60 @@ export default function ChooseSlot() {
 
         <View>
           <SectionLabel>{copy.booking.availableSlots}</SectionLabel>
-          <View style={styles.slots}>
-            {SLOTS.map((slot) => {
-              const selected = draft.slot === slot.time;
-              // The perk the club actually sells: a peak slot that is closed to
-              // everyone else opens for a member. It is the same grid either
-              // way, so the difference is legible rather than hidden.
-              const open = club ? !slot.taken || !!slot.priority : !slot.taken;
-              const forMember = !!slot.priority && !!club;
-              return (
-                <Pressable
-                  key={slot.time}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected, disabled: !open }}
-                  accessibilityLabel={forMember ? `${slot.time} · ${copy.booking.prioritySlot}` : slot.time}
-                  disabled={!open}
-                  onPress={() => draft.setSlot(slot.time)}
-                  style={styles.slot(selected, !open, forMember)}
-                >
-                  <Num variant="small" weight="semibold" tone={selected ? 'inverse' : !open ? 'faint' : 'primary'}>
-                    {slot.time}
-                  </Num>
-                  {forMember && !selected ? (
-                    <Txt variant="label" weight="bold" tone="action">
-                      {copy.booking.prioritySlot}
+          {loading ? (
+            <Txt variant="small" tone="secondary">{copy.booking.checkingAvailability}</Txt>
+          ) : message ? (
+            <Txt variant="small" tone="secondary">{message}</Txt>
+          ) : (
+            <View style={styles.slots}>
+              {(availability?.slots ?? []).map((slot) => {
+                const value = `${slot.startsAt}–${slot.endsAt}`;
+                const selected = draft.slot === value;
+                return (
+                  <Pressable
+                    key={slot.period}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${copy.booking.periods[slot.period]} · ${value}`}
+                    onPress={() => draft.setSlot(value)}
+                    style={styles.slot(selected)}
+                  >
+                    <Txt variant="body" weight="bold" tone={selected ? 'inverse' : 'primary'}>
+                      {copy.booking.periods[slot.period]}
                     </Txt>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-          {/* A taken slot is shown, not hidden: the grid stays stable and you
-              can see the shape of the day. */}
-          <Txt variant="caption" tone="muted" style={styles.note}>
-            {club ? copy.booking.takenNoteMember : copy.booking.takenNote}
-          </Txt>
+                    <Num variant="caption" tone={selected ? 'inverseSoft' : 'secondary'}>{value}</Num>
+                    <Txt variant="caption" tone={selected ? 'inverseSoft' : 'muted'}>
+                      {copy.booking.remainingSlots(slot.remaining)}
+                    </Txt>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {availability?.team ? (
+            <Txt variant="caption" tone="muted" style={styles.note}>
+              {copy.booking.teamAvailable(
+                availability.team.name[language],
+                availability.team.distanceKm,
+                availability.team.dailyCapacity,
+              )}
+            </Txt>
+          ) : null}
         </View>
 
         <View style={styles.hold}>
           <Clock size={theme.scale(14)} color={theme.text.muted} strokeWidth={2} />
-          <Txt variant="caption" tone="muted" style={styles.holdText}>
-            {copy.booking.holdNote}
-          </Txt>
+          <Txt variant="caption" tone="muted" style={styles.holdText}>{copy.booking.holdNote}</Txt>
         </View>
 
-        <Button label={copy.common.continue} size="lg" fullWidth onPress={() => router.push('/book/review')} />
+        <Button
+          label={copy.common.continue}
+          size="lg"
+          fullWidth
+          disabled={loading || !draft.slot || !!message}
+          onPress={() => router.push('/book/review')}
+        />
       </View>
     </Screen>
   );
@@ -89,26 +169,20 @@ const styles = StyleSheet.create((theme) => ({
   page: { paddingBottom: theme.spacing[7] },
   body: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[4], gap: theme.spacing[5] },
   days: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
-  slots: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
-  slot: (selected: boolean, taken: boolean, forMember: boolean) => ({
-    // Three to a row, gaps removed, so every chip is the same width and the
-    // grid cannot go ragged.
-    width: `${(100 - 2 * 3) / 3}%`,
-    minHeight: theme.scale(44),
+  slots: { gap: theme.spacing[2] },
+  slot: (selected: boolean) => ({
+    minHeight: theme.scale(68),
+    paddingHorizontal: theme.spacing[4],
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radius.sm,
+    justifyContent: 'space-between',
+    gap: theme.spacing[2],
+    borderRadius: theme.radius.md,
     borderCurve: 'continuous',
-    gap: 1,
     backgroundColor: selected ? theme.action.primary : theme.surface.bookingSoft,
-    // A member's slot carries the action colour on its own edge rather than a
-    // badge parked on top of it.
-    boxShadow: selected
-      ? undefined
-      : `inset 0 0 0 ${theme.border.width * (forMember ? 2 : 1)}px ${forMember ? theme.action.primary : theme.surface.booking}`,
-    opacity: taken ? 0.45 : 1,
+    boxShadow: selected ? undefined : `inset 0 0 0 ${theme.border.width}px ${theme.surface.booking}`,
   }),
-  note: { marginTop: theme.spacing[2] },
+  note: { marginTop: theme.spacing[3], lineHeight: theme.scale(19) },
   hold: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[1] + 2 },
   holdText: { flexShrink: 1 },
 }));

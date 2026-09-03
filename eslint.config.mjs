@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/.expo/**',
       '**/.wrangler/**',
       '**/.turbo/**',
+      '**/next-env.d.ts',
     ],
   },
   js.configs.recommended,
@@ -28,7 +29,7 @@ export default tseslint.config(
     files: ['**/*.js', '**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
-      globals: { require: 'readonly', module: 'writable', __dirname: 'readonly' },
+      globals: { require: 'readonly', module: 'writable', __dirname: 'readonly', process: 'readonly' },
     },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',

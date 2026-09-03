@@ -18,6 +18,8 @@ export class ApiError extends Error {
   }
 }
 
+interface ErrorPayload { error?: { code?: string } }
+
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const t = token.get();
   const res = await fetch(`${API}${path}`, {
@@ -29,7 +31,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((json as any)?.error?.code ?? 'unknown', res.status);
+  if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown', res.status);
   return json as T;
 }
 
@@ -65,6 +67,31 @@ export interface Service {
   active: boolean;
 }
 
+export interface Team {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  lat: number;
+  lng: number;
+  service_radius_km: number;
+  daily_capacity: number;
+  active: boolean;
+  sort: number;
+}
+
+export interface AdminBooking {
+  id: string;
+  ref: string;
+  scheduled_at: string;
+  service_key: string;
+  source: string;
+  total_minor: number;
+  status: string;
+  stage: string;
+  teams: { name_ar: string } | null;
+  booking_media: Array<{ phase: 'before' | 'after'; kind: 'photo' | 'video'; angle: string }>;
+}
+
 export const auth = {
   requestOtp: (phone: string) => call<{ sent: boolean }>('/auth/otp', {
     method: 'POST', body: JSON.stringify({ phone }),
@@ -85,7 +112,10 @@ export const admin = {
   services: () => call<{ services: Service[] }>('/admin/services'),
   updateService: (key: string, patch: Record<string, unknown>) =>
     call<{ service: Service }>(`/admin/services/${key}`, { method: 'PATCH', body: JSON.stringify(patch) }),
-  bookings: () => call<{ bookings: any[] }>('/admin/bookings'),
+  bookings: () => call<{ bookings: AdminBooking[] }>('/admin/bookings'),
+  teams: () => call<{ teams: Team[] }>('/admin/teams'),
+  updateTeam: (id: string, patch: Record<string, unknown>) =>
+    call<{ team: Team }>(`/admin/teams/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 };
 
 /** Halalas in the database, riyals on screen. */

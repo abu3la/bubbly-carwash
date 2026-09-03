@@ -16,7 +16,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "نحتاج صور السيارة لتوثيق حالتها قبل الغسيل وبعده.",
+          "cameraPermission": "نحتاج الكاميرا لتوثيق السيارة قبل الغسيل وبعده.",
+          "microphonePermission": "نحتاج الميكروفون عند تسجيل فيديو توثيق 360 درجة."
+        }
+      ]
     ]
   }
 }

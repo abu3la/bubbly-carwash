@@ -120,7 +120,7 @@ export const ar: Copy = {
       `رصيدك ${credits} من ${total} غسلات · تنتهي ${expiry}`,
     creditsLeft: (credits) => `${credits} متبقية`,
     club: 'نادي سما',
-    clubTeaser: 'اشتراك شهري — وأولوية بمواعيد 10:00',
+    clubTeaser: 'خطتان شهريتان: غسلتان أو ثلاث غسلات',
     clubActive: (plan, renews) => `${plan} · التجديد ${renews}`,
     clubBalance: (plan, credits, leftThisWeek) =>
       `${plan} · ${credits} غسلات متاحة · ${leftThisWeek} هذا الأسبوع`,
@@ -128,7 +128,7 @@ export const ar: Copy = {
     myClub: 'لوحتي',
     promises: {
       onTime: 'في الموعد دائمًا',
-      documented: 'إتمام موثّق بصورة',
+      documented: 'صور أو فيديو 360° قبل وبعد',
       support: 'دعم سريع',
     },
   },
@@ -156,6 +156,14 @@ export const ar: Copy = {
     takenNoteMember: 'المواعيد الباهتة محجوزة · موعد الذروة مفتوح لك كعضو.',
     prioritySlot: 'أولوية',
     holdNote: 'نحجز لك الموعد مؤقتًا أثناء إتمام الدفع.',
+    periods: { morning: 'صباحًا', afternoon: 'ظهرًا', night: 'مساءً' },
+    fridayOff: 'الجمعة إجازة للفرق',
+    checkingAvailability: 'نتحقق من أقرب فريق…',
+    teamAvailable: (team, distanceKm, capacity) =>
+      `${team} يغطّي موقعك · يبعد ${distanceKm} كم · سعته ${capacity} حجزًا يوميًا`,
+    outsideTeamArea: 'الموقع خارج نطاق الفريق النشط حاليًا.',
+    dayFull: 'اكتملت سعة الفريق لهذا اليوم. اختر يومًا آخر.',
+    remainingSlots: (count) => `${count} متاح`,
 
     addOnsSection: 'إضافات اختيارية',
     addOnWithPrice: (label, price) => `${label} (+${price})`,
@@ -222,14 +230,14 @@ export const ar: Copy = {
   club: {
     title: 'نادي سما',
     blurb: 'اشتراك شهري — غسلات مجدولة تلقائيًا وأولوية في المواعيد.',
-    planLine: (credits, weekly, roll) =>
-      `${credits} غسلات شهريًا · حتى ${weekly} في الأسبوع · ترحيل ${roll}`,
+    planLine: (credits, weekly) =>
+      `${credits} غسلات شهريًا · حتى ${weekly} في الأسبوع`,
     mostPopular: 'الأكثر اشتراكًا',
     perksSection: 'ماذا تحصل عليه',
     perks: [
       'غسلات مجدولة تلقائيًا في موعدك المفضّل',
-      'أولوية في مواعيد الصباح 10:00',
-      'ترحيل الغسلات غير المستخدمة (حتى غسلتين)',
+      'اختيار موعد صباحي أو ظهري أو مسائي',
+      'توثيق السيارة قبل الغسيل وبعده',
       'إيقاف أو إلغاء الاشتراك في أي وقت',
     ],
 
@@ -294,8 +302,8 @@ export const ar: Copy = {
     simulateNext: 'محاكاة الخطوة التالية',
     replay: 'إعادة العرض',
 
-    documentation: 'صور التوثيق',
-    documentationNote: (technician) => `التقطها الفنّي ${technician} عند إكمال الغسلة — للعرض فقط.`,
+    documentation: 'توثيق السيارة قبل وبعد',
+    documentationNote: (technician) => `صور أو فيديو 360° التقطها الفنّي ${technician} قبل الغسيل وبعده — للعرض فقط.`,
 
     rateTechnician: (technician) => `قيّم الفنّي ${technician}`,
     commentPlaceholder: 'اكتب تعليقًا (اختياري)…',
@@ -338,8 +346,8 @@ export const ar: Copy = {
 
   services: {
     exterior: {
-      name: 'غسلة خارجية كاملة',
-      blurb: 'عند بابك، بدون خرطوم ولا فوضى — ماء معالج ومناشف مايكروفايبر.',
+      name: 'غسلة مفردة',
+      blurb: 'غسيل خارجي موثّق قبل وبعد، عند موقع سيارتك.',
       includes: [
         'رغوة نشطة وشطف كامل للهيكل',
         'تنظيف الجنوط والإطارات',
@@ -360,13 +368,13 @@ export const ar: Copy = {
   },
 
   addOns: { wax: 'طبقة واكس حماية', tires: 'لمعة إطارات' },
-  plans: { basic: 'أساسي', plus: 'بلس', max: 'ماكس' },
+  plans: { basic: 'أساسي', plus: 'سوبر ووش', max: 'ماكس' },
   packageLabel: { 3: 'باقة 3 غسلات', 5: 'باقة 5 غسلات', 10: 'باقة 10 غسلات' },
 
   beats: {
     arrived: { title: 'وصل', copy: 'الفنّي عند البوابة.' },
     washed: { title: 'الغسيل', copy: 'اكتمل الغسيل — التجفيف جارٍ.' },
-    verified: { title: 'تأكد', copy: 'فُحصت الجودة — أُرسلت لك صورة.' },
+    verified: { title: 'تأكد', copy: 'فُحصت الجودة — توثيق قبل وبعد جاهز.' },
   },
 
   technicianName: 'محمد الع.',

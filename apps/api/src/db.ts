@@ -9,6 +9,7 @@ import type { Env } from './env';
  * convenience; it is the only thing stopping one customer reading another's
  * addresses.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST rows are narrowed by route-level generics where their shape matters.
 export async function db<T = any>(
   env: Env,
   path: string,

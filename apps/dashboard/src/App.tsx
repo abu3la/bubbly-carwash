@@ -108,6 +108,7 @@ export function App() {
           <NavLink to="/plans">اشتراكات النادي</NavLink>
           <NavLink to="/services">الخدمات</NavLink>
           <NavLink to="/bookings">الحجوزات</NavLink>
+          <NavLink to="/teams">فرق التشغيل</NavLink>
         </nav>
         <div className="foot">
           لوحة التشغيل

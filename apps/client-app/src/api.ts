@@ -6,13 +6,15 @@ import { loadSession } from './auth';
  * Every call carries the session token; the Worker decides what the caller may
  * see. The app never holds a Supabase key and never queries the database.
  */
-const API = 'https://sama-api.samacarwash.workers.dev';
+const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://sama-api-dev.taz2886.workers.dev';
 
 export class ApiError extends Error {
   constructor(readonly code: string) {
     super(code);
   }
 }
+
+interface ErrorPayload { error?: { code?: string } }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const session = await loadSession();
@@ -30,7 +32,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError('offline');
   }
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((json as any)?.error?.code ?? 'unknown');
+  if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
   return json as T;
 }
 
@@ -116,10 +118,39 @@ export interface Catalogue {
     roll: number;
     best: boolean;
   }>;
-  slots: Array<{ startsAt: string; endsAt: string; priorityOnly: boolean }>;
+  slots: Array<{
+    period: 'morning' | 'afternoon' | 'night';
+    startsAt: string;
+    endsAt: string;
+    priorityOnly: boolean;
+  }>;
 }
 
 /** Public — no session needed, so a browsing customer sees real prices. */
 export function fetchCatalogue(): Promise<Catalogue> {
   return call('/catalogue');
+}
+
+export interface Availability {
+  date: string;
+  closed: boolean;
+  reason: 'friday' | 'full' | 'outsideServiceArea' | null;
+  covered: boolean;
+  team: null | {
+    id: string;
+    name: { ar: string; en: string };
+    distanceKm: number;
+    dailyCapacity: number;
+  };
+  slots: Array<{
+    period: 'morning' | 'afternoon' | 'night';
+    startsAt: string;
+    endsAt: string;
+    remaining: number;
+  }>;
+}
+
+export function fetchAvailability(lat: number, lng: number, date: string): Promise<Availability> {
+  const query = new URLSearchParams({ lat: String(lat), lng: String(lng), date });
+  return call(`/catalogue/availability?${query}`);
 }

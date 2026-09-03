@@ -14,8 +14,7 @@ export interface Service {
 }
 
 export const SERVICES: Service[] = [
-  { key: 'exterior', price: 49, minutes: 45 },
-  { key: 'full', price: 69, minutes: 70 },
+  { key: 'exterior', price: 40, minutes: 45 },
 ];
 
 export interface AddOn {
@@ -63,9 +62,8 @@ export interface Plan {
 }
 
 export const PLANS: Plan[] = [
-  { id: 'basic', price: 149, credits: 4, weekly: 1, roll: 1 },
-  { id: 'plus', price: 199, credits: 8, weekly: 2, roll: 2, best: true },
-  { id: 'max', price: 279, credits: 12, weekly: 3, roll: 2 },
+  { id: 'basic', price: 199, credits: 2, weekly: 1, roll: 0 },
+  { id: 'plus', price: 299, credits: 3, weekly: 2, roll: 0, best: true },
 ];
 
 
@@ -73,6 +71,7 @@ export const PLANS: Plan[] = [
 
 export interface Slot {
   time: string;
+  period: 'morning' | 'afternoon' | 'night';
   /** Slots the design marks as taken — the app only offers what is real. */
   taken?: boolean;
   /** Reserved for club members, who are promised priority on peak slots. */
@@ -80,17 +79,13 @@ export interface Slot {
 }
 
 export const SLOTS: Slot[] = [
-  { time: '08:00–08:30' },
-  { time: '08:30–09:00' },
-  { time: '09:00–09:30' },
-  // Held back for the club, which promises priority on the 10:00 slots.
-  { time: '10:00–10:30', taken: true, priority: true },
-  { time: '10:30–11:00' },
-  { time: '11:00–11:30' },
-  { time: '15:30–16:00', taken: true },
-  { time: '16:00–16:30' },
-  { time: '16:30–17:00' },
+  { time: '08:00–12:00', period: 'morning' },
+  { time: '13:00–17:00', period: 'afternoon' },
+  { time: '18:00–22:00', period: 'night' },
 ];
+
+/** The address shown in the trial is in Team 1's Riyadh coverage area. */
+export const BOOKING_LOCATION = { lat: 24.735, lng: 46.668 } as const;
 
 // ------------------------------------------------------------------- user
 
