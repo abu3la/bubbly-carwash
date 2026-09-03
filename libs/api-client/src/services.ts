@@ -1,5 +1,5 @@
-import type { Service } from '@bubbly/types';
-import type { CreateServiceInput } from '@bubbly/validation';
+import type { Service } from '@sama/types';
+import type { CreateServiceInput } from '@sama/validation';
 import { request } from './client';
 
 export const servicesService = {

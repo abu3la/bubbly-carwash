@@ -1,4 +1,4 @@
-import { waterlineFillPath } from '@bubbly/design-tokens';
+import { waterlineFillPath } from '@sama/design-tokens';
 
 interface WaterlineProps {
   /** Curve depth in px. */

@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@bubbly/types';
+import type { BookingStatus } from '@sama/types';
 
 const LABELS: Record<BookingStatus, string> = {
   pending: 'Pending',

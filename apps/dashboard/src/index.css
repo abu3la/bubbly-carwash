@@ -1,147 +1,195 @@
-/* Bubbly Ops shell. Token variables come from @bubbly/ui-web's tokenCss,
-   injected in main.tsx before this sheet applies. */
-
-* {
-  box-sizing: border-box;
+/*
+ * Sama back office.
+ *
+ * The tokens are the app's, restated as CSS custom properties so the two
+ * surfaces cannot drift: the same violet, the same cloud, the same ink. What
+ * differs is density — a phone shows one booking at a time, a back office shows
+ * forty rows and needs to stay readable at that scale.
+ *
+ * Arabic, right to left, because the people running Sama read Arabic. An
+ * English back office over an Arabic product is a seam nobody benefits from.
+ */
+:root {
+  --violet: #5a42ff;
+  --violet-600: #4a33e6;
+  --violet-100: #eeebff;
+  --yellow: #ffd84d;
+  --guava: #ff5e7e;
+  --ice: #bdeeff;
+  --ice-100: #eafaff;
+  --ink: #17162e;
+  --ink-72: rgba(23, 22, 46, 0.72);
+  --ink-56: rgba(23, 22, 46, 0.56);
+  --ink-12: rgba(23, 22, 46, 0.12);
+  --ink-06: rgba(23, 22, 46, 0.06);
+  --cloud: #fafaf5;
+  --white: #fff;
+  --radius: 14px;
 }
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
 
 body {
   margin: 0;
-  background: var(--bb-foam);
-  color: var(--bb-ink);
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: var(--bb-font-body);
-  line-height: 1.55;
+  direction: rtl;
+  background: var(--cloud);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
 }
 
-#root {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  min-height: 100vh;
+/* ------------------------------------------------------------------ shell */
+
+.shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100%; }
+
+.rail {
+  background: var(--ink);
+  color: var(--white);
+  padding: 26px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
-/* sidebar */
-.nav {
-  background: var(--bb-ink);
-  color: var(--bb-foam);
-  padding: 28px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-}
-.nav-links {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.nav-links a {
-  color: var(--bb-foam);
-  opacity: 0.62;
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; }
+
+/* The product's own mark: three beats. Reused rather than redrawn, so the back
+   office is visibly the same company as the app. */
+.beats { display: flex; gap: 5px; }
+.beat { width: 11px; height: 11px; border-radius: 50%; }
+.beat.y { background: var(--yellow); }
+.beat.g { background: var(--guava); }
+.beat.v { background: var(--violet); }
+
+.rail nav { display: flex; flex-direction: column; gap: 2px; }
+
+.rail a {
+  color: rgba(255, 255, 255, 0.62);
   text-decoration: none;
-  padding: 9px 10px;
-  border-radius: var(--bb-radius-sm);
-  font-weight: 500;
-  transition: opacity 140ms ease, background 140ms ease;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 14.5px;
+  transition: background 120ms, color 120ms;
 }
-.nav-links a:hover {
-  opacity: 0.9;
-}
-.nav-links a.active {
-  opacity: 1;
-  font-weight: 650;
-  background: color-mix(in srgb, var(--bb-foam) 9%, transparent);
-}
-.nav-foot {
-  margin-top: auto;
-  font-size: var(--bb-font-caption);
-  opacity: 0.45;
-}
+.rail a:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.rail a.active { color: var(--ink); background: var(--white); font-weight: 600; }
 
-/* content */
-.content {
-  padding: 36px 40px 64px;
-  max-width: 1040px;
-}
-.content > header {
-  margin-bottom: 28px;
-}
+.rail .foot { margin-top: auto; font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.6; }
 
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-  margin-bottom: 28px;
-}
+.content { padding: 34px 40px 60px; overflow-y: auto; }
 
-table.data {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--bb-surface);
-  border: 1px solid color-mix(in srgb, var(--bb-ink) 9%, transparent);
-  border-radius: var(--bb-radius-md);
+/* ------------------------------------------------------------------- page */
+
+.page-head { margin-bottom: 26px; }
+.page-head h1 { margin: 0 0 5px; font-size: 27px; font-weight: 700; letter-spacing: 0; }
+.page-head p { margin: 0; color: var(--ink-56); font-size: 14.5px; }
+
+/* ------------------------------------------------------------------ table */
+
+.sheet {
+  background: var(--white);
+  border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(23, 22, 46, 0.05), 0 8px 24px -14px rgba(23, 22, 46, 0.22);
 }
-table.data th {
-  text-align: left;
-  font-size: var(--bb-font-caption);
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+  text-align: right;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--bb-ink-soft);
-  padding: 12px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--bb-ink) 9%, transparent);
+  color: var(--ink-56);
+  padding: 13px 18px;
+  background: var(--ink-06);
+  white-space: nowrap;
 }
-table.data td {
-  padding: 13px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--bb-ink) 5%, transparent);
-  vertical-align: middle;
-}
-table.data tr:last-child td {
-  border-bottom: none;
-}
-td.num {
+
+td { padding: 13px 18px; border-top: 1px solid var(--ink-06); vertical-align: middle; }
+
+tbody tr.off { opacity: 0.45; }
+
+/* Money and counts are data — a tabular figure keeps columns from jittering as
+   digits change, and the LTR direction keeps 219 from ever rendering as 912. */
+.num { font-variant-numeric: tabular-nums; direction: ltr; text-align: right; unicode-bidi: isolate; }
+
+.headline { font-weight: 700; font-size: 16px; }
+
+input[type='number'], input[type='text'] {
+  width: 92px;
+  padding: 7px 10px;
+  border: 1px solid var(--ink-12);
+  border-radius: 9px;
+  background: var(--white);
+  font: inherit;
   font-variant-numeric: tabular-nums;
+  direction: ltr;
   text-align: right;
+  color: var(--ink);
 }
-th.num {
-  text-align: right;
-}
-.cell-main {
+input:focus { outline: 2px solid var(--violet); outline-offset: 1px; border-color: transparent; }
+
+/* ----------------------------------------------------------------- pieces */
+
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 600;
+  background: var(--yellow);
+  color: var(--ink);
 }
-.cell-sub {
-  color: var(--bb-ink-soft);
-  font-size: var(--bb-font-caption);
-  margin-top: 1px;
-}
+.badge.quiet { background: var(--ink-06); color: var(--ink-56); }
 
-.filter-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.filter-row button {
-  font: 500 var(--bb-font-caption) / 1 system-ui;
-  color: var(--bb-ink-soft);
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--bb-ink) 14%, transparent);
-  border-radius: var(--bb-radius-sm);
-  padding: 7px 12px;
+button {
+  font: inherit;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 16px;
+  background: var(--violet);
+  color: #fff;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 120ms;
 }
-.filter-row button.on {
-  color: var(--bb-surface);
-  background: var(--bb-ink);
-  border-color: var(--bb-ink);
-}
+button:hover:not(:disabled) { background: var(--violet-600); }
+button:disabled { opacity: 0.4; cursor: default; }
+button.ghost { background: transparent; color: var(--violet); padding: 6px 10px; }
+button.ghost:hover:not(:disabled) { background: var(--violet-100); }
 
-.state-note {
-  color: var(--bb-ink-soft);
-  padding: 32px 0;
+.row { display: flex; align-items: center; gap: 10px; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+.note { color: var(--ink-56); font-size: 13px; }
+.err { color: var(--guava); font-size: 13.5px; }
+.ok { color: #0f9d58; font-size: 13.5px; }
+
+/* ------------------------------------------------------------------ login */
+
+.gate { display: grid; place-items: center; min-height: 100vh; padding: 20px; }
+.gate-card {
+  width: 100%;
+  max-width: 372px;
+  background: var(--white);
+  border-radius: 18px;
+  padding: 34px 30px;
+  box-shadow: 0 1px 2px rgba(23, 22, 46, 0.05), 0 20px 50px -24px rgba(23, 22, 46, 0.3);
 }
+.gate-card h1 { margin: 16px 0 4px; font-size: 22px; }
+.gate-card p { margin: 0 0 22px; color: var(--ink-56); font-size: 14px; }
+.gate-card input { width: 100%; margin-bottom: 12px; }
+.gate-card button { width: 100%; }
+
+.dial {
+  display: flex; align-items: center; gap: 8px; direction: ltr;
+  border: 1px solid var(--ink-12); border-radius: 9px; padding: 0 10px; margin-bottom: 12px;
+}
+.dial span { font-weight: 600; color: var(--ink-72); font-variant-numeric: tabular-nums; }
+.dial input { border: 0; margin: 0; width: 100%; text-align: left; }
+.dial input:focus { outline: none; }
+
+.empty { padding: 40px; text-align: center; color: var(--ink-56); }

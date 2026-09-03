@@ -1,7 +1,15 @@
-export { color, statusColor } from './color';
-export { space, radius, fontSize, fontWeight } from './scale';
-export { fontFamily, lineHeight, letterSpacing } from './type';
-export { duration, easing } from './motion';
-export { border, shadow } from './elevation';
-export { waterlinePath, waterlineFillPath } from './waterline';
-export { cssVariables, themeCss } from './css';
+export { palette, beat, onBeat, type BeatKey } from './color';
+export {
+  space,
+  layout,
+  radius,
+  fontSize,
+  lineHeight,
+  lineHeightArabic,
+  tracking,
+  fontWeight,
+  HIT_TARGET,
+} from './scale';
+export { shadow, border, focusRing } from './effects';
+export { duration, easing, easingPoints, spring } from './motion';
+export { fontFamily, nativeFont } from './type';

@@ -1,29 +1,50 @@
-import { useState } from 'react';
 import { Stack } from 'expo-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { configureApi } from '@bubbly/api-client';
-import { color } from '@bubbly/design-tokens';
-
-// Simulators reach the wrangler dev server on localhost; a physical device
-// needs your machine's LAN IP here.
-configureApi({ baseUrl: 'http://localhost:8787' });
+import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  IBMPlexSansArabic_400Regular,
+  IBMPlexSansArabic_500Medium,
+  IBMPlexSansArabic_600SemiBold,
+  IBMPlexSansArabic_700Bold,
+} from '@expo-google-fonts/ibm-plex-sans-arabic';
+import { DirectionRoot, LocaleProvider, ToastProvider } from '@sama/ui-native';
+import { theme } from '@sama/ui-native/theme';
+import { SessionProvider } from '../src/session';
 
 export default function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient());
+  // Fonts are loaded but never gated on: a technician standing beside a car
+  // must not stare at a blank screen because a webfont is slow. The system
+  // face renders first and is replaced when the real one arrives.
+  useFonts({
+    IBMPlexSansArabic_400Regular,
+    IBMPlexSansArabic_500Medium,
+    IBMPlexSansArabic_600SemiBold,
+    IBMPlexSansArabic_700Bold,
+  });
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: color.foam },
-          headerTintColor: color.ink,
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: color.foam },
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: 'Job queue' }} />
-        <Stack.Screen name="job/[id]" options={{ title: 'Job' }} />
-        <Stack.Screen name="history" options={{ title: 'History' }} />
-      </Stack>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        {/* Arabic only, so the direction is fixed rather than chosen. */}
+        <LocaleProvider language="ar">
+          <DirectionRoot>
+            <ToastProvider>
+              <SessionProvider>
+                <StatusBar style="dark" />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: theme.surface.page },
+                    animation: 'slide_from_left',
+                  }}
+                />
+              </SessionProvider>
+            </ToastProvider>
+          </DirectionRoot>
+        </LocaleProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

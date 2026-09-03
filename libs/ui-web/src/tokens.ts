@@ -1,4 +1,4 @@
-import { themeCss } from '@bubbly/design-tokens';
+import { themeCss } from '@sama/design-tokens';
 
 /**
  * Full theme stylesheet apps inject once (style tag or global stylesheet):

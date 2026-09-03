@@ -1,19 +1,22 @@
 {
   "expo": {
-    "name": "Bubbly Driver",
-    "slug": "bubbly-driver",
-    "scheme": "bubblydriver",
+    "name": "Sama Driver",
+    "slug": "sama-driver",
+    "scheme": "samadriver",
     "version": "0.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.bubbly.driver",
+      "bundleIdentifier": "com.samacarwash.driver",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.bubbly.driver"
+      "package": "com.samacarwash.driver"
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ]
   }
 }

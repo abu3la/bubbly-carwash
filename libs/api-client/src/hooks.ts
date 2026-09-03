@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateBookingInput, UpdateBookingStatusInput } from '@bubbly/validation';
+import type { CreateBookingInput, UpdateBookingStatusInput } from '@sama/validation';
 import { servicesService } from './services';
 import { bookingsService, type BookingFilter } from './bookings';
 

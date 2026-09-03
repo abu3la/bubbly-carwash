@@ -4,7 +4,12 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noEmit": true
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "module": "esnext"
   },
-  "include": ["app", "expo-env.d.ts"]
+  "include": [
+    "app",
+    "src"
+  ]
 }

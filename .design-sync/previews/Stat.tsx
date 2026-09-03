@@ -1,4 +1,4 @@
-import { Stat } from '@bubbly/ui-web';
+import { Stat } from '@sama/ui-web';
 
 export const StatRow = () => (
   <div style={{ display: 'flex', gap: 40 }}>

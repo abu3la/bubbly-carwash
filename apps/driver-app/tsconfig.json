@@ -6,5 +6,7 @@
     "noUnusedParameters": true,
     "noEmit": true
   },
-  "include": ["app", "expo-env.d.ts"]
+  "include": [
+    "app"
+  ]
 }

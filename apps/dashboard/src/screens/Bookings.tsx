@@ -1,66 +1,64 @@
-import { useState } from 'react';
-import { useBookings } from '@bubbly/api-client';
-import { PageHeading, StatusBadge } from '@bubbly/ui-web';
-import { formatMoney, formatSlot } from '@bubbly/utils';
-import { BOOKING_STATUSES, type BookingStatus } from '@bubbly/types';
+import { useEffect, useState } from 'react';
+import { admin, sar } from '../api';
 
+const STATUS_AR: Record<string, string> = {
+  scheduled: 'مجدول', active: 'جارٍ', done: 'مكتمل', cancelled: 'ملغى',
+};
+const SOURCE_AR: Record<string, string> = {
+  club: 'النادي', package: 'باقة', cash: 'دفع مباشر',
+};
+
+/** Every customer's bookings — which is the point of a back office. */
 export function Bookings() {
-  const [status, setStatus] = useState<BookingStatus | undefined>();
-  const bookings = useBookings(status ? { status } : undefined);
+  const [rows, setRows] = useState<any[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    admin.bookings().then((d) => setRows(d.bookings)).catch(() => setErr('تعذّر تحميل الحجوزات.'));
+  }, []);
+
+  if (!rows) return <p className="note">{err ?? 'جارٍ التحميل…'}</p>;
 
   return (
     <>
-      <header>
-        <PageHeading title="Bookings" meta="Every wash, live from the API" />
-      </header>
-
-      <div className="filter-row" role="group" aria-label="Filter by status">
-        <button className={status === undefined ? 'on' : ''} onClick={() => setStatus(undefined)}>
-          All
-        </button>
-        {BOOKING_STATUSES.map((s) => (
-          <button key={s} className={status === s ? 'on' : ''} onClick={() => setStatus(s)}>
-            {s.replace('_', ' ')}
-          </button>
-        ))}
+      <div className="page-head">
+        <h1>الحجوزات</h1>
+        <p>{rows.length} حجزًا، الأحدث أولًا.</p>
       </div>
 
-      {bookings.isPending && <p className="state-note">Loading bookings…</p>}
-      {bookings.isError && (
-        <p className="state-note">Can't reach the API — is `pnpm --filter @bubbly/api dev` running?</p>
-      )}
-      {bookings.data && bookings.data.length === 0 && (
-        <p className="state-note">No bookings match this filter.</p>
-      )}
-      {bookings.data && bookings.data.length > 0 && (
-        <table className="data">
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Where</th>
-              <th>When</th>
-              <th>Status</th>
-              <th className="num">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.data.map((b) => (
-              <tr key={b.id}>
-                <td>
-                  <div className="cell-main">{b.id}</div>
-                  <div className="cell-sub">driver: {b.driverId ?? 'unassigned'}</div>
-                </td>
-                <td>{b.address}</td>
-                <td>{formatSlot(b.scheduledAt)}</td>
-                <td>
-                  <StatusBadge status={b.status} />
-                </td>
-                <td className="num">{formatMoney(b.priceMinor, b.currency)}</td>
+      <div className="sheet">
+        {rows.length === 0 ? (
+          <p className="empty">لا حجوزات بعد.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>المرجع</th>
+                <th>الموعد</th>
+                <th>الخدمة</th>
+                <th>الدفع</th>
+                <th>الإجمالي</th>
+                <th>الحالة</th>
+                <th>المرحلة</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {rows.map((b) => (
+                <tr key={b.id} className={b.status === 'cancelled' ? 'off' : ''}>
+                  <td className="headline num">{b.ref}</td>
+                  <td className="num">{String(b.scheduled_at).slice(0, 16).replace('T', ' ')}</td>
+                  <td>{b.service_key === 'exterior' ? 'خارجية' : 'كاملة'}</td>
+                  <td>{SOURCE_AR[b.source] ?? b.source}</td>
+                  <td className="num">{sar(b.total_minor)}</td>
+                  <td>{STATUS_AR[b.status] ?? b.status}</td>
+                  <td className="note">{b.stage}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      {err ? <p className="err" style={{ marginTop: 14 }}>{err}</p> : null}
     </>
   );
 }

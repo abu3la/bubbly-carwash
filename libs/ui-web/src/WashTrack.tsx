@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@bubbly/types';
+import type { BookingStatus } from '@sama/types';
 
 const STATIONS = [
   { key: 'pending', label: 'Pending' },

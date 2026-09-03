@@ -1,0 +1,49 @@
+import { View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { MapPin } from 'lucide-react-native';
+import { useUnistyles, StyleSheet } from 'react-native-unistyles';
+import { Button, Reveal, Screen, Txt } from '@sama/ui-native';
+import { useCopy } from '../../src/i18n';
+
+export default function Permission() {
+  const { theme } = useUnistyles();
+  const router = useRouter();
+  const copy = useCopy();
+  // Straight to the manual form while the map is out: the address is what the
+  // wash needs, and a coordinate is an optimisation on top of it.
+  const next = () => router.push('/onboarding/address');
+
+  return (
+    <Screen contentStyle={styles.screen}>
+      <View style={styles.stage}>
+        {/* The mark stands bare. A glyph parked on a tinted disc is the
+            component-kit default, and the container adds nothing the icon's own
+            weight and colour cannot carry. */}
+        <Reveal>
+          <MapPin size={theme.scale(64)} color={theme.action.primary} strokeWidth={1.6} />
+        </Reveal>
+        <Reveal delay={90} style={styles.copy}>
+          <Txt variant="title" weight="bold" center>
+            {copy.onboarding.locationTitle}
+          </Txt>
+          <Txt variant="body" tone="secondary" center style={styles.blurb}>
+            {copy.onboarding.locationBlurb}
+          </Txt>
+        </Reveal>
+      </View>
+
+      <View style={styles.actions}>
+        <Button label={copy.onboarding.allowLocation} size="lg" fullWidth onPress={next} />
+        <Button label={copy.onboarding.enterManually} variant="ghost" fullWidth onPress={next} />
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create((theme) => ({
+  screen: { padding: theme.spacing[6], justifyContent: 'space-between' },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing[5] },
+  copy: { alignItems: 'center', gap: theme.spacing[2] },
+  blurb: { maxWidth: theme.scale(290) },
+  actions: { gap: theme.spacing[2] },
+}));

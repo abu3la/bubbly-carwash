@@ -18,7 +18,7 @@ await build({
 });
 const { themeCss } = await import(pathToFileURL(outFile).href);
 const header =
-  '/* GENERATED from @bubbly/design-tokens themeCss() — do not edit.\n' +
+  '/* GENERATED from @sama/design-tokens themeCss() — do not edit.\n' +
   '   Regenerate: node .design-sync/gen-tokens.mjs */\n';
 writeFileSync(join(root, 'libs/design-tokens/tokens.css'), header + themeCss() + '\n');
 rmSync(tmp, { recursive: true, force: true });

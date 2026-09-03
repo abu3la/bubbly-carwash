@@ -1,4 +1,4 @@
-import { WashTrack } from '@bubbly/ui-web';
+import { WashTrack } from '@sama/ui-web';
 
 export const Assigned = () => <WashTrack status="assigned" />;
 

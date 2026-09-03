@@ -1,4 +1,4 @@
-import { Waterline } from '@bubbly/ui-web';
+import { Waterline } from '@sama/ui-web';
 
 /** The signature meniscus edge: place it directly above the section whose
  * surface it pours into — the fill must match that section's background. */

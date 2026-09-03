@@ -1,4 +1,4 @@
-import { Card, StatusBadge, LedgerRow, LedgerTotal } from '@bubbly/ui-web';
+import { Card, StatusBadge, LedgerRow, LedgerTotal } from '@sama/ui-web';
 
 export const BookingCard = () => (
   <Card style={{ maxWidth: 380 }}>

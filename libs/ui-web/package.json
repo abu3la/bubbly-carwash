@@ -1,5 +1,5 @@
 {
-  "name": "@bubbly/ui-web",
+  "name": "@sama/ui-web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@bubbly/design-tokens": "workspace:*",
-    "@bubbly/types": "workspace:*"
+    "@sama/design-tokens": "workspace:*",
+    "@sama/types": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=19"

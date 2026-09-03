@@ -1,10 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bubbly-api",
+  "name": "sama-api",
+  // Sama's own Cloudflare account (9955ac@gmail.com). It has its own
+  // workers.dev subdomain, `samacarwash`, which is why the API lives here and
+  // not alongside another project — that subdomain is one per account, and
+  // sharing one means a rename on either side breaks the other's URLs.
+  "account_id": "de8c4462ba0c1c0449f99aa8dbb71870",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
-  // Supabase URL and service-role key are secrets:
-  //   local dev  -> apps/api/.dev.vars (copy .dev.vars.example)
-  //   production -> wrangler secret put SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
+  // Secrets are never in this file. It is committed; secrets are not.
+  //   local dev  -> apps/api/.dev.vars (gitignored)
+  //   production -> wrangler secret put SUPABASE_URL
+  //                 wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+  //                 wrangler secret put MOYASAR_SECRET_KEY
+  //                 wrangler secret put MOYASAR_WEBHOOK_SECRET
   "observability": { "enabled": true }
 }

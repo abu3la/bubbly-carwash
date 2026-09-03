@@ -1,47 +1,59 @@
 /**
- * Bubbly's world is water: a deep petrol ink (green-leaning, deliberately not
- * the stock blue-slate), foam-tinted surfaces, and one aqua accent used
- * sparingly. Semantic colors are separate from the accent.
+ * Sama's palette, ported verbatim from the handoff's `tokens/colors.css`.
+ * Electric violet is the one action colour; guava, yellow and ice are the
+ * supporting brand tones. Ink is a single near-black expressed in alpha steps
+ * rather than a ladder of greys, so every muted tone is provably the same hue.
  */
-export const color = {
-  // grounds
-  ink: '#142b30',
-  inkSoft: '#51696e',
-  inkFaint: '#7d9296',
-  foam: '#eef3f2',
-  surface: '#f7fafa',
-  surfaceSunken: '#e4edec',
+export const palette = {
+  violet: '#5A42FF',
+  violet600: '#4A33E6',
+  violet700: '#3D28C4',
+  violet200: '#C9C1FF',
+  violet100: '#EEEBFF',
 
-  // dark grounds
-  night: '#0d1c1f',
-  nightSurface: '#13262a',
-  nightRaised: '#182e33',
-  foamOnNight: '#d9e9e7',
-  mutedOnNight: '#93aeac',
+  guava: '#FF5E7E',
+  guava600: '#E84A6B',
+  guava100: '#FFE9EE',
 
-  inkFaintOnNight: '#6d8785',
+  yellow: '#FFD84D',
+  yellow600: '#EFC53B',
+  yellow100: '#FFF5D6',
 
-  // accent — one aqua, two tonal steps per ground
-  aqua: '#0d7e8f',
-  aquaDeep: '#0a5f6c',
-  aquaOnNight: '#52c2d0',
-  aquaSoftOnNight: '#7dd3de',
+  ice: '#BDEEFF',
+  ice100: '#E7F8FF',
 
-  // semantic (not the accent)
-  success: '#2e7d5b',
-  warning: '#a8681c',
-  danger: '#a83a32',
-  successOnNight: '#5fae8c',
-  warningOnNight: '#cf9455',
-  dangerOnNight: '#cf7a72',
+  ink: '#17162E',
+  ink72: 'rgba(23,22,46,0.72)',
+  ink56: 'rgba(23,22,46,0.56)',
+  ink40: 'rgba(23,22,46,0.4)',
+  ink16: 'rgba(23,22,46,0.16)',
+  ink10: 'rgba(23,22,46,0.1)',
+  ink06: 'rgba(23,22,46,0.06)',
+
+  cloud: '#FAFAF5',
+  white: '#FFFFFF',
+  whiteSoft: 'rgba(255,255,255,0.72)',
+
+  /** Readable ink for text sitting on the tint backgrounds. */
+  onYellowTint: '#8A6D00',
+  onIceTint: '#0B6A8F',
 } as const;
 
-/** Booking status → semantic color role. */
-export const statusColor = {
-  pending: color.inkFaint,
-  assigned: color.aqua,
-  en_route: color.aqua,
-  washing: color.warning,
-  done: color.success,
-  cancelled: color.danger,
+/**
+ * The wash pipeline has exactly three beats. Never a fourth — the handoff is
+ * explicit, and StatusBadge is the only component allowed to colour them.
+ */
+export const beat = {
+  arrived: palette.violet,
+  washed: palette.guava,
+  verified: palette.yellow,
 } as const;
+
+export type BeatKey = keyof typeof beat;
+
+/** Ink that sits legibly on each beat colour. */
+export const onBeat: Record<BeatKey, string> = {
+  arrived: palette.white,
+  washed: palette.white,
+  verified: palette.ink,
+};

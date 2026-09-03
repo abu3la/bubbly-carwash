@@ -1,4 +1,4 @@
-import { LedgerRow, LedgerTotal } from '@bubbly/ui-web';
+import { LedgerRow, LedgerTotal } from '@sama/ui-web';
 
 export const PaymentSummary = () => (
   <div style={{ maxWidth: 360 }}>

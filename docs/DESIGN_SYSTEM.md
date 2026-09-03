@@ -208,3 +208,48 @@ not from a SaaS template.
 - Every control actually responds; anything static must not look tappable.
 - Content is visible with animations disabled; motion only ever moves things
   that are already on screen.
+
+## 6. Decisions the client-app build settled
+
+These supersede the matching lines above. They came out of building the Arabic
+client app against the approved design file (`Bubbly App.dc.html`) and the
+compiled `WashTrack` in `ds-bundle/`, and they are what ships.
+
+- **`WashTrack` fill is the single aqua accent, not `statusColor`.** The
+  compiled DS component (`ds-bundle/_screenshots/general__WashTrack.png`) draws
+  every reached station in aqua, including `washing` and `done`. An amber rail
+  for "washing" fought the brand and read as a warning. `statusColor` still
+  drives `StatusBadge` and any status *text*; the rail does not use it.
+- **`WashTrack` shows station labels.** Five equal columns, one label centred
+  under each dot, current one in semibold. Each label owning a column is what
+  keeps the end labels from being clipped at any string length in Arabic. Screens
+  therefore do **not** print a separate "current station: X" caption — the track
+  already names it.
+- **The rail is a hairline, and the water laps.** 2pt rail, 8pt dots, 12pt for
+  the current one. A meniscus cannot read at 2pt, so the `washing` motion moment
+  is the water's leading edge lapping ±2pt around the station (`duration.fill`
+  to rise, then a slow loop), caps unchanged, gated behind reduced-motion.
+  `waterlineCrestPath` was tried and removed — it drew as an arrowhead.
+- **Bottom sheets keep rounded top corners**, per the design file, rather than a
+  waterline top edge. The waterline appears at section transitions (onboarding,
+  home, account, tracking) and nowhere else in the app.
+
+### RTL mechanics — read before touching any layout
+
+`I18nManager.isRTL` is **false** at runtime; the app's right-to-left flow comes
+from Yoga's `direction` style. Two consequences, both learned the hard way:
+
+1. **`direction` does not cross a native view boundary.** React Navigation hosts
+   each screen in its own native view, and a `Modal` mounts its own tree, so a
+   direction set at the app root never reaches them. `Screen` and `Sheet` each
+   restate `direction` from `useDirection()`. Any new component that mounts its
+   own host view must do the same.
+2. **Text alignment cannot be trusted to follow it.** `textAlign: 'auto'`
+   resolves from `I18nManager` (LTR here), so Arabic text lands against the
+   wrong edge. `Txt` states `textAlign` and `writingDirection` outright, and
+   short labels whose edge must be exact use `<Txt hug>`, which pins them with
+   `alignSelf` — layout-level alignment is the only one that resolves reliably.
+   Paragraphs must NOT use `hug`; they need full width to wrap.
+
+Anything laid out left-to-right on purpose (a phone keypad, OTP boxes) sets
+`flexDirection: 'row-reverse'` under RTL, which Yoga flips back to visual LTR.

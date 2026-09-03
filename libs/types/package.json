@@ -1,8 +1,7 @@
 {
-  "name": "@bubbly/types",
+  "name": "@sama/types",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {

@@ -1,5 +1,5 @@
 {
-  "name": "@bubbly/validation",
+  "name": "@sama/validation",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@bubbly/types": "workspace:*",
+    "@sama/types": "workspace:*",
     "zod": "^3.25.0"
   },
   "devDependencies": {

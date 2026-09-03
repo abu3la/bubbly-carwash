@@ -1,24 +1,20 @@
 /**
- * The display face is the signature and must be chosen by *rendering* the
- * candidates in docs/DESIGN_SYSTEM.md §3 (Fontshare Pally / Sentient /
- * Gambarino), then self-hosting the woff2 under assets/fonts. Until that
- * decision lands, the stack falls through to the system face so nothing
- * silently renders in a wrong webfont.
+ * IBM Plex Sans Arabic carries the whole interface — the handoff names it, and
+ * it is a genuine Arabic family with tabular numerals, which this app leans on
+ * for every price, slot and invoice ID.
  */
 export const fontFamily = {
-  display: "'BubblyDisplay', system-ui, -apple-system, 'Segoe UI', sans-serif",
-  body: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  arabic: "'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif",
+  latin: "'IBM Plex Sans', system-ui, sans-serif",
 } as const;
 
-/** Keyed to the fontSize steps in scale.ts. */
-export const lineHeight = {
-  caption: 1.4,
-  body: 1.5,
-  emphasis: 1.4,
-  title: 1.25,
-  display: 1.1,
-} as const;
-
-export const letterSpacing = {
-  display: -0.5,
+/**
+ * React Native does not synthesise weights for custom families: each weight is
+ * its own registered family name, so a component picks a weight by family.
+ */
+export const nativeFont = {
+  regular: 'IBMPlexSansArabic_400Regular',
+  medium: 'IBMPlexSansArabic_500Medium',
+  semibold: 'IBMPlexSansArabic_600SemiBold',
+  bold: 'IBMPlexSansArabic_700Bold',
 } as const;
