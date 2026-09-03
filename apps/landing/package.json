@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:dev": "NEXT_PUBLIC_DASHBOARD_URL=https://sama-dashboard-dev.taz2886.workers.dev opennextjs-cloudflare build && wrangler deploy --config wrangler.dev.jsonc",
+    "deploy:dev:triggers": "wrangler triggers deploy --config wrangler.dev.jsonc",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
@@ -23,6 +25,6 @@
     "@types/react-dom": "^19.1.0",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2",
-    "wrangler": "^4.30.0"
+    "wrangler": "^4.128.0"
   }
 }

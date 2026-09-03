@@ -7,6 +7,9 @@
  * bundle — the Worker is the only thing that holds it.
  */
 export interface Env {
+  /** Private media storage. Object metadata and ownership stay in Supabase. */
+  MEDIA?: R2Bucket;
+
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   MOYASAR_SECRET_KEY?: string;

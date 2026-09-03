@@ -81,24 +81,11 @@ body {
   font-size: clamp(16px, 1.6vw, 19px);
   max-width: 44ch;
 }
-.hero .cta {
-  align-self: flex-start;
-  font: 600 16px/1 system-ui;
-  color: var(--night);
-  background: var(--aqua);
-  border: none;
-  border-radius: 8px;
-  padding: 15px 26px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 140ms ease;
-}
-.hero .cta:hover {
-  background: var(--foam);
-}
-.hero .cta:focus-visible {
-  outline: 2px solid var(--foam);
-  outline-offset: 3px;
+.hero .release-note {
+  margin: 0;
+  color: var(--foam);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* the bubble field — always visible, motion is additive */

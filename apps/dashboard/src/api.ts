@@ -3,7 +3,7 @@
  * backend and no direct database access. What separates them is the caller's
  * role, checked server-side against `profiles.role`.
  */
-const API = 'https://sama-api.samacarwash.workers.dev';
+const API = import.meta.env.VITE_API_URL ?? 'https://sama-api.samacarwash.workers.dev';
 const TOKEN_KEY = 'sama.admin.token';
 
 export const token = {

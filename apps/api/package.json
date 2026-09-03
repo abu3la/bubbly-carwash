@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --config wrangler.dev.jsonc",
+    "deploy:dev:triggers": "wrangler triggers deploy --config wrangler.dev.jsonc",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
@@ -19,9 +21,9 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250823.0",
+    "@cloudflare/workers-types": "^5.20260831.1",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2",
-    "wrangler": "^4.30.0"
+    "wrangler": "^4.128.0"
   }
 }

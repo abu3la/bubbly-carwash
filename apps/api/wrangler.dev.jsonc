@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sama-api-dev",
+  "account_id": "57118b773c4166fafe8b041d792cb2ef",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "sama-dev-media"
+    }
+  ]
+}

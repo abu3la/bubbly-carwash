@@ -30,6 +30,9 @@ function BrandMark() {
   );
 }
 
+const dashboardUrl =
+  process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'https://bubbly-dashboard.example.workers.dev';
+
 export default function Home() {
   return (
     <main className="stage">
@@ -39,7 +42,7 @@ export default function Home() {
           <BrandMark />
           Bubbly
         </span>
-        <a className="ops" href="https://bubbly-dashboard.example.workers.dev">
+        <a className="ops" href={dashboardUrl}>
           Operations
         </a>
       </nav>
@@ -51,9 +54,7 @@ export default function Home() {
           Pick a package, drop a pin, and a Bubbly driver comes to you. No queue, no tunnel, no
           moving your car.
         </p>
-        <a className="cta" href="#" aria-label="Get the Bubbly app">
-          Get the app
-        </a>
+        <p className="release-note">Customer app in private testing.</p>
       </section>
       <p className="wordmark" aria-hidden="true">
         BUBBLY

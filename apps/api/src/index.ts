@@ -34,6 +34,7 @@ app.get('/health', (c) =>
   c.json({
     name: 'sama-api',
     supabase: Boolean(c.env.SUPABASE_URL && c.env.SUPABASE_SERVICE_ROLE_KEY),
+    storage: Boolean(c.env.MEDIA),
     moyasar: Boolean(c.env.MOYASAR_SECRET_KEY),
     webhook: Boolean(c.env.MOYASAR_WEBHOOK_SECRET),
   }),
