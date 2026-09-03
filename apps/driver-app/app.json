@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Sama Driver",
-    "slug": "sama-driver",
-    "scheme": "samadriver",
+    "name": "BubblesCarWash Driver",
+    "slug": "bubblescarwash-driver",
+    "scheme": "bubblescarwashdriver",
     "version": "0.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.samacarwash.driver",
+      "bundleIdentifier": "com.bubblescarwash.driver",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.samacarwash.driver"
+      "package": "com.bubblescarwash.driver"
     },
     "plugins": [
       "expo-router",

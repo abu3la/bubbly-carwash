@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
 import { theme } from '@sama/ui-native/theme';
+import { ClubDraftProvider } from '../../src/clubDraft';
 
 export default function ClubLayout() {
   return (
-    <Stack
+    <ClubDraftProvider><Stack
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: theme.surface.page },
@@ -11,6 +12,7 @@ export default function ClubLayout() {
       }}
     >
       <Stack.Screen name="processing" options={{ gestureEnabled: false, animation: 'fade' }} />
-    </Stack>
+      <Stack.Screen name="payment" options={{ gestureEnabled: false, animation: 'fade' }} />
+    </Stack></ClubDraftProvider>
   );
 }

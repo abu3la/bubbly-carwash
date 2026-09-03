@@ -23,6 +23,12 @@ export type ErrorCode =
   | 'badMediaType'
   | 'badMediaSize'
   | 'storageUnavailable'
+  | 'jobClaimed'
+  | 'technicianNotInTeam'
+  | 'outsideDriverShift'
+  | 'technicianBusy'
+  | 'badIncidentCategory'
+  | 'incidentNoteRequired'
   | 'offline'
   | 'unknown';
 
@@ -56,6 +62,9 @@ export interface Job {
   service_key: string;
   total_minor: number;
   source: string;
+  technician_id: string | null;
+  team_id: string;
+  customers: { full_name: string; phone: string } | null;
   vehicles: { make: string; model: string; color: string; plate: string; size: string } | null;
   addresses: {
     label: string;
@@ -136,8 +145,11 @@ export async function loadSession(): Promise<Session | null> {
 
 export const signOut = () => AsyncStorage.removeItem(SESSION_KEY);
 
-export const jobs = () => call<{ jobs: Job[] }>('/driver/jobs');
+export const jobs = () => call<{ team: { id: string; name_ar: string } | null; jobs: Job[] }>('/driver/jobs');
 export const doneJobs = () => call<{ jobs: Job[] }>('/driver/jobs/done');
+
+export const claimJob = (id: string) =>
+  call<{ booking: { id: string; technician_id: string } }>(`/driver/jobs/${id}/claim`, { method: 'POST' });
 
 export const advance = (id: string, stage: Stage, note?: string) =>
   call<{ booking: { ref: string; stage: Stage; status: string } }>(`/driver/jobs/${id}/stage`, {
@@ -194,3 +206,31 @@ export async function uploadEvidence(
 export function nextStage(current: Stage): Stage | null {
   return { booked: 'arrived', arrived: 'washed', washed: 'verified', verified: null }[current] as Stage | null;
 }
+
+export interface DriverNotification {
+  id: string;
+  booking_id: string | null;
+  kind: string;
+  title_ar: string;
+  body_ar: string;
+  read_at: string | null;
+  created_at: string;
+}
+export const notifications = () => call<{ notifications: DriverNotification[] }>('/me/notifications');
+export const readNotification = (id: string) => call(`/me/notifications/${id}/read`, { method: 'PATCH' });
+export const registerPushToken = (token: string, platform: 'ios' | 'android') =>
+  call<{ registered: boolean }>('/me/push-token', { method: 'POST', body: JSON.stringify({ token, platform, app: 'driver' }) });
+
+export interface DriverIncident {
+  id: string;
+  booking_id: string;
+  category: string;
+  note: string;
+  status: 'open' | 'resolved';
+  created_at: string;
+}
+export const incidents = () => call<{ incidents: DriverIncident[] }>('/driver/incidents');
+export const reportIncident = (bookingId: string, category: string, note: string) =>
+  call<{ incident: DriverIncident }>(`/driver/jobs/${bookingId}/incidents`, {
+    method: 'POST', body: JSON.stringify({ category, note }),
+  });

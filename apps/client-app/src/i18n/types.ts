@@ -93,6 +93,7 @@ export interface Copy {
     otpTitle: string;
     otpHeading: string;
     otpSentTo: string;
+    developmentCodeHint: (code: string) => string;
     resendIn: (time: string) => string;
     resendNow: string;
     resend: string;
@@ -106,8 +107,13 @@ export interface Copy {
     searchPlaceholder: string;
     mapNote: string;
     servedHere: string;
+    checkingArea: string;
+    outsideArea: string;
+    areaCheckFailed: string;
     droppedPin: string;
     confirmLocation: string;
+    useCurrentLocation: string;
+    currentLocationUnavailable: string;
 
     addressTitle: string;
     addressHeading: string;
@@ -118,6 +124,7 @@ export interface Copy {
     accessNotes: string;
     accessNotesPlaceholder: string;
     saveAndContinue: string;
+    saveLocation: string;
     vehicleTitle: string;
     vehicleHeading: string;
     vehicleSub: string;
@@ -205,6 +212,7 @@ export interface Copy {
 
     processingPayment: string;
     processingPaymentSub: string;
+    paymentFailed: string;
     processingCredit: string;
     processingCreditSub: string;
 

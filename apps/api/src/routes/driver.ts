@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { db } from '../db';
+import { notify } from '../notifications';
 
 /**
  * The technician's app.
@@ -24,18 +25,33 @@ const ORDER = ['booked', 'arrived', 'washed', 'verified'] as const;
 type Stage = (typeof ORDER)[number];
 
 driverRoute.get('/jobs', async (c) => {
+  const caller = c.get('caller');
+  const [membership] = await db<{ team_id: string; shift_start: string; shift_end: string; teams: { id: string; name_ar: string } }>(
+    c.env,
+    `team_members?profile_id=eq.${caller.id}&active=eq.true&available=eq.true&select=team_id,shift_start,shift_end,teams(id,name_ar)&limit=1`,
+  );
+  if (!membership) return c.json({ team: null, jobs: [] });
   const rows = await db(
     c.env,
-    `bookings?technician_id=eq.${c.get('caller').id}` +
+    `bookings?team_id=eq.${encodeURIComponent(membership.team_id)}` +
+      `&or=(technician_id.is.null,technician_id.eq.${caller.id})` +
       '&status=in.(scheduled,active)' +
-      '&select=id,ref,scheduled_at,ends_at,status,stage,service_key,total_minor,source,' +
+      '&payment_confirmed=eq.true' +
+      '&select=id,ref,scheduled_at,ends_at,status,stage,service_key,total_minor,source,technician_id,team_id,' +
+      'customers:profiles!bookings_profile_id_fkey(full_name,phone),' +
       'vehicles(make,model,color,plate,size),' +
       'addresses(label,line,district,city,lat,lng,notes),' +
       'booking_add_ons(add_on_key),' +
       'booking_media(id,phase,kind,angle,content_type,byte_size,created_at)' +
       '&order=scheduled_at',
   );
-  return c.json({ jobs: rows });
+  const jobs = rows.filter((job: { scheduled_at: string }) => {
+    const localTime = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date(job.scheduled_at));
+    return localTime >= membership.shift_start.slice(0, 5) && localTime < membership.shift_end.slice(0, 5);
+  });
+  return c.json({ team: membership.teams, jobs });
 });
 
 driverRoute.get('/jobs/done', async (c) => {
@@ -47,6 +63,22 @@ driverRoute.get('/jobs/done', async (c) => {
   return c.json({ jobs: rows });
 });
 
+driverRoute.post('/jobs/:id/claim', async (c) => {
+  const caller = c.get('caller');
+  try {
+    const [booking] = await db(c.env, 'rpc/claim_team_booking', {
+      method: 'POST', body: { p_booking: c.req.param('id'), p_technician: caller.id },
+    });
+    return c.json({ booking });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const known = ['bookingNotFound', 'bookingNotClaimable', 'jobClaimed', 'technicianNotInTeam', 'outsideDriverShift', 'technicianBusy']
+      .find((code) => message.includes(code));
+    if (known) return c.json({ error: { code: known } }, known === 'bookingNotFound' ? 404 : 409);
+    throw error;
+  }
+});
+
 driverRoute.post('/jobs/:id/stage', async (c) => {
   const caller = c.get('caller');
   const id = c.req.param('id');
@@ -56,7 +88,10 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
     return c.json({ error: { code: 'badStage' } }, 400);
   }
 
-  const [booking] = await db(c.env, `bookings?id=eq.${id}&technician_id=eq.${caller.id}&select=id,stage,status`);
+  const [booking] = await db<{ id: string; stage: Stage; status: string; profile_id: string; ref: string }>(
+    c.env,
+    `bookings?id=eq.${id}&technician_id=eq.${caller.id}&select=id,stage,status,profile_id,ref`,
+  );
   // Scoped to this technician, so another's job reads as "not found" rather
   // than confirming it exists.
   if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
@@ -105,8 +140,81 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
     body: { booking_id: id, stage, actor_id: caller.id, note: note?.trim() ?? '' },
   });
 
+  const messages: Record<Stage, { ar: string; en: string }> = {
+    booked: { ar: 'تم تأكيد حجزك.', en: 'Your booking is confirmed.' },
+    arrived: { ar: 'وصل فريق BubblesCarWash إلى موقعك.', en: 'Your BubblesCarWash team has arrived.' },
+    washed: { ar: 'اكتمل غسيل سيارتك وتجري مراجعة الجودة.', en: 'Your wash is complete and being checked.' },
+    verified: { ar: 'اكتملت غسلتك وتم حفظ توثيق قبل وبعد.', en: 'Your wash is complete and the evidence is ready.' },
+  };
+  try {
+    await notify(c.env, {
+      profileId: booking.profile_id,
+      bookingId: id,
+      kind: `booking_${stage}`,
+      titleAr: booking.ref,
+      titleEn: booking.ref,
+      bodyAr: messages[stage].ar,
+      bodyEn: messages[stage].en,
+      data: { route: '/(tabs)/bookings' },
+    });
+  } catch (error) {
+    console.warn('[driver] customer notification failed', error);
+  }
+
   const [updated] = await db(c.env, `bookings?id=eq.${id}&select=id,ref,stage,status`);
   return c.json({ booking: updated });
+});
+
+driverRoute.get('/incidents', async (c) => {
+  const rows = await db(
+    c.env,
+    `operations_incidents?reported_by=eq.${c.get('caller').id}` +
+      '&select=id,booking_id,category,note,status,created_at,resolved_at' +
+      '&order=created_at.desc&limit=50',
+  );
+  return c.json({ incidents: rows });
+});
+
+driverRoute.post('/jobs/:id/incidents', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const body = await c.req.json<{ category?: string; note?: string }>();
+  const categories = new Set(['customer_absent', 'access', 'vehicle', 'safety', 'equipment', 'other']);
+  if (!body.category || !categories.has(body.category)) {
+    return c.json({ error: { code: 'badIncidentCategory' } }, 400);
+  }
+  if (!body.note?.trim()) return c.json({ error: { code: 'incidentNoteRequired' } }, 400);
+
+  const [booking] = await db<{ id: string; ref: string }>(
+    c.env,
+    `bookings?id=eq.${id}&technician_id=eq.${caller.id}&status=in.(scheduled,active)&select=id,ref`,
+  );
+  if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
+
+  const [incident] = await db(c.env, 'operations_incidents', {
+    method: 'POST',
+    prefer: 'return=representation',
+    body: {
+      booking_id: id,
+      reported_by: caller.id,
+      category: body.category,
+      note: body.note.trim(),
+    },
+  });
+
+  const admins = await db<{ id: string }>(c.env, 'profiles?role=eq.admin&active=eq.true&select=id');
+  await Promise.all(admins.map((admin) => notify(c.env, {
+    profileId: admin.id,
+    bookingId: id,
+    kind: 'incident_reported',
+    titleAr: `بلاغ على ${booking.ref}`,
+    titleEn: `Incident on ${booking.ref}`,
+    bodyAr: body.note!.trim(),
+    bodyEn: body.note!.trim(),
+    data: { route: '/operations' },
+  }).catch((error) => console.warn('[driver] admin notification failed', error))));
+
+  return c.json({ incident }, 201);
 });
 
 const ALLOWED_TYPES = new Set([

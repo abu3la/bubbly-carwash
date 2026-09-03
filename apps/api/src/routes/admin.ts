@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { db } from '../db';
+import { assignBooking, assignmentFailure } from '../dispatch';
+import { refundInvoice } from '../moyasar';
+import { notify } from '../notifications';
 
 /**
  * The back office.
@@ -144,6 +147,10 @@ adminRoute.patch('/plans/:id', async (c) => {
   for (const k of ['credits', 'weekly', 'roll'] as const) {
     if (typeof b[k] === 'number') patch[k] = Math.round(b[k]!);
   }
+  if (typeof b.weekly === 'number') {
+    patch.credits = Math.round(b.weekly);
+    patch.roll = 0;
+  }
   if (typeof b.active === 'boolean') patch.active = b.active;
   if (!Object.keys(patch).length) return c.json({ error: { code: 'nothingToUpdate' } }, 400);
 
@@ -161,8 +168,14 @@ adminRoute.patch('/plans/:id', async (c) => {
 adminRoute.get('/bookings', async (c) => {
   const rows = await db(
     c.env,
-    'bookings?select=*,teams(name_ar),booking_add_ons(add_on_key,price_minor),' +
-      'booking_media(id,phase,kind,angle,created_at)&order=scheduled_at.desc&limit=200',
+    'bookings?payment_confirmed=eq.true&select=*,teams(id,name_ar),' +
+      'profiles!bookings_profile_id_fkey(full_name,phone),' +
+      'technician:profiles!bookings_technician_id_fkey(id,full_name,phone),' +
+      'vehicles(make,model,color,plate,size),addresses(label,line,district,city,lat,lng,notes),' +
+      'services(name_ar,name_en),booking_add_ons(add_on_key,price_minor),' +
+      'booking_media(id,phase,kind,angle,content_type,byte_size,created_at),' +
+      'payments(id,state,provider,provider_ref,amount_minor,created_at)' +
+      '&order=scheduled_at.desc&limit=200',
   );
   return c.json({ bookings: rows });
 });
@@ -170,8 +183,17 @@ adminRoute.get('/bookings', async (c) => {
 /* --------------------------------------------------------------------- teams */
 
 adminRoute.get('/teams', async (c) => {
-  const rows = await db(c.env, 'teams?order=sort');
-  return c.json({ teams: rows });
+  const [rows, members] = await Promise.all([
+    db<{ id: string } & Record<string, unknown>>(c.env, 'teams?order=sort'),
+    db<{ team_id: string; profile_id: string; active: boolean; available: boolean; is_lead: boolean; shift_start: string; shift_end: string; profiles: unknown }>(
+      c.env,
+      'team_members?select=team_id,profile_id,active,available,is_lead,shift_start,shift_end,profiles!inner(id,full_name,phone,active)&order=is_lead.desc,updated_at',
+    ),
+  ]);
+  return c.json({ teams: rows.map((team) => ({
+    ...team,
+    members: members.filter((member) => member.team_id === team.id),
+  })) });
 });
 
 adminRoute.patch('/teams/:id', async (c) => {
@@ -227,60 +249,134 @@ adminRoute.patch('/teams/:id', async (c) => {
  * flow — same login as everyone, different role.
  */
 adminRoute.get('/technicians', async (c) => {
-  const rows = await db(
-    c.env,
-    "profiles?role=eq.driver&select=id,full_name,active,created_at&order=created_at",
-  );
-  return c.json({ technicians: rows });
+  const [rows, invites] = await Promise.all([
+    db(c.env,
+      'profiles?role=eq.driver&select=id,full_name,phone,active,created_at,' +
+        'team_members(team_id,active,available,is_lead,shift_start,shift_end,teams(id,name_ar,active))' +
+        '&order=created_at'),
+    db<{ phone: string; full_name: string; team_id: string; available: boolean; is_lead: boolean; shift_start: string; shift_end: string; created_at: string; teams: unknown }>(
+      c.env,
+      'driver_invites?active=eq.true&accepted_at=is.null&select=phone,full_name,team_id,available,is_lead,shift_start,shift_end,created_at,teams(id,name_ar,active)&order=created_at',
+    ),
+  ]);
+  return c.json({ technicians: [
+    ...rows,
+    ...invites.map((invite) => ({
+      id: `invite:${invite.phone}`,
+      full_name: invite.full_name,
+      phone: invite.phone,
+      active: true,
+      pending: true,
+      created_at: invite.created_at,
+      team_members: [{
+        team_id: invite.team_id,
+        active: true,
+        available: invite.available,
+        is_lead: invite.is_lead,
+        shift_start: invite.shift_start,
+        shift_end: invite.shift_end,
+        teams: invite.teams,
+      }],
+    })),
+  ] });
 });
 
 const SAUDI_MOBILE = /^\+9665\d{8}$/;
 
 adminRoute.post('/technicians', async (c) => {
-  const b = await c.req.json<{ phone?: string; name?: string }>();
+  const b = await c.req.json<{ phone?: string; name?: string; teamId?: string }>();
   if (!b.phone || !SAUDI_MOBILE.test(b.phone)) {
     return c.json({ error: { code: 'invalidPhone' } }, 400);
   }
   if (!b.name?.trim()) return c.json({ error: { code: 'nameRequired' } }, 400);
+  if (!b.teamId) return c.json({ error: { code: 'teamRequired' } }, 400);
+  const [team] = await db(c.env, `teams?id=eq.${encodeURIComponent(b.teamId)}&select=id`);
+  if (!team) return c.json({ error: { code: 'teamNotFound' } }, 404);
 
-  // Created already confirmed: the admin vouching for the number is the
-  // verification, and a technician should not be blocked on an SMS that Sama
-  // cannot yet send.
-  const res = await fetch(`${c.env.SUPABASE_URL}/auth/v1/admin/users`, {
-    method: 'POST',
-    headers: {
-      apikey: c.env.SUPABASE_SERVICE_ROLE_KEY!,
-      Authorization: `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ phone: b.phone.replace(/^\+/, ''), phone_confirm: true }),
-  });
-  const created = (await res.json().catch(() => ({}))) as { id?: string; msg?: string };
-
-  let id = created.id;
-  if (!res.ok || !id) {
-    // Already a customer, most likely. Promote the existing person rather than
-    // refusing — someone who books washes can also work here.
-    const existing = await db<{ id: string }>(
-      c.env,
-      `profiles?select=id&limit=1&id=not.is.null&order=created_at`,
-    );
-    if (!created.id) {
-      console.warn('[admin] technician create', res.status, created.msg);
-      return c.json({ error: { code: 'couldNotCreate' } }, 409);
-    }
-    id = existing[0]?.id;
+  // Existing customers are promoted deliberately. This also avoids asking
+  // Supabase Auth to create a duplicate identity for the same phone number.
+  const [knownProfile] = await db<{ id: string }>(
+    c.env,
+    `profiles?phone=eq.${encodeURIComponent(b.phone)}&select=id&limit=1`,
+  );
+  if (knownProfile) {
+    const [row] = await db(c.env, `profiles?id=eq.${knownProfile.id}`, {
+      method: 'PATCH',
+      prefer: 'return=representation',
+      body: { role: 'driver', full_name: b.name.trim(), active: true },
+    });
+    await db(c.env, 'team_members?on_conflict=profile_id', {
+      method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: {
+        team_id: b.teamId, profile_id: knownProfile.id, active: true, available: true,
+        is_lead: false, shift_start: '08:00', shift_end: '22:00', updated_at: new Date().toISOString(),
+      },
+    });
+    return c.json({ technician: row }, 200);
   }
 
-  // The trigger-free path: our own profile row, with the role that matters.
-  await db(c.env, 'profiles?on_conflict=id', {
+  // The identity is created by the ordinary OTP flow. The signed invite is
+  // consumed on first login and promotes exactly this phone into the team.
+  const [invite] = await db(c.env, 'driver_invites?on_conflict=phone', {
     method: 'POST',
-    prefer: 'resolution=merge-duplicates,return=minimal',
-    body: { id, role: 'driver', full_name: b.name.trim() },
+    prefer: 'resolution=merge-duplicates,return=representation',
+    body: {
+      phone: b.phone,
+      full_name: b.name.trim(),
+      team_id: b.teamId,
+      created_by: c.get('caller').id,
+      active: true,
+      accepted_by: null,
+      accepted_at: null,
+      updated_at: new Date().toISOString(),
+    },
   });
+  return c.json({ technician: { id: `invite:${b.phone}`, full_name: b.name.trim(), phone: b.phone, pending: true, team_id: b.teamId, ...invite } }, 201);
+});
 
-  const [row] = await db(c.env, `profiles?id=eq.${id}&select=id,full_name,role,active`);
-  return c.json({ technician: row }, 201);
+adminRoute.put('/technicians/:id/team', async (c) => {
+  const technicianId = c.req.param('id');
+  const body = await c.req.json<{
+    teamId?: string | null;
+    available?: boolean;
+    isLead?: boolean;
+    shiftStart?: string;
+    shiftEnd?: string;
+  }>();
+  const [technician] = await db(
+    c.env,
+    `profiles?id=eq.${technicianId}&role=eq.driver&select=id`,
+  );
+  if (!technician) return c.json({ error: { code: 'notFound' } }, 404);
+
+  if (body.teamId === null) {
+    await db(c.env, `team_members?profile_id=eq.${technicianId}`, {
+      method: 'DELETE', prefer: 'return=minimal',
+    });
+    return c.json({ membership: null });
+  }
+  if (!body.teamId) return c.json({ error: { code: 'teamRequired' } }, 400);
+  const [team] = await db(c.env, `teams?id=eq.${encodeURIComponent(body.teamId)}&select=id`);
+  if (!team) return c.json({ error: { code: 'teamNotFound' } }, 404);
+  const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if ((body.shiftStart && !clock.test(body.shiftStart)) || (body.shiftEnd && !clock.test(body.shiftEnd))) {
+    return c.json({ error: { code: 'badShift' } }, 400);
+  }
+
+  const [membership] = await db(c.env, 'team_members?on_conflict=profile_id', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates,return=representation',
+    body: {
+      team_id: body.teamId,
+      profile_id: technicianId,
+      active: true,
+      available: body.available ?? true,
+      is_lead: body.isLead ?? false,
+      shift_start: body.shiftStart ?? '08:00',
+      shift_end: body.shiftEnd ?? '22:00',
+      updated_at: new Date().toISOString(),
+    },
+  });
+  return c.json({ membership });
 });
 
 adminRoute.patch('/technicians/:id', async (c) => {
@@ -302,21 +398,138 @@ adminRoute.patch('/technicians/:id', async (c) => {
 /** Dispatch: put a booking in a technician's list. */
 adminRoute.patch('/bookings/:id/assign', async (c) => {
   const b = await c.req.json<{ technicianId?: string | null }>();
-
-  if (b.technicianId) {
-    const [tech] = await db(
-      c.env,
-      `profiles?id=eq.${b.technicianId}&role=eq.driver&active=eq.true&select=id`,
-    );
-    if (!tech) return c.json({ error: { code: 'notATechnician' } }, 400);
+  if (!b.technicianId) {
+    const [row] = await db(c.env, `bookings?id=eq.${c.req.param('id')}&status=in.(scheduled,active)`, {
+      method: 'PATCH',
+      prefer: 'return=representation',
+      body: { technician_id: null },
+    });
+    if (!row) return c.json({ error: { code: 'notFound' } }, 404);
+    return c.json({ booking: row });
   }
+  try {
+    return c.json({ booking: await assignBooking(c.env, c.req.param('id'), b.technicianId, c.get('caller').id) });
+  } catch (error) {
+    const code = assignmentFailure(error);
+    if (code) return c.json({ error: { code } }, code === 'bookingNotFound' ? 404 : 409);
+    throw error;
+  }
+});
 
-  const [row] = await db(c.env, `bookings?id=eq.${c.req.param('id')}`, {
+adminRoute.get('/bookings/:id/media/:mediaId/content', async (c) => {
+  if (!c.env.MEDIA) return c.json({ error: { code: 'storageUnavailable' } }, 503);
+  const [media] = await db<{ object_key: string; content_type: string }>(
+    c.env,
+    `booking_media?id=eq.${c.req.param('mediaId')}&booking_id=eq.${c.req.param('id')}&select=object_key,content_type`,
+  );
+  if (!media) return c.json({ error: { code: 'notFound' } }, 404);
+  const object = await c.env.MEDIA.get(media.object_key);
+  if (!object) return c.json({ error: { code: 'notFound' } }, 404);
+  return new Response(object.body, {
+    headers: { 'Content-Type': media.content_type, 'Cache-Control': 'private, max-age=300', ETag: object.httpEtag },
+  });
+});
+
+adminRoute.get('/incidents', async (c) => {
+  const rows = await db(
+    c.env,
+    'operations_incidents?select=id,booking_id,category,note,status,created_at,resolved_at,' +
+      'bookings(ref,team_id),profiles!operations_incidents_reported_by_fkey(full_name,phone)' +
+      '&order=created_at.desc&limit=200',
+  );
+  return c.json({ incidents: rows });
+});
+
+adminRoute.patch('/incidents/:id/resolve', async (c) => {
+  const caller = c.get('caller');
+  const [row] = await db(c.env, `operations_incidents?id=eq.${c.req.param('id')}`, {
     method: 'PATCH',
     prefer: 'return=representation',
-    // Null unassigns, which dispatch needs when someone calls in sick.
-    body: { technician_id: b.technicianId ?? null },
+    body: { status: 'resolved', resolved_by: caller.id, resolved_at: new Date().toISOString() },
   });
   if (!row) return c.json({ error: { code: 'notFound' } }, 404);
-  return c.json({ booking: row });
+  return c.json({ incident: row });
+});
+
+adminRoute.get('/operations', async (c) => {
+  const now = new Date().toISOString();
+  const stale = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+  const [unassigned, active, incidents, failedPayments, disabledTokens] = await Promise.all([
+    db(c.env, `bookings?payment_confirmed=eq.true&status=eq.scheduled&technician_id=is.null&scheduled_at=gte.${encodeURIComponent(now)}&select=id`),
+    db(c.env, `bookings?status=eq.active&scheduled_at=lt.${encodeURIComponent(stale)}&select=id`),
+    db(c.env, 'operations_incidents?status=eq.open&select=id'),
+    db(c.env, 'payments?state=eq.failed&select=id'),
+    db(c.env, 'device_push_tokens?active=eq.false&select=id'),
+  ]);
+  return c.json({
+    checkedAt: now,
+    unassignedBookings: unassigned.length,
+    staleActiveBookings: active.length,
+    openIncidents: incidents.length,
+    failedPayments: failedPayments.length,
+    invalidPushTokens: disabledTokens.length,
+    firebaseConfigured: Boolean(c.env.FIREBASE_PROJECT_ID && c.env.FIREBASE_CLIENT_EMAIL && c.env.FIREBASE_PRIVATE_KEY),
+    smsMode: c.env.DEV_FIXED_OTP ? 'development-code' : c.env.TAQNYAT_BEARER && c.env.TAQNYAT_SENDER ? 'taqnyat' : 'not-configured',
+    paymentMode: c.env.MOYASAR_SECRET_KEY?.startsWith('sk_live_') ? 'live' : c.env.MOYASAR_SECRET_KEY ? 'test' : 'not-configured',
+  });
+});
+
+adminRoute.post('/payments/:id/refund', async (c) => {
+  const caller = c.get('caller');
+  const body = await c.req.json<{ reason?: string }>();
+  if (!body.reason?.trim() || body.reason.trim().length < 4) {
+    return c.json({ error: { code: 'refundReasonRequired' } }, 400);
+  }
+  const [payment] = await db<{
+    id: string; profile_id: string; booking_id: string | null; membership_id: string | null;
+    amount_minor: number; state: string; provider_ref: string;
+  }>(c.env, `payments?id=eq.${c.req.param('id')}&provider=eq.moyasar&select=id,profile_id,booking_id,membership_id,amount_minor,state,provider_ref`);
+  if (!payment) return c.json({ error: { code: 'notFound' } }, 404);
+  if (payment.state !== 'paid') return c.json({ error: { code: 'paymentNotRefundable' } }, 409);
+
+  try {
+    const refunded = await refundInvoice(c.env, payment.provider_ref);
+    await db(c.env, 'payment_refunds', {
+      method: 'POST', prefer: 'return=minimal', body: {
+        payment_id: payment.id,
+        provider_payment_ref: refunded.paymentId,
+        amount_minor: refunded.amount,
+        reason: body.reason.trim(),
+        requested_by: caller.id,
+      },
+    });
+    await db(c.env, `payments?id=eq.${payment.id}`, {
+      method: 'PATCH', prefer: 'return=minimal', body: { state: 'refunded', updated_at: new Date().toISOString() },
+    });
+    if (payment.booking_id) {
+      await db(c.env, `bookings?id=eq.${payment.booking_id}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { status: 'cancelled', cancelled_at: new Date().toISOString() },
+      });
+    }
+    if (payment.membership_id) {
+      await Promise.all([
+        db(c.env, `memberships?id=eq.${payment.membership_id}`, {
+          method: 'PATCH', prefer: 'return=minimal', body: { state: 'cancelled', cancelled_at: new Date().toISOString() },
+        }),
+        db(c.env, `bookings?membership_id=eq.${payment.membership_id}&status=eq.scheduled&stage=eq.booked`, {
+          method: 'PATCH', prefer: 'return=minimal', body: { status: 'cancelled', cancelled_at: new Date().toISOString() },
+        }),
+      ]);
+    }
+    await notify(c.env, {
+      profileId: payment.profile_id,
+      bookingId: payment.booking_id,
+      kind: 'payment_refunded',
+      titleAr: 'تم استرجاع المبلغ',
+      titleEn: 'Payment refunded',
+      bodyAr: `تمت إعادة ${(refunded.amount / 100).toFixed(2)} ر.س إلى وسيلة الدفع.`,
+      bodyEn: `${(refunded.amount / 100).toFixed(2)} SAR was returned to your payment method.`,
+    });
+    return c.json({ refunded: true, amountMinor: refunded.amount });
+  } catch (error) {
+    console.error('[admin] refund failed', error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('paymentNotRefundable')) return c.json({ error: { code: 'paymentNotRefundable' } }, 409);
+    return c.json({ error: { code: 'refundFailed' } }, 502);
+  }
 });

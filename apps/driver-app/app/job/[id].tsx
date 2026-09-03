@@ -2,11 +2,12 @@ import { useCallback, useState } from 'react';
 import { Linking, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowRight, Camera, Car, MapPin, Sparkles, Video } from 'lucide-react-native';
+import { AlertTriangle, ArrowRight, Camera, Car, MapPin, Phone, Sparkles, Video } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { BeatIcon, Button, Card, Num, Screen, Txt, useToast } from '@sama/ui-native';
-import { ApiError, advance, jobs as fetchJobs, nextStage, uploadEvidence, type Job } from '../../src/api';
+import { BeatIcon, Button, Card, Input, Num, Screen, Txt, useToast } from '@sama/ui-native';
+import { ApiError, advance, claimJob, jobs as fetchJobs, nextStage, reportIncident, uploadEvidence, type Job } from '../../src/api';
 import { copy } from '../../src/copy';
+import { useSession } from '../../src/session';
 
 const LIT: Record<string, 0 | 1 | 2 | 3> = { booked: 0, arrived: 1, washed: 2, verified: 3 };
 
@@ -15,20 +16,29 @@ export default function JobScreen() {
   const router = useRouter();
   const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { session } = useSession();
 
   const [job, setJob] = useState<Job | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showIncident, setShowIncident] = useState(false);
+  const [incidentCategory, setIncidentCategory] = useState('access');
+  const [incidentNote, setIncidentNote] = useState('');
 
   // There is no single-job endpoint: a technician has a handful of jobs, so
   // reusing the list is cheaper than another route and keeps the two in step.
   const load = useCallback(async () => {
+    setLoaded(false);
     try {
       const all = (await fetchJobs()).jobs;
       setJob(all.find((j) => j.id === id) ?? null);
+      setError(null);
     } catch (e) {
       setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']);
+    } finally {
+      setLoaded(true);
     }
   }, [id]);
 
@@ -88,12 +98,31 @@ export default function JobScreen() {
     }
   };
 
+  const claim = async () => {
+    if (!job) return;
+    setBusy(true); setError(null);
+    try { await claimJob(job.id); await load(); toast.show(copy.claimed); }
+    catch (e) { setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']); await load(); }
+    finally { setBusy(false); }
+  };
+
+  const sendIncident = async () => {
+    if (!job || !incidentNote.trim()) return;
+    setBusy(true); setError(null);
+    try {
+      await reportIncident(job.id, incidentCategory, incidentNote.trim());
+      setIncidentNote(''); setShowIncident(false); toast.show(copy.incidentSent);
+    } catch (e) { setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']); }
+    finally { setBusy(false); }
+  };
+
   if (!job) {
     return (
       <Screen contentStyle={styles.page}>
-        <Txt variant="small" tone={error ? 'danger' : 'secondary'}>
-          {error ?? '…'}
+        <Txt variant="body" tone={error ? 'danger' : 'secondary'} center>
+          {error ?? (loaded ? copy.unavailableJob : '…')}
         </Txt>
+        {loaded ? <Button label={copy.backToJobs} fullWidth onPress={() => router.replace('/jobs')} /> : null}
       </Screen>
     );
   }
@@ -106,12 +135,13 @@ export default function JobScreen() {
   const beforeCount = media.filter((item) => item.phase === 'before').length;
   const afterCount = media.filter((item) => item.phase === 'after').length;
   const evidencePhase = job.stage === 'arrived' ? 'before' : job.stage === 'washed' ? 'after' : null;
+  const claimed = job.technician_id === session?.userId;
   const requiredEvidenceReady = next === 'washed' ? beforeCount > 0 : next === 'verified' ? afterCount > 0 : true;
 
-  // Apple Maps by coordinates when we have them, by address text when not.
+  // Google Maps directions by coordinates when we have them, by address text when not.
   const openMaps = () => {
     const q = a?.lat && a?.lng ? `${a.lat},${a.lng}` : encodeURIComponent(a?.line ?? '');
-    Linking.openURL(`http://maps.apple.com/?daddr=${q}`);
+    Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${q}`);
   };
 
   return (
@@ -132,6 +162,19 @@ export default function JobScreen() {
           {copy.stages[job.stage]}
         </Txt>
       </View>
+
+      {!claimed ? <Card variant="booking" style={styles.block}>
+        <Txt variant="body" weight="bold">{copy.teamJob}</Txt>
+        <Txt variant="small" tone="secondary">{copy.teamJobSub}</Txt>
+        <Button label={busy ? copy.working : copy.claimJob} fullWidth disabled={busy} onPress={claim} />
+      </Card> : null}
+
+      <Card style={styles.block}>
+        <View style={styles.row}><Phone size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} /><Txt variant="label" weight="semibold" tone="muted">{copy.customer}</Txt></View>
+        <Txt variant="body" weight="bold">{job.customers?.full_name || copy.customer}</Txt>
+        <Num variant="small" tone="secondary">{job.customers?.phone || '—'}</Num>
+        {job.customers?.phone ? <Button label={copy.callCustomer} variant="secondary" size="sm" onPress={() => Linking.openURL(`tel:${job.customers!.phone}`)} /> : null}
+      </Card>
 
       <Card style={styles.block}>
         <View style={styles.row}>
@@ -155,7 +198,7 @@ export default function JobScreen() {
         </View>
       </Card>
 
-      {evidencePhase ? (
+      {claimed && evidencePhase ? (
         <Card variant="booking" style={styles.block}>
           <Txt variant="body" weight="bold">
             {evidencePhase === 'before' ? copy.beforeEvidence : copy.afterEvidence}
@@ -211,6 +254,19 @@ export default function JobScreen() {
         <Button label="الاتجاهات" variant="secondary" size="sm" onPress={openMaps} />
       </Card>
 
+      {claimed ? <Card style={styles.block}>
+        <View style={styles.row}><AlertTriangle size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} /><Txt variant="body" weight="bold">{copy.reportProblem}</Txt></View>
+        {!showIncident ? <Button label={copy.openReport} variant="ghost" size="sm" onPress={() => setShowIncident(true)} /> : <>
+          <View style={styles.incidentKinds}>
+            <Button label={copy.accessProblem} variant={incidentCategory === 'access' ? 'dark' : 'secondary'} size="sm" onPress={() => setIncidentCategory('access')} />
+            <Button label={copy.otherProblem} variant={incidentCategory === 'other' ? 'dark' : 'secondary'} size="sm" onPress={() => setIncidentCategory('other')} />
+          </View>
+          <Input label={copy.problemDetails} value={incidentNote} onChangeText={setIncidentNote} placeholder={copy.problemPlaceholder} />
+          <Button label={busy ? copy.working : copy.sendReport} disabled={busy || !incidentNote.trim()} onPress={sendIncident} />
+          <Button label={copy.cancel} variant="ghost" size="sm" onPress={() => setShowIncident(false)} />
+        </>}
+      </Card> : null}
+
       <Card style={styles.block}>
         <View style={styles.row}>
           <Sparkles size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} />
@@ -234,7 +290,7 @@ export default function JobScreen() {
       {/* One action, and only the next one. Advancing is the whole job, so the
           button is large and unmistakable — this is used one-handed, outdoors,
           often with wet hands. */}
-      {next ? (
+      {claimed && next ? (
         <Button
           label={busy ? copy.working : copy.actions[next]}
           size="lg"
@@ -242,11 +298,11 @@ export default function JobScreen() {
           disabled={busy || uploading || !requiredEvidenceReady}
           onPress={step}
         />
-      ) : (
+      ) : claimed ? (
         <Txt variant="body" weight="bold" center tone="action">
           {copy.done}
         </Txt>
-      )}
+      ) : null}
     </Screen>
   );
 }
@@ -266,4 +322,5 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.surface.bookingSoft,
   },
   evidenceActions: { gap: theme.spacing[2] },
+  incidentKinds: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
 }));

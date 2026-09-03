@@ -24,11 +24,14 @@ export default function Jobs() {
   const router = useRouter();
   const { session, ready, signOut } = useSession();
   const [list, setList] = useState<Job[] | null>(null);
+  const [teamName, setTeamName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setList((await fetchJobs()).jobs);
+      const result = await fetchJobs();
+      setList(result.jobs);
+      setTeamName(result.team?.name_ar ?? null);
       setError(null);
     } catch (e) {
       setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']);
@@ -54,10 +57,14 @@ export default function Jobs() {
             {copy.today}
           </Txt>
           <Txt variant="small" tone="secondary">
-            {list ? `${list.length}` : '—'}
+            {list ? `${teamName ?? copy.noTeam} · ${list.length}` : '—'}
           </Txt>
         </View>
-        <Button label={copy.signOut} variant="ghost" size="sm" onPress={signOut} />
+        <View style={styles.actions}>
+          <Button label={copy.notifications} variant="ghost" size="sm" onPress={() => router.push('/notifications')} />
+          <Button label={copy.history} variant="ghost" size="sm" onPress={() => router.push('/history')} />
+          <Button label={copy.signOut} variant="ghost" size="sm" onPress={signOut} />
+        </View>
       </View>
 
       {error ? (
@@ -96,6 +103,7 @@ export default function Jobs() {
             <Txt variant="body" weight="bold">
               {copy.services[job.service_key] ?? job.service_key}
             </Txt>
+            <Txt variant="caption" tone={job.technician_id ? 'action' : 'muted'}>{job.technician_id ? copy.claimedByYou : copy.availableToTeam}</Txt>
 
             <View style={styles.line}>
               <Car size={theme.scale(14)} color={theme.text.muted} strokeWidth={2} />
@@ -131,6 +139,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[3],
   },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '68%' },
   job: { gap: theme.spacing[2] },
   jobHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   time: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[1] + 2 },

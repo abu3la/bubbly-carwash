@@ -1,7 +1,7 @@
 # Development deployment
 
 The shared development environment runs in the Cloudflare account
-`Taz2886@yahoo.com's Account` (`57118b773c4166fafe8b041d792cb2ef`). Production
+the Taz development account (`57118b773c4166fafe8b041d792cb2ef`). Production
 configuration stays in the original Wrangler files; development uses the
 separate `wrangler.dev.jsonc` files.
 

@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { useEffect, type ReactNode } from 'react';
+import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,6 +18,9 @@ import { Boot } from '../src/components/Boot';
 import { loadLanguage } from '../src/language';
 import { CatalogueProvider } from '../src/catalogue';
 import { SessionProvider, useSession } from '../src/session';
+import { AuthSessionProvider, useAuthSession } from '../src/authSession';
+import { CustomerDataProvider } from '../src/customerData';
+import { registerFirebaseMessaging } from '../src/firebase';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* already hidden on a fast reload — nothing to recover */
@@ -42,11 +46,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <CatalogueProvider>
-        <SessionProvider>
+        <AuthSessionProvider>
+          <FirebaseRegistration />
+          <CustomerDataProvider>
+          <CatalogueProvider>
+          <SessionProvider>
           <Localised>
             <StatusBar style="dark" />
-            <Stack
+            <AuthGate><Stack
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: theme.surface.page },
@@ -64,13 +71,44 @@ export default function RootLayout() {
               <Stack.Screen name="book" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="packages" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="club" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-            </Stack>
+            </Stack></AuthGate>
           </Localised>
-        </SessionProvider>
-        </CatalogueProvider>
+          </SessionProvider>
+          </CatalogueProvider>
+          </CustomerDataProvider>
+        </AuthSessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+function FirebaseRegistration() {
+  const { session } = useAuthSession();
+  const router = useRouter();
+  useEffect(() => {
+    let disposed = false;
+    let unsubscribe: (() => void) | null = null;
+    if (session) void registerFirebaseMessaging((route) => router.push(route as never))
+      .then((listener) => {
+        if (disposed) listener?.();
+        else unsubscribe = listener;
+      })
+      .catch((error) => console.warn('[fcm] registration failed', error));
+    return () => { disposed = true; unsubscribe?.(); };
+  }, [router, session]);
+  return null;
+}
+
+function AuthGate({ children }: { children: ReactNode }) {
+  const { loading, session } = useAuthSession();
+  const segments = useSegments() as string[];
+  if (loading) {
+    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator /></View>;
+  }
+  const publicOnboarding = segments[0] === 'onboarding'
+    && (!segments[1] || segments[1] === 'index' || segments[1] === 'phone' || segments[1] === 'otp');
+  if (!session && !publicOnboarding) return <Redirect href="/onboarding/phone" />;
+  return children;
 }
 
 /**

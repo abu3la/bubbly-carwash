@@ -17,8 +17,8 @@ export interface Place {
   city: string;
 }
 
-/** Makkah, used until the device tells us better. */
-export const FALLBACK = { lat: 21.3891, lng: 39.8579 };
+/** Central Makkah, the pilot service area, used until the device tells us better. */
+export const FALLBACK = { lat: 21.4225, lng: 39.8262 };
 
 function toPlace(a: Location.LocationGeocodedAddress, lat: number, lng: number): Place {
   // Apple splits an address differently per country. In Saudi the street tends

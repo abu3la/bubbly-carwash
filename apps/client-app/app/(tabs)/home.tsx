@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Bell, ChevronDown, Clock, Droplets, MapPin, MessageSquare, ShieldCheck } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import {
@@ -7,7 +8,6 @@ import {
   BookingTicket,
   Button,
   Card,
-  IconButton,
   Num,
   Screen,
   Txt,
@@ -15,36 +15,58 @@ import {
 import { PROMISE_ICONS, SERVICES } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { SectionLabel, Stagger } from '../../src/components/Bits';
-import { useSession } from '../../src/session';
+import { useCustomerData } from '../../src/customerData';
+import { useCatalogue } from '../../src/catalogue';
+import { useLocale } from '@sama/ui-native';
 
 const ICONS = { clock: Clock, shield: ShieldCheck, chat: MessageSquare };
 
 export default function Home() {
   const { theme } = useUnistyles();
   const router = useRouter();
-  const session = useSession();
+  const { language } = useLocale();
   const copy = useCopy();
-  const { booking, club } = session;
-  const cheapest = SERVICES[0];
+  const { profile, addresses, bookings, membership, refresh } = useCustomerData();
+  const catalogue = useCatalogue();
+  const cheapest = catalogue?.services[0] ?? { priceMinor: SERVICES[0].price * 100, minutes: SERVICES[0].minutes };
+  const address = addresses.find((item) => item.is_default) ?? addresses[0] ?? null;
+  const booking = bookings.find((item) => item.payment_confirmed && item.status === 'scheduled') ?? null;
+
+  useFocusEffect(useCallback(() => {
+    void refresh();
+    return () => {};
+  }, [refresh]));
+
+  const labelIndex = address?.label === 'work' ? 1 : address?.label === 'other' ? 2 : 0;
+  const locationLabel = address
+    ? `${copy.onboarding.addressLabels[labelIndex]} · ${address.district || address.city || address.line}`
+    : `${copy.addressLabel} · ${copy.addressShort}`;
 
   return (
     <Screen scroll bottomInset={theme.spacing[6]} contentStyle={styles.page}>
       <View style={styles.topRow}>
-        <Card onPress={() => {}} style={styles.place}>
+        <Card
+          onPress={() => router.push('/account/addresses')}
+          style={styles.place}
+        >
           <MapPin size={theme.scale(14)} color={theme.text.primary} strokeWidth={2.2} />
-          <Txt variant="caption" weight="bold">
-            {copy.addressLabel} · {copy.addressShort}
+          <Txt variant="caption" weight="bold" numberOfLines={1} style={styles.placeText}>
+            {locationLabel}
           </Txt>
           <ChevronDown size={theme.scale(13)} color={theme.text.muted} strokeWidth={2.2} />
         </Card>
-        <IconButton label={copy.profile.rows.notifications} variant="secondary" size="md" onPress={() => {}}>
-          <Bell size={theme.scale(17)} color={theme.text.secondary} strokeWidth={2} />
-        </IconButton>
+        <Button
+          label={language === 'ar' ? 'التنبيهات' : 'Alerts'}
+          variant="ghost"
+          size="sm"
+          icon={<Bell size={theme.scale(16)} color={theme.action.primary} strokeWidth={2} />}
+          onPress={() => router.push('/notifications')}
+        />
       </View>
 
       <View style={styles.greeting}>
         <Txt variant="title" weight="bold">
-          {copy.home.greeting(copy.customerShort)}
+          {copy.home.greeting(profile?.full_name || (language === 'ar' ? 'عميلنا' : 'there'))}
         </Txt>
         <Txt variant="body" tone="secondary">
           {copy.brand.tagline}.
@@ -54,9 +76,9 @@ export default function Home() {
       {booking ? (
         <Stagger index={0}>
           <BookingTicket
-            time={booking.slot}
-            meta={`${booking.day} · ${copy.services[booking.serviceKey].name}`}
-            stub={<BeatIcon size="sm" active={session.stage} animate={session.isLive && session.stage < 3} />}
+            time={new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' }).format(new Date(booking.scheduled_at))}
+            meta={`${new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Riyadh' }).format(new Date(booking.scheduled_at))} · ${language === 'ar' ? booking.services.name_ar : booking.services.name_en}`}
+            stub={<BeatIcon size="sm" active={0} />}
             onPress={() => router.push('/(tabs)/bookings')}
           />
         </Stagger>
@@ -71,9 +93,7 @@ export default function Home() {
         <View style={styles.options}>
           <Stagger index={2}>
             <Card onPress={() => router.push('/book/service')} style={styles.option}>
-              <View style={styles.optionIcon('ice')}>
-                <Droplets size={theme.scale(20)} color={theme.action.primary} strokeWidth={2} />
-              </View>
+              <Droplets size={theme.scale(24)} color={theme.action.primary} strokeWidth={2} />
               <View style={styles.optionText}>
                 <Txt variant="body" weight="bold">
                   {copy.home.singleWash}
@@ -84,7 +104,7 @@ export default function Home() {
               </View>
               <View style={styles.optionPrice}>
                 <Num variant="bodyLg" weight="bold">
-                  {copy.common.fromPrice(cheapest.price)}
+                  {copy.common.fromPrice(cheapest.priceMinor / 100)}
                 </Num>
                 <Num variant="caption" tone="muted">
                   {copy.common.minutes(cheapest.minutes)}
@@ -101,13 +121,13 @@ export default function Home() {
                   {copy.home.club}
                 </Txt>
                 <Txt variant="caption" tone="inverseSoft">
-                  {club
-                    ? copy.home.clubBalance(copy.plans[club.planId], club.credits, club.weekly - club.used)
+                  {membership
+                    ? (language === 'ar' ? `${membership.plans.weekly - membership.usedThisWeek} مواعيد متاحة هذا الأسبوع` : `${membership.plans.weekly - membership.usedThisWeek} appointments available this week`)
                     : copy.home.clubTeaser}
                 </Txt>
               </View>
               <Button
-                label={club ? copy.home.myClub : copy.home.join}
+                label={membership ? copy.home.myClub : copy.home.join}
                 variant="secondary"
                 size="sm"
                 onPress={() => router.push('/club')}
@@ -143,8 +163,9 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: theme.spacing[4],
     gap: theme.spacing[5],
   },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing[3] },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing[2] },
   place: {
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing[1] + 2,
@@ -152,19 +173,11 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing[3] + 1,
     borderRadius: theme.radius.pill,
   },
+  placeText: { flexShrink: 1 },
   greeting: { gap: 2 },
   options: { gap: theme.spacing[3] },
   option: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[2] + 2 },
   club: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3] + 2 },
-  optionIcon: (tone: 'ice' | 'yellow') => ({
-    width: theme.scale(40),
-    height: theme.scale(40),
-    borderRadius: theme.scale(13),
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tone === 'ice' ? theme.surface.bookingSoft : theme.palette.yellow100,
-  }),
   optionText: { flex: 1, gap: 1 },
   // Prices hold their own column so every row's amount shares one end edge.
   optionPrice: { alignItems: 'flex-end', flexShrink: 0 },

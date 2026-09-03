@@ -7,6 +7,9 @@ import { Plans } from './screens/Plans';
 import { Services } from './screens/Services';
 import { Bookings } from './screens/Bookings';
 import { Teams } from './screens/Teams';
+import { Drivers } from './screens/Drivers';
+import { Dispatch } from './screens/Dispatch';
+import { Operations } from './screens/Operations';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -19,6 +22,9 @@ createRoot(document.getElementById('root')!).render(
           <Route path="services" element={<Services />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="teams" element={<Teams />} />
+          <Route path="drivers" element={<Drivers />} />
+          <Route path="dispatch" element={<Dispatch />} />
+          <Route path="operations" element={<Operations />} />
         </Route>
       </Routes>
     </BrowserRouter>

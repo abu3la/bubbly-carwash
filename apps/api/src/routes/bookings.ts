@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../db';
+import { createInvoice, getInvoice, invoiceMatches } from '../moyasar';
+import { notifyTeamOfBooking } from '../dispatch';
+import { notify } from '../notifications';
 
 /**
  * Bookings.
@@ -20,6 +23,8 @@ bookingsRoute.use('*', requireAuth());
 const KNOWN_FAILURES = new Set([
   'vehicleNotYours',
   'addressNotYours',
+  'vehicleUnavailable',
+  'addressUnavailable',
   'locationRequired',
   'outsideServiceArea',
   'fridayClosed',
@@ -46,7 +51,9 @@ bookingsRoute.get('/', async (c) => {
   const rows = await db(
     c.env,
     `bookings?profile_id=eq.${c.get('caller').id}` +
-      '&select=*,booking_add_ons(add_on_key,price_minor)' +
+      '&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes),' +
+      'services(key,name_ar,name_en),teams(id,name_ar,name_en),booking_add_ons(add_on_key,price_minor),' +
+      'booking_media(id,phase,kind,angle,content_type,byte_size,created_at)' +
       '&order=scheduled_at.desc',
   );
   return c.json({ bookings: rows });
@@ -130,9 +137,49 @@ bookingsRoute.post('/', async (c) => {
         p_slot_start: b.slotStart,
         p_source: source,
         p_add_ons: b.addOns ?? [],
+        p_payment_confirmed: false,
       },
     });
-    return c.json({ booking }, 201);
+    if (Number(booking.total_minor) === 0) {
+      await db(c.env, `bookings?id=eq.${booking.id}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { payment_confirmed: true },
+      });
+      booking.payment_confirmed = true;
+      await notifyTeamOfBooking(c.env, booking.id).catch((error) => {
+        console.warn('[dispatch] team notification failed after booking', error);
+      });
+      return c.json({ booking, checkoutUrl: null }, 201);
+    }
+
+    const origin = new URL(c.req.url).origin;
+    const query = `kind=booking&id=${encodeURIComponent(booking.id)}`;
+    try {
+      const invoice = await createInvoice(c.env, {
+        amount: Number(booking.total_minor),
+        description: `BubblesCarWash - ${booking.ref}`,
+        successUrl: `${origin}/payments/return?${query}&result=success`,
+        backUrl: `${origin}/payments/return?${query}&result=cancel`,
+        callbackUrl: `${origin}/webhooks/moyasar/invoice`,
+        metadata: { booking_id: booking.id, profile_id: caller.id },
+      });
+      await db(c.env, 'payments', {
+        method: 'POST', prefer: 'return=minimal',
+        body: {
+          profile_id: caller.id,
+          booking_id: booking.id,
+          amount_minor: Number(booking.total_minor),
+          provider: 'moyasar',
+          provider_ref: invoice.id,
+        },
+      });
+      return c.json({ booking, checkoutUrl: invoice.url }, 201);
+    } catch (error) {
+      console.error('[bookings] payment checkout failed', error);
+      await db(c.env, `bookings?id=eq.${booking.id}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { status: 'cancelled', cancelled_at: new Date().toISOString() },
+      });
+      return c.json({ error: { code: 'paymentUnavailable' } }, 503);
+    }
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
     // The function raises named exceptions; anything else is ours, not the
@@ -144,13 +191,52 @@ bookingsRoute.post('/', async (c) => {
   }
 });
 
+bookingsRoute.post('/:id/confirm', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const [booking] = await db<{ id: string; payment_confirmed: boolean; status: string }>(
+    c.env,
+    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&select=id,payment_confirmed,status`,
+  );
+  if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
+  if (booking.status === 'cancelled') return c.json({ error: { code: 'cancelled' } }, 409);
+  if (!booking.payment_confirmed) {
+    const [payment] = await db<{ id: string; provider_ref: string; amount_minor: number }>(
+      c.env,
+      `payments?booking_id=eq.${id}&provider=eq.moyasar&select=id,provider_ref,amount_minor&order=created_at.desc&limit=1`,
+    );
+    if (!payment?.provider_ref) return c.json({ error: { code: 'paymentNotFound' } }, 409);
+    const invoice = await getInvoice(c.env, payment.provider_ref);
+    if (invoice.status !== 'paid') return c.json({ error: { code: 'paymentPending' } }, 409);
+    if (!invoiceMatches(invoice, { amount: payment.amount_minor, profileId: caller.id, bookingId: id })) {
+      return c.json({ error: { code: 'paymentMismatch' } }, 409);
+    }
+    await Promise.all([
+      db(c.env, `bookings?id=eq.${id}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { payment_confirmed: true },
+      }),
+      db(c.env, `payments?id=eq.${payment.id}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { state: 'paid', updated_at: new Date().toISOString() },
+      }),
+    ]);
+  }
+  const [confirmed] = await db(
+    c.env,
+    `bookings?id=eq.${id}&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes),services(key,name_ar,name_en),teams(id,name_ar,name_en)`,
+  );
+  await notifyTeamOfBooking(c.env, id).catch((error) => {
+    console.warn('[dispatch] team notification failed after payment', error);
+  });
+  return c.json({ booking: confirmed });
+});
+
 bookingsRoute.post('/:id/cancel', async (c) => {
   const caller = c.get('caller');
   const id = c.req.param('id');
 
   const [booking] = await db(
     c.env,
-    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&select=id,status,stage,source,membership_id,purchase_id`,
+    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&select=id,ref,status,stage,source,membership_id,purchase_id,technician_id`,
   );
   // Scoped to the caller, so a stranger's booking id reads as "not found"
   // rather than confirming it exists.
@@ -168,18 +254,22 @@ bookingsRoute.post('/:id/cancel', async (c) => {
     body: { status: 'cancelled', cancelled_at: new Date().toISOString() },
   });
 
-  // Give back whatever paid for it. Cash refunds go through the payment
-  // provider and are not handled here.
-  if (booking.source === 'club' && booking.membership_id) {
-    const [m] = await db(c.env, `memberships?id=eq.${booking.membership_id}&select=credits_left`);
-    if (m) {
-      await db(c.env, `memberships?id=eq.${booking.membership_id}`, {
-        method: 'PATCH',
-        prefer: 'return=minimal',
-        body: { credits_left: m.credits_left + 1 },
-      });
-    }
-  } else if (booking.source === 'package' && booking.purchase_id) {
+  if (booking.technician_id) {
+    await notify(c.env, {
+      profileId: booking.technician_id,
+      bookingId: id,
+      kind: 'job_cancelled',
+      titleAr: 'أُلغيت المهمة',
+      titleEn: 'Job cancelled',
+      bodyAr: `أُلغي الحجز ${booking.ref}`,
+      bodyEn: `${booking.ref} was cancelled`,
+      data: { route: '/jobs' },
+    }).catch((error) => console.warn('[bookings] cancellation notification failed', error));
+  }
+
+  // Club usage is derived from non-cancelled appointments, so cancellation
+  // frees that week's place without manufacturing a transferable credit.
+  if (booking.source === 'package' && booking.purchase_id) {
     const [p] = await db(c.env, `package_purchases?id=eq.${booking.purchase_id}&select=credits_left`);
     if (p) {
       await db(c.env, `package_purchases?id=eq.${booking.purchase_id}`, {

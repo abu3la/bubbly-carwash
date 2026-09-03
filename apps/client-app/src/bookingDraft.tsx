@@ -1,14 +1,25 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { SLOTS, type AddOn, type PayMethod, type Service } from './content';
-import { quoteForSource, type PaySource } from './session';
+import { type AddOn, type PayMethod, type Service } from './content';
+import { type PaySource } from './session';
 import { useCopy } from './i18n';
+import type { SavedAddress, SavedVehicle } from './api';
+import { useCatalogue } from './catalogue';
 
 interface Draft {
   serviceKey: Service['key'];
   addOnKeys: AddOn['key'][];
   /** The chosen day's label in the active language. */
   day: string;
+  date: string;
   slot: string;
+  slotStart: string;
+  period: 'morning' | 'afternoon' | 'night' | '';
+  vehicleId: string;
+  vehicleLabel: string;
+  addressId: string;
+  addressLabel: string;
+  addressLat: number | null;
+  addressLng: number | null;
   /** Which balance pays for the wash itself. */
   source: PaySource;
   method: PayMethod['key'];
@@ -19,8 +30,10 @@ interface DraftApi extends Draft {
   total: number;
   setService: (key: Service['key']) => void;
   toggleAddOn: (key: AddOn['key']) => void;
-  setDay: (day: string) => void;
-  setSlot: (slot: string) => void;
+  setDay: (date: string, label: string) => void;
+  setSlot: (period: 'morning' | 'afternoon' | 'night', startsAt: string, endsAt: string) => void;
+  setVehicle: (vehicle: SavedVehicle) => void;
+  setAddress: (address: SavedAddress) => void;
   setSource: (source: PaySource) => void;
   setMethod: (method: PayMethod['key']) => void;
   reset: () => void;
@@ -31,7 +44,16 @@ const INITIAL: Draft = {
   addOnKeys: [],
   // Filled in by the provider, which can read the active language.
   day: '',
-  slot: SLOTS.find((s) => !s.taken)?.time ?? SLOTS[0].time,
+  date: '',
+  slot: '',
+  slotStart: '',
+  period: '',
+  vehicleId: '',
+  vehicleLabel: '',
+  addressId: '',
+  addressLabel: '',
+  addressLat: null,
+  addressLng: null,
   source: 'cash',
   method: 'mada',
 };
@@ -56,6 +78,7 @@ export function BookingDraftProvider({
   sources: PaySource[];
 }) {
   const copy = useCopy();
+  const catalogue = useCatalogue();
   const preferred = sources[0] ?? 'cash';
   const defaults = { ...INITIAL, source: preferred, day: copy.days[1] };
   const [draft, setDraft] = useState<Draft>(defaults);
@@ -63,7 +86,15 @@ export function BookingDraftProvider({
   const value = useMemo<DraftApi>(
     () => ({
       ...draft,
-      total: quoteForSource(draft.serviceKey, draft.addOnKeys, draft.source),
+      total: (
+        (draft.source === 'cash'
+          ? (catalogue?.services.find((service) => service.key === draft.serviceKey)?.priceMinor ?? 4000)
+          : 0)
+        + draft.addOnKeys.reduce((sum, key) => (
+          sum + (catalogue?.addOns.find((addOn) => addOn.key === key)?.priceMinor
+            ?? (key === 'wax' ? 2000 : 1000))
+        ), 0)
+      ) / 100,
       setService: (serviceKey) => setDraft((d) => ({ ...d, serviceKey })),
       toggleAddOn: (key) =>
         setDraft((d) => ({
@@ -72,13 +103,30 @@ export function BookingDraftProvider({
             ? d.addOnKeys.filter((k) => k !== key)
             : [...d.addOnKeys, key],
         })),
-      setDay: (day) => setDraft((d) => ({ ...d, day })),
-      setSlot: (slot) => setDraft((d) => ({ ...d, slot })),
+      setDay: (date, day) => setDraft((d) => ({ ...d, date, day, slot: '', slotStart: '', period: '' })),
+      setSlot: (period, startsAt, endsAt) => setDraft((d) => ({
+        ...d,
+        period,
+        slot: `${startsAt}–${endsAt}`,
+        slotStart: `${d.date}T${startsAt}:00+03:00`,
+      })),
+      setVehicle: (vehicle) => setDraft((d) => ({
+        ...d,
+        vehicleId: vehicle.id,
+        vehicleLabel: `${vehicle.make} ${vehicle.model}`.trim(),
+      })),
+      setAddress: (address) => setDraft((d) => ({
+        ...d,
+        addressId: address.id,
+        addressLabel: address.line,
+        addressLat: address.lat,
+        addressLng: address.lng,
+      })),
       setSource: (source) => setDraft((d) => ({ ...d, source })),
       setMethod: (method) => setDraft((d) => ({ ...d, method })),
       reset: () => setDraft({ ...INITIAL, source: preferred, day: copy.days[1] }),
     }),
-    [draft, preferred, copy],
+    [draft, preferred, copy, catalogue],
   );
 
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;

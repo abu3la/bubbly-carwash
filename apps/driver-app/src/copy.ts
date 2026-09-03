@@ -1,9 +1,9 @@
 /**
- * Arabic only. Every technician Sama employs reads Arabic, and a language
+ * Arabic only. Every BubblesCarWash technician reads Arabic, and a language
  * toggle in a tool used one-handed beside a car is a setting nobody wants.
  */
 export const copy = {
-  brand: 'سما',
+  brand: 'BubblesCarWash',
   role: 'تطبيق الفنّي',
 
   signInTitle: 'سجّل دخولك',
@@ -20,8 +20,20 @@ export const copy = {
   noJobs: 'لا مهام الآن.',
   noJobsSub: 'ستظهر هنا فور إسنادها إليك.',
   history: 'المنجزة',
+  notifications: 'التنبيهات',
+  noTeam: 'غير مرتبط بفريق',
+  claimedByYou: 'مستلمة باسمك',
+  availableToTeam: 'متاحة لأعضاء الفريق',
   noHistory: 'لم تُنجز مهام بعد.',
   signOut: 'تسجيل الخروج',
+  teamJob: 'مهمة متاحة لفريقك',
+  teamJobSub: 'الحجز أُسند للفريق تلقائيًا. استلمه قبل بدء التوجه حتى يعرف بقية الفريق أنه معك.',
+  claimJob: 'استلام المهمة',
+  claimed: 'أصبحت المهمة باسمك',
+  unavailableJob: 'لم تعد هذه المهمة متاحة. ربما استلمها عضو آخر من الفريق.',
+  backToJobs: 'العودة للمهام',
+  customer: 'العميل',
+  callCustomer: 'اتصال بالعميل',
 
   vehicle: 'السيارة',
   address: 'الموقع',
@@ -53,6 +65,15 @@ export const copy = {
   evidenceSaved: 'تم حفظ التوثيق بأمان',
   evidenceCount: (before: number, after: number) => `قبل الغسيل: ${before} · بعد الغسيل: ${after}`,
   cameraDenied: 'فعّل إذن الكاميرا لتوثيق السيارة.',
+  reportProblem: 'بلاغ تشغيلي',
+  openReport: 'إبلاغ الإدارة',
+  accessProblem: 'تعذّر الوصول',
+  otherProblem: 'مشكلة أخرى',
+  problemDetails: 'التفاصيل',
+  problemPlaceholder: 'اكتب ما حدث بوضوح',
+  sendReport: 'إرسال البلاغ',
+  incidentSent: 'وصل البلاغ إلى مركز التشغيل',
+  cancel: 'إلغاء',
 
   services: { exterior: 'غسلة خارجية', full: 'غسلة كاملة' } as Record<string, string>,
   addOns: { wax: 'واكس حماية', tires: 'لمعة إطارات' } as Record<string, string>,
@@ -73,6 +94,12 @@ export const copy = {
     badMediaType: 'نوع الملف غير مدعوم. استخدم صورة أو فيديو.',
     badMediaSize: 'الملف أكبر من الحد المسموح أو غير مكتمل.',
     storageUnavailable: 'التخزين غير متاح الآن. حاول لاحقًا.',
+    jobClaimed: 'استلم سائق آخر هذه المهمة.',
+    technicianNotInTeam: 'حسابك غير مرتبط بهذا الفريق.',
+    outsideDriverShift: 'موعد المهمة خارج مناوبتك.',
+    technicianBusy: 'لديك مهمة أخرى في الوقت نفسه.',
+    badIncidentCategory: 'نوع البلاغ غير صحيح.',
+    incidentNoteRequired: 'اكتب تفاصيل البلاغ.',
     offline: 'لا يوجد اتصال. تحقق من الشبكة.',
     unknown: 'تعذّر إكمال العملية.',
   } as Record<string, string>,

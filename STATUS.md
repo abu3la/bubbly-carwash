@@ -31,7 +31,7 @@ the app persists.
 
 ## Cloudflare
 
-Sama has its own Cloudflare account, `9955ac@gmail.com`
+The legacy production deployment has its own Cloudflare account.
 (`de8c4462ba0c1c0449f99aa8dbb71870`), with its own `workers.dev` subdomain,
 `samacarwash`. The API is at **https://sama-api.samacarwash.workers.dev**.
 
@@ -43,7 +43,7 @@ accounts mean neither project can break the other's URLs.
 
 Two dead ends, recorded so they are not retried:
 
-- **Taz2886@yahoo.com's account** — `aaahashmi95@gmail.com` is a *member* but
+- **Taz development account** - the deployment operator is a *member* but
   holds no Workers permission there, so every call returns
   `403 / code 10000`. Being able to *see* an account in `whoami` says nothing
   about permissions in it. No token, profile, or re-login fixes this; only a

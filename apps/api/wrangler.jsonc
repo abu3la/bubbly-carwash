@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sama-api",
-  // Sama's own Cloudflare account (9955ac@gmail.com). It has its own
+  // Legacy production Cloudflare account. It has its own
   // workers.dev subdomain, `samacarwash`, which is why the API lives here and
   // not alongside another project — that subdomain is one per account, and
   // sharing one means a rename on either side breaks the other's URLs.
@@ -14,5 +14,9 @@
   //                 wrangler secret put SUPABASE_SERVICE_ROLE_KEY
   //                 wrangler secret put MOYASAR_SECRET_KEY
   //                 wrangler secret put MOYASAR_WEBHOOK_SECRET
+  //                 wrangler secret put GOOGLE_PLACES_API_KEY
+  //                 wrangler secret put FIREBASE_PROJECT_ID
+  //                 wrangler secret put FIREBASE_CLIENT_EMAIL
+  //                 wrangler secret put FIREBASE_PRIVATE_KEY
   "observability": { "enabled": true }
 }

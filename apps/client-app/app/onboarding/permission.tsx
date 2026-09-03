@@ -9,9 +9,8 @@ export default function Permission() {
   const { theme } = useUnistyles();
   const router = useRouter();
   const copy = useCopy();
-  // Straight to the manual form while the map is out: the address is what the
-  // wash needs, and a coordinate is an optimisation on top of it.
-  const next = () => router.push('/onboarding/address');
+  const openMap = () => router.push('/onboarding/map');
+  const enterManually = () => router.push('/onboarding/address');
 
   return (
     <Screen contentStyle={styles.screen}>
@@ -33,8 +32,13 @@ export default function Permission() {
       </View>
 
       <View style={styles.actions}>
-        <Button label={copy.onboarding.allowLocation} size="lg" fullWidth onPress={next} />
-        <Button label={copy.onboarding.enterManually} variant="ghost" fullWidth onPress={next} />
+        <Button label={copy.onboarding.allowLocation} size="lg" fullWidth onPress={openMap} />
+        <Button
+          label={copy.onboarding.enterManually}
+          variant="ghost"
+          fullWidth
+          onPress={enterManually}
+        />
       </View>
     </Screen>
   );

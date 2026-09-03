@@ -56,21 +56,25 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return json as T;
 }
 
-/** Sends the code. For a registered test number no SMS is sent at all. */
-export async function requestOtp(phoneE164: string): Promise<void> {
-  await post<{ sent: boolean }>('/auth/otp', { phone: phoneE164 });
+function fromPayload(d: VerifyPayload, fallback?: Session): Session {
+  return {
+    accessToken: d.accessToken,
+    refreshToken: d.refreshToken,
+    userId: d.user?.id ?? fallback?.userId ?? '',
+    phone: d.user?.phone ?? fallback?.phone ?? '',
+    expiresAt: Math.floor(Date.now() / 1000) + (d.expiresIn ?? 3600),
+  };
+}
+
+/** Starts sign-in. Development returns its fixed code instead of sending SMS. */
+export async function requestOtp(phoneE164: string): Promise<{ developmentCode?: string }> {
+  return post<{ sent: boolean; developmentCode?: string }>('/auth/otp', { phone: phoneE164 });
 }
 
 /** Exchanges the code for a session. Throws if the code is wrong or expired. */
 export async function verifyOtp(phoneE164: string, code: string): Promise<Session> {
   const d = await post<VerifyPayload>('/auth/verify', { phone: phoneE164, code });
-  const session: Session = {
-    accessToken: d.accessToken,
-    refreshToken: d.refreshToken,
-    userId: d.user?.id ?? '',
-    phone: d.user?.phone ?? '',
-    expiresAt: Math.floor(Date.now() / 1000) + (d.expiresIn ?? 3600),
-  };
+  const session = fromPayload(d);
   await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
 }
@@ -78,8 +82,17 @@ export async function verifyOtp(phoneE164: string, code: string): Promise<Sessio
 export async function loadSession(): Promise<Session | null> {
   try {
     const raw = await AsyncStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as Session;
+    if (stored.expiresAt > Math.floor(Date.now() / 1000) + 60) return stored;
+    const refreshed = fromPayload(
+      await post<VerifyPayload>('/auth/refresh', { refreshToken: stored.refreshToken }),
+      stored,
+    );
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
+    return refreshed;
   } catch {
+    await AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
     return null;
   }
 }

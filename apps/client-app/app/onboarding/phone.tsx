@@ -72,8 +72,11 @@ export default function Phone() {
               // A real request. If it fails the customer stays on this screen
               // with the reason, rather than walking into a code entry that
               // could never succeed.
-              await requestOtp(toE164(phone));
-              router.push({ pathname: '/onboarding/otp', params: { phone: digits } });
+              const result = await requestOtp(toE164(phone));
+              router.push({
+                pathname: '/onboarding/otp',
+                params: { phone: digits, developmentCode: result.developmentCode },
+              });
             } catch (e) {
               setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);
             } finally {

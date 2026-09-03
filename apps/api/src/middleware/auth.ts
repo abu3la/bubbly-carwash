@@ -35,7 +35,7 @@ export const requireAuth = (): MiddlewareHandler<{ Bindings: Env }> => async (c,
   });
   if (!res.ok) return c.json({ error: { code: 'unauthorized' } }, 401);
 
-  const user = (await res.json()) as { id?: string; phone?: string };
+  const user = (await res.json()) as { id?: string; phone?: string; user_metadata?: { phone?: string } };
   if (!user.id) return c.json({ error: { code: 'unauthorized' } }, 401);
 
   // The role comes from our own table, never from the token. Supabase issues
@@ -48,7 +48,7 @@ export const requireAuth = (): MiddlewareHandler<{ Bindings: Env }> => async (c,
   const profile = rows[0];
   if (!profile?.active) return c.json({ error: { code: 'unauthorized' } }, 401);
 
-  c.set('caller', { id: user.id, phone: user.phone ?? '', role: profile.role });
+  c.set('caller', { id: user.id, phone: user.phone || user.user_metadata?.phone || '', role: profile.role });
   await next();
 };
 

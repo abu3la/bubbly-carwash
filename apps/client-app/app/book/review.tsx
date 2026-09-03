@@ -4,22 +4,32 @@ import { StyleSheet } from 'react-native-unistyles';
 import { BookingTicket, Button, Card, Checkbox, Radio, Screen, Tooltip, Txt } from '@sama/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { LedgerRow, SectionLabel } from '../../src/components/Bits';
-import { ADD_ONS, SERVICES } from '../../src/content';
+import { ADD_ONS, SERVICES, type AddOn } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
-import { useSession } from '../../src/session';
-
-/** The list price of a service, which is data rather than copy. */
-const SERVICE_PRICE = (key: (typeof SERVICES)[number]['key']) =>
-  (SERVICES.find((s) => s.key === key) ?? SERVICES[0]).price;
+import { useCustomerData } from '../../src/customerData';
+import { useCatalogue } from '../../src/catalogue';
+import { useLocale } from '@sama/ui-native';
 
 export default function Review() {
   const router = useRouter();
   const draft = useBookingDraft();
-  const { wallet, club, sources } = useSession();
+  const { membership } = useCustomerData();
+  const catalogue = useCatalogue();
+  const { language } = useLocale();
   const copy = useCopy();
-  const service = copy.services[draft.serviceKey];
-  const chosenAddOns = ADD_ONS.filter((a) => draft.addOnKeys.includes(a.key));
+  const liveService = catalogue?.services.find((item) => item.key === draft.serviceKey);
+  const service = {
+    name: liveService?.name[language] ?? copy.services[draft.serviceKey].name,
+    price: (liveService?.priceMinor ?? (SERVICES.find((item) => item.key === draft.serviceKey)?.price ?? 40) * 100) / 100,
+  };
+  const addOns = catalogue?.addOns.map((item) => ({
+    key: item.key as AddOn['key'],
+    price: item.priceMinor / 100,
+    name: item.name[language],
+  })) ?? ADD_ONS.map((item) => ({ ...item, name: copy.addOns[item.key] }));
+  const chosenAddOns = addOns.filter((a) => draft.addOnKeys.includes(a.key));
+  const sources = membership ? (['club', 'cash'] as const) : (['cash'] as const);
 
   return (
     <Screen scroll contentStyle={styles.page}>
@@ -28,16 +38,16 @@ export default function Review() {
       <View style={styles.body}>
         <BookingTicket
           time={draft.slot}
-          meta={`${draft.day} · ${copy.vehicleName} · ${copy.addressLabel}`}
+          meta={`${draft.day} · ${draft.vehicleLabel} · ${draft.addressLabel}`}
         />
 
         <View>
           <SectionLabel>{copy.booking.addOnsSection}</SectionLabel>
           <Card style={styles.addOns}>
-            {ADD_ONS.map((addOn) => (
+            {addOns.map((addOn) => (
               <Checkbox
                 key={addOn.key}
-                label={copy.booking.addOnWithPrice(copy.addOns[addOn.key], copy.common.money(addOn.price))}
+                label={copy.booking.addOnWithPrice(addOn.name, copy.common.money(addOn.price))}
                 checked={draft.addOnKeys.includes(addOn.key)}
                 onChange={() => draft.toggleAddOn(addOn.key)}
               />
@@ -58,11 +68,7 @@ export default function Review() {
                   selected={draft.source === source}
                   onPress={() => draft.setSource(source)}
                   label={
-                    source === 'club'
-                      ? copy.booking.sourceClub
-                      : source === 'package'
-                        ? copy.booking.sourcePackage
-                        : copy.booking.sourceCash
+                    source === 'club' ? copy.booking.sourceClub : copy.booking.sourceCash
                   }
                 />
               ))}
@@ -71,11 +77,12 @@ export default function Review() {
                 this is the moment the question comes up. */}
             <Tooltip label={copy.booking.creditCoversWashOnly}>
               <Txt variant="caption" tone="secondary" style={styles.sourceNote}>
-                {draft.source === 'club' && club
-                  ? copy.booking.clubRemaining(club.credits, club.weekly - club.used)
-                  : draft.source === 'package'
-                    ? copy.booking.useCreditSub(wallet.credits)
-                    : copy.booking.cashNote}
+                {draft.source === 'club' && membership
+                  ? copy.booking.clubRemaining(
+                    membership.plans.weekly,
+                    Math.max(0, membership.plans.weekly - membership.usedThisWeek),
+                  )
+                  : copy.booking.cashNote}
               </Txt>
             </Tooltip>
           </View>
@@ -86,20 +93,16 @@ export default function Review() {
               rather than letting it surprise anyone at checkout. */}
           <LedgerRow
             label={
-              draft.source === 'club'
-                ? copy.booking.fromClub(service.name)
-                : draft.source === 'package'
-                  ? copy.booking.fromPackage(service.name)
-                  : service.name
+              draft.source === 'club' ? copy.booking.fromClub(service.name) : service.name
             }
             amount={
               draft.source === 'cash'
-                ? copy.common.money(SERVICE_PRICE(draft.serviceKey))
+                ? copy.common.money(service.price)
                 : copy.booking.oneWash
             }
           />
           {chosenAddOns.map((addOn) => (
-            <LedgerRow key={addOn.key} label={copy.addOns[addOn.key]} amount={copy.common.money(addOn.price)} />
+            <LedgerRow key={addOn.key} label={addOn.name} amount={copy.common.money(addOn.price)} />
           ))}
           <LedgerRow label={copy.common.totalWithVat} amount={copy.common.money(draft.total)} strong />
         </View>

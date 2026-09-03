@@ -1,212 +1,92 @@
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  Bell,
-  Car,
-  ChevronLeft,
-  CreditCard,
-  FileText,
-  Globe,
-  MapPin,
-  MessageSquare,
-  Receipt,
-} from 'lucide-react-native';
+import { Car, ChevronLeft, Globe, MapPin } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Num, Screen, Txt, useToast } from '@sama/ui-native';
-import { CUSTOMER } from '../../src/content';
+import { Button, Card, Num, Screen, Txt, useLocale, useToast } from '@sama/ui-native';
 import { useCopy } from '../../src/i18n';
 import { useSession } from '../../src/session';
-
-const ICONS = { Car, MapPin, CreditCard, Receipt, Globe, Bell, MessageSquare, FileText };
-
-interface Row {
-  icon: keyof typeof ICONS;
-  label: string;
-  value?: string;
-  onPress?: () => void;
-}
+import { useAuthSession } from '../../src/authSession';
+import { useCustomerData } from '../../src/customerData';
 
 export default function Profile() {
   const { theme } = useUnistyles();
+  const { language } = useLocale();
   const router = useRouter();
   const session = useSession();
+  const auth = useAuthSession();
+  const { profile, vehicles, addresses, membership } = useCustomerData();
   const toast = useToast();
-  const { wallet, club } = session;
   const copy = useCopy();
+  const ar = language === 'ar';
 
-  // Two languages, so the row is a straight toggle: tap it and the interface
-  // switches in place. No confirmation and no restart to warn about.
-  const toggleLanguage = () => {
-    session.setLanguage(session.language === 'ar' ? 'en' : 'ar');
-  };
-
-  const rows: Row[] = [
-    { icon: 'Car', label: copy.profile.rows.vehicles, value: copy.vehicleName },
-    { icon: 'MapPin', label: copy.profile.rows.addresses, value: copy.profile.addressesValue },
-    { icon: 'CreditCard', label: copy.profile.rows.cards, value: copy.profile.cardValue },
-    { icon: 'Receipt', label: copy.profile.rows.invoices },
-    {
-      icon: 'Globe',
-      label: copy.profile.rows.language,
-      value: copy.profile.languageName,
-      onPress: toggleLanguage,
-    },
-    { icon: 'Bell', label: copy.profile.rows.notifications, value: copy.profile.notificationsOn },
-    { icon: 'MessageSquare', label: copy.profile.rows.support },
-    { icon: 'FileText', label: copy.profile.rows.terms },
+  const rows = [
+    { icon: Car, label: copy.profile.rows.vehicles, value: `${vehicles.length}`, onPress: () => router.push('/account/vehicles') },
+    { icon: MapPin, label: copy.profile.rows.addresses, value: `${addresses.length}`, onPress: () => router.push('/account/addresses') },
+    { icon: Globe, label: copy.profile.rows.language, value: copy.profile.languageName, onPress: () => session.setLanguage(ar ? 'en' : 'ar') },
   ];
 
   return (
     <Screen scroll bottomInset={theme.spacing[6]} contentStyle={styles.page}>
       <View style={styles.identity}>
-        <View style={styles.avatar}>
-          <Txt variant="heading" weight="bold" tone="action">
-            {copy.customerInitial}
-          </Txt>
-        </View>
-        <View style={styles.identityText}>
-          <Txt variant="heading" weight="bold">
-            {copy.customerName}
-          </Txt>
-          <Txt variant="small" tone="secondary">
-            <Num variant="small" tone="secondary">
-              {CUSTOMER.phone}
-            </Num>{' '}
-            · {copy.profile.verified}
-          </Txt>
-        </View>
+        <Txt variant="heading" weight="bold">{profile?.full_name || (ar ? 'عميل BubblesCarWash' : 'BubblesCarWash customer')}</Txt>
+        <Txt variant="small" tone="secondary">
+          <Num variant="small" tone="secondary">{profile?.phone || auth.session?.phone}</Num> · {copy.profile.verified}
+        </Txt>
       </View>
 
-      {session.hasCredits || club ? (
-        <View style={styles.summaries}>
-          {session.hasCredits ? (
-            <Card onPress={() => router.push('/packages')} style={styles.summary}>
-              <Txt variant="label" weight="bold" tone="muted">
-                {copy.profile.walletBalance}
-              </Txt>
-              <View style={styles.summaryValue}>
-                <Num variant="heading" weight="bold">
-                  {wallet.credits}
-                </Num>
-                <Txt variant="caption" tone="muted">
-                  {copy.profile.ofTotal(wallet.total)}
-                </Txt>
-              </View>
-              <Txt variant="label" tone="muted">
-                {copy.profile.expires(copy.packageExpiry)}
-              </Txt>
-            </Card>
-          ) : null}
-
-          {club ? (
-            <Card variant="dark" onPress={() => router.push('/club/dashboard')} style={styles.summary}>
-              <Txt variant="label" weight="bold" style={styles.gold}>
-                {copy.club.title} · {copy.plans[club.planId]}
-              </Txt>
-              <View style={styles.summaryValue}>
-                <Num variant="heading" weight="bold" tone="inverse">
-                  {club.credits}
-                </Num>
-                <Txt variant="caption" tone="inverseSoft">
-                  {copy.profile.clubCredits}
-                </Txt>
-              </View>
-              <Txt variant="label" tone="inverseSoft">
-                {copy.profile.renews(copy.renewalDate)}
-              </Txt>
-            </Card>
-          ) : null}
-        </View>
+      {membership ? (
+        <Card onPress={() => router.push('/club/dashboard')} style={styles.membership}>
+          <View style={styles.membershipText}>
+            <Txt variant="body" weight="bold">{ar ? membership.plans.name_ar : membership.plans.name_en}</Txt>
+            <Txt variant="caption" tone="secondary">
+              {ar ? `${membership.plans.weekly} غسلات أسبوعيًا، بلا ترحيل` : `${membership.plans.weekly} washes weekly, no rollover`}
+            </Txt>
+          </View>
+          <Num variant="small" weight="bold">{membership.usedThisWeek}/{membership.plans.weekly}</Num>
+        </Card>
       ) : (
-        <Card onPress={() => router.push('/packages')} style={styles.teaser}>
-          <Txt variant="body" weight="bold">
-            {copy.profile.noBalanceTitle}
-          </Txt>
-          <Txt variant="caption" tone="secondary">
-            {copy.profile.noBalanceSub(copy.common.money(139))}
-          </Txt>
+        <Card onPress={() => router.push('/club')} style={styles.membership}>
+          <View style={styles.membershipText}>
+            <Txt variant="body" weight="bold">{ar ? 'لا يوجد اشتراك نشط' : 'No active subscription'}</Txt>
+            <Txt variant="caption" tone="secondary">{ar ? 'اختر غسلتين أو ثلاث غسلات أسبوعيًا' : 'Choose two or three weekly washes'}</Txt>
+          </View>
         </Card>
       )}
 
       <Card style={styles.rows}>
-        {rows.map((row, i) => {
-          const Icon = ICONS[row.icon];
-          const Row = row.onPress ? Pressable : View;
+        {rows.map((row, index) => {
+          const Icon = row.icon;
           return (
-            <Row
-              key={row.label}
-              accessibilityRole={row.onPress ? 'button' : undefined}
-              onPress={row.onPress}
-              style={styles.row(i === 0)}
-            >
+            <Pressable key={row.label} accessibilityRole="button" onPress={row.onPress} style={styles.row(index > 0)}>
               <Icon size={theme.scale(18)} color={theme.text.secondary} strokeWidth={2} />
-              <Txt variant="body" weight="semibold" style={styles.rowLabel}>
-                {row.label}
-              </Txt>
-              {row.value ? (
-                <Txt variant="caption" tone="muted">
-                  {row.value}
-                </Txt>
-              ) : null}
-              {/* The chevron points the way the language reads. */}
-              <ChevronLeft
-                size={theme.scale(16)}
-                color={theme.text.faint}
-                strokeWidth={2}
-                style={session.language === 'ar' ? undefined : styles.flip}
-              />
-            </Row>
+              <Txt variant="body" weight="semibold" style={styles.rowLabel}>{row.label}</Txt>
+              <Txt variant="caption" tone="muted">{row.value}</Txt>
+              <ChevronLeft size={theme.scale(16)} color={theme.text.faint} strokeWidth={2} style={ar ? undefined : styles.flip} />
+            </Pressable>
           );
         })}
       </Card>
 
-      <Button
-        label={copy.profile.signOut}
-        variant="ghost"
-        fullWidth
-        onPress={() => {
-          session.signOut();
-          toast.show(copy.profile.signedOut, 'washed');
-          router.replace('/onboarding');
-        }}
-      />
-
-      <Txt variant="label" tone="muted" center>
-        {copy.brand.version}
-      </Txt>
-
+      <Button label={copy.profile.signOut} variant="ghost" fullWidth onPress={async () => {
+        await auth.signOut();
+        toast.show(copy.profile.signedOut, 'washed');
+        router.replace('/onboarding');
+      }} />
+      <Txt variant="label" tone="muted" center>BubblesCarWash · {copy.brand.version}</Txt>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
   page: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[4], gap: theme.spacing[4] },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3] + 2 },
-  identityText: { flex: 1, gap: 1 },
-  avatar: {
-    width: theme.scale(54),
-    height: theme.scale(54),
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.action.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaries: { flexDirection: 'row', gap: theme.spacing[2] + 2 },
-  // Equal columns so the two cards match height and their numbers share a line.
-  summary: { flex: 1, gap: theme.spacing[1] },
-  summaryValue: { flexDirection: 'row', alignItems: 'baseline', gap: theme.spacing[1] + 2 },
-  gold: { color: theme.palette.yellow },
-  teaser: { gap: theme.spacing[1] },
-  rows: { paddingVertical: theme.spacing[1], paddingHorizontal: theme.spacing[4] },
-  row: (first: boolean) => ({
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[3],
-    minHeight: theme.layout.hitTarget,
-    paddingVertical: theme.spacing[3],
-    borderTopWidth: first ? 0 : theme.border.width,
-    borderTopColor: theme.border.subtle,
+  identity: { gap: theme.spacing[1], paddingVertical: theme.spacing[2] },
+  membership: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3] },
+  membershipText: { flex: 1, gap: 2 },
+  rows: { paddingVertical: 0, paddingHorizontal: theme.spacing[4] },
+  row: (bordered: boolean) => ({
+    minHeight: theme.scale(58), flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3],
+    borderTopWidth: bordered ? theme.border.width : 0, borderTopColor: theme.border.subtle,
   }),
   rowLabel: { flex: 1 },
-  flip: { transform: [{ scaleX: -1 }] },
+  flip: { transform: [{ rotate: '180deg' }] },
 }));

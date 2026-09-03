@@ -20,7 +20,7 @@ export function Plans() {
     <>
       <div className="page-head">
         <h1>اشتراكات النادي</h1>
-        <p>الرسوم الشهرية وحدود الاستخدام. الحد الأسبوعي هو ما يحمي الربحية.</p>
+        <p>اشتراك أسبوعي بلا رصيد: الموعد الفائت لا يُرحّل ولا يُعوّض.</p>
       </div>
 
       <div className="sheet">
@@ -29,21 +29,20 @@ export function Plans() {
             <tr>
               <th>الخطة</th>
               <th>الشهري (ر.س)</th>
-              <th>غسلات الدورة</th>
-              <th>الحد الأسبوعي</th>
-              <th>الترحيل</th>
+              <th>الغسلات أسبوعيًا</th>
               <th>الحالة</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((p) => (
+            {rows.filter((p) => ['basic', 'basic-3', 'plus', 'plus-3'].includes(p.id)).map((p) => (
               <tr key={p.id} className={p.active ? '' : 'off'}>
-                <td className="headline">{p.name_ar}</td>
+                <td>
+                  <strong className="headline">{p.name_ar}</strong>
+                  <span className="row-detail">{p.weekly === 2 ? 'خيار الغسلتين' : 'خيار الثلاث غسلات'}</span>
+                </td>
                 {([
                   ['priceSar', (p.price_minor / 100).toFixed(0)],
-                  ['credits', String(p.credits)],
                   ['weekly', String(p.weekly)],
-                  ['roll', String(p.roll)],
                 ] as const).map(([field, value]) => (
                   <td key={field}>
                     <input

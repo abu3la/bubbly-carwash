@@ -21,4 +21,18 @@ export interface Env {
   /** Taqnyat, once a sender name is registered. Absent = codes are logged. */
   TAQNYAT_BEARER?: string;
   TAQNYAT_SENDER?: string;
+
+  /**
+   * Development-only sign-in code. It is deliberately a normal Worker var,
+   * not a secret, and must never be present in the production deployment.
+   */
+  DEV_FIXED_OTP?: string;
+
+  /** Server-side Places API (New) key. Never embedded in either mobile app. */
+  GOOGLE_PLACES_API_KEY?: string;
+
+  /** Firebase service account used only by the Worker for FCM HTTP v1. */
+  FIREBASE_PROJECT_ID?: string;
+  FIREBASE_CLIENT_EMAIL?: string;
+  FIREBASE_PRIVATE_KEY?: string;
 }

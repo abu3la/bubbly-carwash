@@ -5,6 +5,9 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
   "workers_dev": true,
+  "vars": {
+    "DEV_FIXED_OTP": "1111"
+  },
   "observability": { "enabled": true },
   "r2_buckets": [
     {

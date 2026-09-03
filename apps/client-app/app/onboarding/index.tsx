@@ -10,11 +10,6 @@ export default function Welcome() {
   const session = useSession();
   const copy = useCopy();
 
-  const skip = () => {
-    session.completeOnboarding();
-    router.replace('/(tabs)/home');
-  };
-
   return (
     <Screen contentStyle={styles.screen}>
       <View style={styles.stage}>
@@ -55,7 +50,6 @@ export default function Welcome() {
 
       <View style={styles.actions}>
         <Button label={copy.onboarding.start} size="lg" fullWidth onPress={() => router.push('/onboarding/phone')} />
-        <Button label={copy.onboarding.skip} variant="ghost" size="md" fullWidth onPress={skip} />
       </View>
     </Screen>
   );

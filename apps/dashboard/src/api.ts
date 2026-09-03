@@ -77,6 +77,36 @@ export interface Team {
   daily_capacity: number;
   active: boolean;
   sort: number;
+  members: TeamMember[];
+}
+
+export interface TeamMember {
+  team_id: string;
+  profile_id: string;
+  active: boolean;
+  available: boolean;
+  is_lead: boolean;
+  shift_start: string;
+  shift_end: string;
+  profiles: { id: string; full_name: string; phone: string; active: boolean };
+}
+
+export interface Technician {
+  id: string;
+  full_name: string;
+  phone: string;
+  active: boolean;
+  pending?: boolean;
+  created_at: string;
+  team_members: Array<{
+    team_id: string;
+    active: boolean;
+    available: boolean;
+    is_lead: boolean;
+    shift_start: string;
+    shift_end: string;
+    teams: { id: string; name_ar: string; active: boolean };
+  }>;
 }
 
 export interface AdminBooking {
@@ -88,12 +118,42 @@ export interface AdminBooking {
   total_minor: number;
   status: string;
   stage: string;
-  teams: { name_ar: string } | null;
-  booking_media: Array<{ phase: 'before' | 'after'; kind: 'photo' | 'video'; angle: string }>;
+  teams: { id: string; name_ar: string } | null;
+  technician: { id: string; full_name: string; phone: string } | null;
+  profiles: { full_name: string; phone: string } | null;
+  vehicles: { make: string; model: string; color: string; plate: string; size: string };
+  addresses: { label: string; line: string; district: string; city: string; lat: number | null; lng: number | null; notes: string };
+  services: { name_ar: string; name_en: string };
+  booking_media: Array<{ id: string; phase: 'before' | 'after'; kind: 'photo' | 'video'; angle: string; content_type: string; byte_size: number }>;
+  payments: Array<{ id: string; state: string; provider: string; provider_ref: string; amount_minor: number; created_at: string }>;
+}
+
+export interface Incident {
+  id: string;
+  booking_id: string;
+  category: string;
+  note: string;
+  status: 'open' | 'resolved';
+  created_at: string;
+  resolved_at: string | null;
+  bookings: { ref: string; team_id: string };
+  profiles: { full_name: string; phone: string };
+}
+
+export interface OperationsSnapshot {
+  checkedAt: string;
+  unassignedBookings: number;
+  staleActiveBookings: number;
+  openIncidents: number;
+  failedPayments: number;
+  invalidPushTokens: number;
+  firebaseConfigured: boolean;
+  smsMode: 'development-code' | 'taqnyat' | 'not-configured';
+  paymentMode: 'live' | 'test' | 'not-configured';
 }
 
 export const auth = {
-  requestOtp: (phone: string) => call<{ sent: boolean }>('/auth/otp', {
+  requestOtp: (phone: string) => call<{ sent: boolean; developmentCode?: string }>('/auth/otp', {
     method: 'POST', body: JSON.stringify({ phone }),
   }),
   verify: (phone: string, code: string) =>
@@ -116,6 +176,29 @@ export const admin = {
   teams: () => call<{ teams: Team[] }>('/admin/teams'),
   updateTeam: (id: string, patch: Record<string, unknown>) =>
     call<{ team: Team }>(`/admin/teams/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  technicians: () => call<{ technicians: Technician[] }>('/admin/technicians'),
+  createTechnician: (phone: string, name: string, teamId: string) =>
+    call<{ technician: Technician }>('/admin/technicians', { method: 'POST', body: JSON.stringify({ phone, name, teamId }) }),
+  updateTechnician: (id: string, patch: { active?: boolean; name?: string }) =>
+    call<{ technician: Technician }>(`/admin/technicians/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  setTechnicianTeam: (id: string, patch: { teamId: string | null; available?: boolean; isLead?: boolean; shiftStart?: string; shiftEnd?: string }) =>
+    call<{ membership: TeamMember | null }>(`/admin/technicians/${id}/team`, { method: 'PUT', body: JSON.stringify(patch) }),
+  assignBooking: (id: string, technicianId: string | null) =>
+    call<{ booking: AdminBooking }>(`/admin/bookings/${id}/assign`, { method: 'PATCH', body: JSON.stringify({ technicianId }) }),
+  incidents: () => call<{ incidents: Incident[] }>('/admin/incidents'),
+  resolveIncident: (id: string) =>
+    call<{ incident: Incident }>(`/admin/incidents/${id}/resolve`, { method: 'PATCH' }),
+  operations: () => call<OperationsSnapshot>('/admin/operations'),
+  refundPayment: (id: string, reason: string) =>
+    call<{ refunded: true; amountMinor: number }>(`/admin/payments/${id}/refund`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  mediaBlob: async (bookingId: string, mediaId: string) => {
+    const t = token.get();
+    const response = await fetch(`${API}/admin/bookings/${bookingId}/media/${mediaId}/content`, {
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+    });
+    if (!response.ok) throw new ApiError('mediaUnavailable', response.status);
+    return response.blob();
+  },
 };
 
 /** Halalas in the database, riyals on screen. */

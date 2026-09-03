@@ -7,25 +7,25 @@ import { Button, Num, Screen, Txt } from '@sama/ui-native';
 import { useCopy } from '../../src/i18n';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { AuthError, requestOtp, toE164, verifyOtp } from '../../src/auth';
+import { useAuthSession } from '../../src/authSession';
 
-/**
- * Six, because Supabase will not issue a shorter SMS OTP — its minimum is 6 and
- * the dashboard rejects anything less. It is also the right length for an app
- * holding prepaid balances: four digits is ten thousand guesses.
- */
-const LENGTH = 6;
+const LIVE_OTP_LENGTH = 6;
 const RESEND_SECONDS = 24;
 
 export default function Otp() {
   const router = useRouter();
-  const { phone } = useLocalSearchParams<{ phone?: string }>();
+  const params = useLocalSearchParams<{ phone?: string; developmentCode?: string }>();
+  const { phone } = params;
   const national = phone ?? '';
+  const [developmentCode, setDevelopmentCode] = useState(params.developmentCode);
+  const length = developmentCode?.length ?? LIVE_OTP_LENGTH;
   const [code, setCode] = useState('');
   const [left, setLeft] = useState(RESEND_SECONDS);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<TextInput>(null);
   const copy = useCopy();
+  const authSession = useAuthSession();
 
   useEffect(() => {
     if (left <= 0) return;
@@ -50,24 +50,29 @@ export default function Otp() {
               {toE164(national)}
             </Num>
           </Txt>
+          {developmentCode ? (
+            <Txt variant="small" weight="semibold" tone="action">
+              {copy.onboarding.developmentCodeHint(developmentCode)}
+            </Txt>
+          ) : null}
         </View>
 
         {/* One hidden field drives the boxes: the OS keyboard, paste and
             autofill all keep working, and the boxes are pure display. */}
         <Pressable onPress={() => input.current?.focus()} style={styles.boxes}>
-          {Array.from({ length: LENGTH }, (_, i) => (
+          {Array.from({ length }, (_, i) => (
             <OtpBox key={i} digit={code[i]} active={i === code.length} />
           ))}
         </Pressable>
         <TextInput
           ref={input}
           value={code}
-          onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, LENGTH))}
+          onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, length))}
           keyboardType="number-pad"
           textContentType="oneTimeCode"
           autoComplete="sms-otp"
           autoFocus
-          maxLength={LENGTH}
+          maxLength={length}
           style={styles.hidden}
         />
 
@@ -87,14 +92,15 @@ export default function Otp() {
           label={checking ? copy.common.verifying : copy.onboarding.verify}
           size="lg"
           fullWidth
-          disabled={code.length < LENGTH || checking}
+          disabled={code.length < length || checking}
           onPress={async () => {
             setError(null);
             setChecking(true);
             try {
               // The real exchange. A wrong code fails here and goes no further,
               // which is the whole point of the screen.
-              await verifyOtp(toE164(national), code);
+              const verified = await verifyOtp(toE164(national), code);
+              authSession.signedIn(verified);
               router.push('/onboarding/permission');
             } catch (e) {
               setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);
@@ -113,7 +119,8 @@ export default function Otp() {
               setError(null);
               setLeft(RESEND_SECONDS);
               try {
-                await requestOtp(toE164(national));
+                const result = await requestOtp(toE164(national));
+                setDevelopmentCode(result.developmentCode);
               } catch (e) {
                 setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);
               }

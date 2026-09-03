@@ -13,6 +13,8 @@
   "dependencies": {
     "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-firebase/app": "^26.3.3",
+    "@react-native-firebase/messaging": "^26.3.3",
     "@sama/api-client": "workspace:*",
     "@sama/design-tokens": "workspace:*",
     "@sama/i18n": "workspace:*",
@@ -29,9 +31,11 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.0",
     "expo-updates": "~29.0.20",
+    "expo-video": "~3.0.16",
     "lucide-react-native": "^1.32.0",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-calendars": "^1.1314.0",
     "react-native-edge-to-edge": "^1.8.1",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "1.20.1",
@@ -41,7 +45,8 @@
     "react-native-screens": "~4.16.0",
     "react-native-size-matters": "^0.4.2",
     "react-native-svg": "15.12.1",
-    "react-native-unistyles": "^3.3.0"
+    "react-native-unistyles": "^3.3.0",
+    "react-native-webview": "13.15.0"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

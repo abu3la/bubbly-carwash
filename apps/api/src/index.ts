@@ -8,10 +8,13 @@ import { catalogueRoute } from './routes/catalogue';
 import { driverRoute } from './routes/driver';
 import { hooksRoute } from './routes/hooks';
 import { meRoute } from './routes/me';
+import { membershipsRoute } from './routes/memberships';
+import { paymentsRoute } from './routes/payments';
+import { placesRoute } from './routes/places';
 import { webhooksRoute } from './routes/webhooks';
 
 /**
- * Sama Car Wash API.
+ * BubblesCarWash API.
  *
  * The only path to the database. It holds the Supabase service-role key, which
  * bypasses row-level security — every table has RLS on with no policies, so
@@ -26,17 +29,26 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', cors());
 
-app.get('/', (c) => c.json({ name: 'sama-api', status: 'ok' }));
+app.get('/', (c) => c.json({ name: 'bubblescarwash-api', status: 'ok' }));
 
 // Reports which secrets are present, never what they are. Enough to tell a
 // misconfigured deploy from a working one without leaking anything.
 app.get('/health', (c) =>
   c.json({
-    name: 'sama-api',
+    name: 'bubblescarwash-api',
     supabase: Boolean(c.env.SUPABASE_URL && c.env.SUPABASE_SERVICE_ROLE_KEY),
     storage: Boolean(c.env.MEDIA),
     moyasar: Boolean(c.env.MOYASAR_SECRET_KEY),
     webhook: Boolean(c.env.MOYASAR_WEBHOOK_SECRET),
+    places: Boolean(c.env.GOOGLE_PLACES_API_KEY),
+    notifications: c.env.FIREBASE_PROJECT_ID && c.env.FIREBASE_CLIENT_EMAIL && c.env.FIREBASE_PRIVATE_KEY
+      ? 'firebase'
+      : 'not-configured',
+    sms: c.env.DEV_FIXED_OTP
+      ? 'development-code'
+      : c.env.TAQNYAT_BEARER && c.env.TAQNYAT_SENDER
+        ? 'taqnyat'
+        : 'not-configured',
   }),
 );
 
@@ -47,6 +59,9 @@ app.route('/bookings', bookingsRoute);
 app.route('/driver', driverRoute);
 app.route('/hooks', hooksRoute);
 app.route('/me', meRoute);
+app.route('/memberships', membershipsRoute);
+app.route('/payments', paymentsRoute);
+app.route('/places', placesRoute);
 app.route('/webhooks', webhooksRoute);
 
 export default app;

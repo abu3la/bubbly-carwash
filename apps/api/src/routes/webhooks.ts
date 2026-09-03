@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { db } from '../db';
+import { getInvoice, invoiceMatches } from '../moyasar';
+import { notifyTeamOfBooking } from '../dispatch';
 
 /**
  * Moyasar payment webhooks.
@@ -17,6 +19,69 @@ import { db } from '../db';
  *    second membership.
  */
 export const webhooksRoute = new Hono<{ Bindings: Env }>();
+
+/**
+ * Hosted-invoice callback. The incoming body is never trusted: its id is used
+ * only to fetch the invoice back from Moyasar with our secret key. Granting
+ * happens from that verified response, so a forged public POST buys nothing.
+ */
+webhooksRoute.post('/moyasar/invoice', async (c) => {
+  const body: { id?: string; data?: { id?: string } } = await c.req.json().catch(() => ({}));
+  const ref = body.id ?? body.data?.id;
+  if (!ref) return c.json({ error: 'no invoice id' }, 400);
+  let invoice;
+  try {
+    invoice = await getInvoice(c.env, ref);
+  } catch (error) {
+    console.error('[moyasar] invoice verification failed', error);
+    return c.json({ error: 'could not verify invoice' }, 502);
+  }
+  if (invoice.status !== 'paid') return c.json({ received: true, paid: false });
+
+  const [payment] = await db<{
+    id: string; profile_id: string; booking_id: string | null; membership_id: string | null; state: string; amount_minor: number;
+  }>(c.env, `payments?provider=eq.moyasar&provider_ref=eq.${encodeURIComponent(ref)}&select=id,profile_id,booking_id,membership_id,state,amount_minor`);
+  if (!payment) return c.json({ received: true, known: false });
+  if (payment.state === 'paid') return c.json({ received: true, known: true, paid: true });
+  if (!invoiceMatches(invoice, {
+    amount: payment.amount_minor,
+    profileId: payment.profile_id,
+    ...(payment.booking_id ? { bookingId: payment.booking_id } : {}),
+    ...(payment.membership_id ? { membershipId: payment.membership_id } : {}),
+  })) {
+    console.error('[moyasar] verified invoice did not match local payment', { ref });
+    return c.json({ error: 'invoice mismatch' }, 409);
+  }
+
+  try {
+    if (payment.booking_id) {
+      await db(c.env, `bookings?id=eq.${payment.booking_id}`, {
+        method: 'PATCH', prefer: 'return=minimal', body: { payment_confirmed: true },
+      });
+      await notifyTeamOfBooking(c.env, payment.booking_id).catch((error) => {
+        console.warn('[dispatch] paid booking team notification failed', error);
+      });
+    } else if (payment.membership_id) {
+      await db(c.env, 'rpc/activate_membership_with_slots', {
+        method: 'POST', body: { p_membership: payment.membership_id, p_profile: payment.profile_id },
+      });
+      const created = await db<{ id: string }>(
+        c.env,
+        `bookings?membership_id=eq.${payment.membership_id}&payment_confirmed=eq.true&select=id`,
+      );
+      await Promise.all(created.map(({ id }) => notifyTeamOfBooking(c.env, id).catch((error) => {
+        console.warn('[dispatch] membership booking team notification failed', { id, error });
+      })));
+    }
+    await db(c.env, `payments?id=eq.${payment.id}`, {
+      method: 'PATCH', prefer: 'return=minimal', body: { state: 'paid', updated_at: new Date().toISOString() },
+    });
+  } catch (error) {
+    console.error('[moyasar] paid invoice activation failed', error);
+    return c.json({ error: 'activation failed' }, 500);
+  }
+  return c.json({ received: true, known: true, paid: true });
+});
 
 /**
  * Compares in constant time.

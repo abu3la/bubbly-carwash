@@ -7,20 +7,21 @@ import { useCopy } from '../../src/i18n';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { ApiError, saveAddress } from '../../src/api';
+import { useCustomerData } from '../../src/customerData';
 
 export default function SaveAddress() {
   const router = useRouter();
   const copy = useCopy();
+  const { refresh } = useCustomerData();
+  // Carried from the map: the coordinates and address the customer chose.
+  const picked = useLocalSearchParams<{
+    lat?: string; lng?: string; line?: string; district?: string; city?: string; returnTo?: string;
+  }>();
   const [label, setLabel] = useState(0);
-  const [line, setLine] = useState('');
+  const [line, setLine] = useState(picked.line ?? '');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Carried from the map: the coordinates the customer actually chose.
-  const picked = useLocalSearchParams<{
-    lat?: string; lng?: string; line?: string; district?: string; city?: string;
-  }>();
 
   const finish = async () => {
     setError(null);
@@ -37,9 +38,18 @@ export default function SaveAddress() {
         lng: picked.lng ? Number(picked.lng) : undefined,
         notes: note,
       });
-      // The car is the last thing onboarding needs, and it comes after the
-      // address because a wash without a place to happen is meaningless.
-      router.push('/onboarding/vehicle');
+      await refresh();
+      if (picked.returnTo === 'home') {
+        router.replace('/(tabs)/home');
+      } else if (picked.returnTo === 'booking') {
+        router.replace('/book/vehicle');
+      } else if (picked.returnTo === 'addresses') {
+        router.replace('/account/addresses');
+      } else {
+        // The car is the last thing onboarding needs, and it comes after the
+        // address because a wash without a place to happen is meaningless.
+        router.push('/onboarding/vehicle');
+      }
     } catch (e) {
       // The address is the one thing a wash cannot happen without, so a failure
       // here stops the flow rather than being swallowed.
@@ -53,7 +63,12 @@ export default function SaveAddress() {
 
   return (
     <Screen contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.addressTitle} step={3} steps={4} onBack={() => router.back()} />
+      <FlowHeader
+        title={copy.onboarding.addressTitle}
+        step={picked.returnTo ? undefined : 3}
+        steps={picked.returnTo ? undefined : 4}
+        onBack={() => router.back()}
+      />
 
       <View style={styles.body}>
         <View style={styles.head}>
@@ -98,7 +113,11 @@ export default function SaveAddress() {
         ) : null}
 
         <Button
-          label={saving ? copy.common.sending : copy.onboarding.saveAndContinue}
+          label={saving
+            ? copy.common.sending
+            : picked.returnTo
+              ? copy.onboarding.saveLocation
+              : copy.onboarding.saveAndContinue}
           size="lg"
           fullWidth
           disabled={saving || line.trim().length < 4}

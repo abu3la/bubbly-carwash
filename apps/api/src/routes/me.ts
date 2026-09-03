@@ -6,6 +6,74 @@ import { db } from '../db';
 export const meRoute = new Hono<{ Bindings: Env }>();
 meRoute.use('*', requireAuth());
 
+meRoute.get('/', async (c) => {
+  const caller = c.get('caller');
+  const [profile] = await db(c.env, `profiles?id=eq.${caller.id}&select=id,full_name,phone,language,role,created_at`);
+  return c.json({ profile: { ...profile, phone: profile?.phone || caller.phone } });
+});
+
+/* ------------------------------------------------------------ notifications */
+
+meRoute.get('/notifications', async (c) => {
+  const caller = c.get('caller');
+  const rows = await db(
+    c.env,
+    `notifications?profile_id=eq.${caller.id}` +
+      '&select=id,booking_id,kind,title_ar,title_en,body_ar,body_en,data,read_at,created_at' +
+      '&order=created_at.desc&limit=100',
+  );
+  return c.json({ notifications: rows });
+});
+
+meRoute.patch('/notifications/:id/read', async (c) => {
+  const caller = c.get('caller');
+  const [row] = await db(
+    c.env,
+    `notifications?id=eq.${c.req.param('id')}&profile_id=eq.${caller.id}`,
+    { method: 'PATCH', prefer: 'return=representation', body: { read_at: new Date().toISOString() } },
+  );
+  if (!row) return c.json({ error: { code: 'notFound' } }, 404);
+  return c.json({ notification: row });
+});
+
+meRoute.post('/push-token', async (c) => {
+  const caller = c.get('caller');
+  const body = await c.req.json<{ token?: string; app?: string; platform?: string }>();
+  // Native registration token issued by Firebase Messaging. FCM tokens are
+  // opaque and their format is not a public contract, so validate size rather
+  // than rejecting a future valid token by prefix.
+  if (!body.token || body.token.length < 32 || body.token.length > 4096) {
+    return c.json({ error: { code: 'invalidPushToken' } }, 400);
+  }
+  if (!['customer', 'driver'].includes(body.app ?? '') || !['ios', 'android'].includes(body.platform ?? '')) {
+    return c.json({ error: { code: 'invalidPushClient' } }, 400);
+  }
+  const [row] = await db(c.env, 'device_push_tokens?on_conflict=token', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates,return=representation',
+    body: {
+      profile_id: caller.id,
+      token: body.token,
+      app: body.app,
+      platform: body.platform,
+      active: true,
+      updated_at: new Date().toISOString(),
+    },
+  });
+  return c.json({ registered: Boolean(row) });
+});
+
+meRoute.delete('/push-token', async (c) => {
+  const caller = c.get('caller');
+  const body = await c.req.json<{ token?: string }>();
+  if (body.token) {
+    await db(c.env, `device_push_tokens?profile_id=eq.${caller.id}&token=eq.${encodeURIComponent(body.token)}`, {
+      method: 'PATCH', prefer: 'return=minimal', body: { active: false, updated_at: new Date().toISOString() },
+    });
+  }
+  return c.json({ unregistered: true });
+});
+
 /** Saudi Arabia's bounding box, give or take. */
 const IN_SAUDI = (lat: number, lng: number) =>
   lat >= 15.5 && lat <= 32.5 && lng >= 34.0 && lng <= 56.0;
@@ -22,7 +90,7 @@ interface AddressInput {
 }
 
 meRoute.get('/addresses', async (c) => {
-  const rows = await db(c.env, `addresses?profile_id=eq.${c.get('caller').id}&order=created_at.desc`);
+  const rows = await db(c.env, `addresses?profile_id=eq.${c.get('caller').id}&archived_at=is.null&order=created_at.desc`);
   return c.json({ addresses: rows });
 });
 
@@ -51,7 +119,7 @@ meRoute.post('/addresses', async (c) => {
   // first one saved becomes the default because there is nothing to compare it
   // to; later ones only take over if asked. Anything else surprises someone who
   // adds a work address and finds their washes moved there.
-  const existing = await db(c.env, `addresses?profile_id=eq.${caller.id}&select=id`);
+  const existing = await db(c.env, `addresses?profile_id=eq.${caller.id}&archived_at=is.null&select=id`);
   const makeDefault = body.isDefault ?? existing.length === 0;
 
   // The table has a partial unique index on (profile_id) where is_default, so
@@ -82,6 +150,37 @@ meRoute.post('/addresses', async (c) => {
   return c.json({ address: row }, 201);
 });
 
+meRoute.patch('/addresses/:id/default', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const [owned] = await db(c.env, `addresses?id=eq.${id}&profile_id=eq.${caller.id}&archived_at=is.null&select=id`);
+  if (!owned) return c.json({ error: { code: 'notFound' } }, 404);
+  await db(c.env, `addresses?profile_id=eq.${caller.id}&is_default=eq.true`, {
+    method: 'PATCH', prefer: 'return=minimal', body: { is_default: false },
+  });
+  const [address] = await db(c.env, `addresses?id=eq.${id}&profile_id=eq.${caller.id}`, {
+    method: 'PATCH', prefer: 'return=representation', body: { is_default: true },
+  });
+  return c.json({ address });
+});
+
+meRoute.delete('/addresses/:id', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const [owned] = await db<{ id: string; is_default: boolean }>(c.env, `addresses?id=eq.${id}&profile_id=eq.${caller.id}&archived_at=is.null&select=id,is_default`);
+  if (!owned) return c.json({ error: { code: 'notFound' } }, 404);
+  const used = await db(c.env, `bookings?address_id=eq.${id}&status=neq.cancelled&select=id&limit=1`);
+  if (used.length) return c.json({ error: { code: 'addressInUse' } }, 409);
+  await db(c.env, `addresses?id=eq.${id}&profile_id=eq.${caller.id}`, {
+    method: 'PATCH', prefer: 'return=minimal', body: { archived_at: new Date().toISOString(), is_default: false },
+  });
+  if (owned.is_default) {
+    const [next] = await db(c.env, `addresses?profile_id=eq.${caller.id}&archived_at=is.null&select=id&order=created_at.desc&limit=1`);
+    if (next) await db(c.env, `addresses?id=eq.${next.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { is_default: true } });
+  }
+  return c.json({ deleted: true });
+});
+
 /* ------------------------------------------------------------------ vehicles */
 
 interface VehicleInput {
@@ -96,7 +195,7 @@ interface VehicleInput {
 const SIZES = ['sedan', 'suv', 'pickup'] as const;
 
 meRoute.get('/vehicles', async (c) => {
-  const rows = await db(c.env, `vehicles?profile_id=eq.${c.get('caller').id}&order=created_at.desc`);
+  const rows = await db(c.env, `vehicles?profile_id=eq.${c.get('caller').id}&archived_at=is.null&order=created_at.desc`);
   return c.json({ vehicles: rows });
 });
 
@@ -114,7 +213,7 @@ meRoute.post('/vehicles', async (c) => {
 
   const size = SIZES.includes(body.size as never) ? body.size! : 'sedan';
 
-  const existing = await db(c.env, `vehicles?profile_id=eq.${caller.id}&select=id`);
+  const existing = await db(c.env, `vehicles?profile_id=eq.${caller.id}&archived_at=is.null&select=id`);
   const makeDefault = body.isDefault ?? existing.length === 0;
   if (makeDefault && existing.length > 0) {
     await db(c.env, `vehicles?profile_id=eq.${caller.id}&is_default=eq.true`, {
@@ -138,4 +237,35 @@ meRoute.post('/vehicles', async (c) => {
   });
 
   return c.json({ vehicle: row }, 201);
+});
+
+meRoute.patch('/vehicles/:id/default', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const [owned] = await db(c.env, `vehicles?id=eq.${id}&profile_id=eq.${caller.id}&archived_at=is.null&select=id`);
+  if (!owned) return c.json({ error: { code: 'notFound' } }, 404);
+  await db(c.env, `vehicles?profile_id=eq.${caller.id}&is_default=eq.true`, {
+    method: 'PATCH', prefer: 'return=minimal', body: { is_default: false },
+  });
+  const [vehicle] = await db(c.env, `vehicles?id=eq.${id}&profile_id=eq.${caller.id}`, {
+    method: 'PATCH', prefer: 'return=representation', body: { is_default: true },
+  });
+  return c.json({ vehicle });
+});
+
+meRoute.delete('/vehicles/:id', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const [owned] = await db<{ id: string; is_default: boolean }>(c.env, `vehicles?id=eq.${id}&profile_id=eq.${caller.id}&archived_at=is.null&select=id,is_default`);
+  if (!owned) return c.json({ error: { code: 'notFound' } }, 404);
+  const used = await db(c.env, `bookings?vehicle_id=eq.${id}&status=neq.cancelled&select=id&limit=1`);
+  if (used.length) return c.json({ error: { code: 'vehicleInUse' } }, 409);
+  await db(c.env, `vehicles?id=eq.${id}&profile_id=eq.${caller.id}`, {
+    method: 'PATCH', prefer: 'return=minimal', body: { archived_at: new Date().toISOString(), is_default: false },
+  });
+  if (owned.is_default) {
+    const [next] = await db(c.env, `vehicles?profile_id=eq.${caller.id}&archived_at=is.null&select=id&order=created_at.desc&limit=1`);
+    if (next) await db(c.env, `vehicles?id=eq.${next.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { is_default: true } });
+  }
+  return c.json({ deleted: true });
 });

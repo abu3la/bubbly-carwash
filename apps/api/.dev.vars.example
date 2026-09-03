@@ -2,3 +2,7 @@
 # Leave unset to run against the in-memory seeded dataset.
 SUPABASE_URL=""
 SUPABASE_SERVICE_ROLE_KEY=""
+GOOGLE_PLACES_API_KEY=""
+FIREBASE_PROJECT_ID=""
+FIREBASE_CLIENT_EMAIL=""
+FIREBASE_PRIVATE_KEY=""

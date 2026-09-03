@@ -96,7 +96,7 @@ hooksRoute.post('/sms', async (c) => {
   const provider = resolveSmsProvider(c.env);
 
   try {
-    await provider.send({ to: payload.user.phone, body: `رمز سما: ${payload.sms.otp}` });
+    await provider.send({ to: payload.user.phone, body: `رمز BubblesCarWash: ${payload.sms.otp}` });
   } catch (err) {
     console.error('[sms] send failed', err);
     return c.json({ error: { http_code: 502, message: 'sms delivery failed' } }, 502);

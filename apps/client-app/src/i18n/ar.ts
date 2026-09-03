@@ -4,10 +4,10 @@ import type { Copy } from './types';
 /** Arabic — the source copy. The product is written here first, not translated into here. */
 export const ar: Copy = {
   brand: {
-    name: 'سما',
-    latin: 'Sama Car Wash',
+    name: 'BubblesCarWash',
+    latin: 'BubblesCarWash',
     tagline: 'لمعة في وقتها',
-    version: 'Sama Car Wash · الإصدار 1.0 · لمعة في وقتها',
+    version: 'BubblesCarWash · الإصدار 1.0 · لمعة في وقتها',
   },
 
   common: {
@@ -65,14 +65,15 @@ export const ar: Copy = {
 
     signInTitle: 'تسجيل الدخول',
     phoneTitle: 'سجّل دخولك برقم جوالك',
-    phoneSub: 'سنرسل لك رمز تحقق عبر رسالة نصية.',
+    phoneSub: 'نستخدم رقم جوالك للتحقق من هويتك.',
     phonePlaceholder: '5X XXX XXXX',
     sendCode: 'إرسال رمز التحقق',
     terms: 'بالمتابعة أنت توافق على الشروط وسياسة الخصوصية.',
 
     otpTitle: 'رمز التحقق',
     otpHeading: 'أدخل رمز التحقق',
-    otpSentTo: 'أرسلنا الرمز إلى',
+    otpSentTo: 'رمز التحقق للرقم',
+    developmentCodeHint: (code) => `رمز التطوير الحالي: ${isolate(code)}`,
     resendIn: (time) => `إعادة الإرسال خلال ${time}`,
     resendNow: 'يمكنك طلب رمز جديد الآن',
     resend: 'إعادة إرسال الرمز',
@@ -84,10 +85,15 @@ export const ar: Copy = {
     enterManually: 'إدخال العنوان يدويًا',
 
     searchPlaceholder: 'ابحث عن حي أو شارع…',
-    mapNote: 'خريطة توضيحية',
+    mapNote: 'خريطة الموقع',
     servedHere: 'الخدمة متاحة هنا',
+    checkingArea: 'نتحقق…',
+    outsideArea: 'خارج نطاق الخدمة',
+    areaCheckFailed: 'تعذّر التحقق',
     droppedPin: 'الموقع المحدد على الخريطة',
     confirmLocation: 'تأكيد الموقع',
+    useCurrentLocation: 'استخدام موقعي الحالي',
+    currentLocationUnavailable: 'تعذّر الوصول إلى موقعك الحالي. تأكد من السماح بخدمة الموقع.',
 
     addressTitle: 'حفظ العنوان',
     addressHeading: 'احفظ عنوانك',
@@ -98,6 +104,7 @@ export const ar: Copy = {
     accessNotes: 'ملاحظات للوصول (اختياري)',
     accessNotesPlaceholder: 'البوابة الزرقاء، بجوار المسجد',
     saveAndContinue: 'حفظ ومتابعة',
+    saveLocation: 'حفظ الموقع',
     vehicleTitle: 'سيارتك',
     vehicleHeading: 'سجّل سيارتك',
     vehicleSub: 'حتى يتعرّف عليها الفنّي عند وصوله.',
@@ -119,7 +126,7 @@ export const ar: Copy = {
     packagesBalance: (credits, total, expiry) =>
       `رصيدك ${credits} من ${total} غسلات · تنتهي ${expiry}`,
     creditsLeft: (credits) => `${credits} متبقية`,
-    club: 'نادي سما',
+    club: 'Bubbles Club',
     clubTeaser: 'خطتان شهريتان: غسلتان أو ثلاث غسلات',
     clubActive: (plan, renews) => `${plan} · التجديد ${renews}`,
     clubBalance: (plan, credits, leftThisWeek) =>
@@ -179,8 +186,8 @@ export const ar: Copy = {
     sourcePackage: 'من رصيد الباقة',
     sourceCash: 'ادفع الآن',
     cashNote: 'تُدفع الغسلة والإضافات عند الحجز.',
-    clubRemaining: (credits, leftThisWeek) =>
-      `${credits} غسلات في دورتك · تبقّى لك ${leftThisWeek} هذا الأسبوع`,
+    clubRemaining: (weekly, leftThisWeek) =>
+      `تبقّى لك ${leftThisWeek} من ${weekly} غسلات هذا الأسبوع`,
     confirmBooking: 'تأكيد الحجز',
     continueToPayment: 'المتابعة للدفع',
 
@@ -189,8 +196,9 @@ export const ar: Copy = {
 
     processingPayment: 'نعالج الدفع بأمان…',
     processingPaymentSub: 'لا تغلق التطبيق — لن يُخصم المبلغ مرتين.',
+    paymentFailed: 'لم يكتمل الدفع. لم نؤكد الحجز ويمكنك المحاولة مرة أخرى.',
     processingCredit: 'نؤكد حجزك…',
-    processingCreditSub: 'نخصم غسلة من رصيدك.',
+    processingCreditSub: 'نثبت الموعد ضمن غسلات هذا الأسبوع.',
 
     paidTitle: 'تم الدفع، حجزك مؤكد!',
     creditTitle: 'تم الحجز — خُصمت غسلة من رصيدك',
@@ -228,7 +236,7 @@ export const ar: Copy = {
   },
 
   club: {
-    title: 'نادي سما',
+    title: 'Bubbles Club',
     blurb: 'اشتراك شهري — غسلات مجدولة تلقائيًا وأولوية في المواعيد.',
     planLine: (credits, weekly) =>
       `${credits} غسلات شهريًا · حتى ${weekly} في الأسبوع`,
@@ -368,7 +376,7 @@ export const ar: Copy = {
   },
 
   addOns: { wax: 'طبقة واكس حماية', tires: 'لمعة إطارات' },
-  plans: { basic: 'أساسي', plus: 'سوبر ووش', max: 'ماكس' },
+  plans: { basic: 'أساسي', 'basic-3': 'أساسي', plus: 'سوبر ووش', 'plus-3': 'سوبر ووش' },
   packageLabel: { 3: 'باقة 3 غسلات', 5: 'باقة 5 غسلات', 10: 'باقة 10 غسلات' },
 
   beats: {
@@ -383,10 +391,10 @@ export const ar: Copy = {
   customerInitial: 'ف',
   vehicleName: 'لكزس LX — أبيض',
   addressLabel: 'المنزل',
-  addressLine: 'فيلا 12، شارع الياسمين',
-  addressDistrict: 'حي النخيل، الرياض',
-  addressFull: 'فيلا 12، شارع الياسمين، حي النخيل، الرياض',
-  addressShort: 'حي النخيل',
+  addressLine: 'منزل 12، شارع إبراهيم الجفالي',
+  addressDistrict: 'حي العوالي، مكة المكرمة',
+  addressFull: 'منزل 12، شارع إبراهيم الجفالي، حي العوالي، مكة المكرمة',
+  addressShort: 'حي العوالي',
   days: ['اليوم الاثنين', 'غدًا الثلاثاء', 'الأربعاء 12', 'الخميس 13'],
   pastServices: {
     'BK-4821': 'غسلة خارجية',

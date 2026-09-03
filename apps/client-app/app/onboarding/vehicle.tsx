@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
 import { Button, Input, Screen, Tag, Txt } from '@sama/ui-native';
 import { useCopy } from '../../src/i18n';
@@ -8,12 +8,15 @@ import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { ApiError, saveVehicle } from '../../src/api';
 import { useSession } from '../../src/session';
+import { useCustomerData } from '../../src/customerData';
 
 const SIZES = ['sedan', 'suv', 'pickup'] as const;
 
 export default function RegisterVehicle() {
   const router = useRouter();
   const session = useSession();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const { refresh } = useCustomerData();
   const copy = useCopy();
 
   const [make, setMake] = useState('');
@@ -33,6 +36,11 @@ export default function RegisterVehicle() {
     setSaving(true);
     try {
       await saveVehicle({ make, model, color, plate, size: SIZES[size] });
+      await refresh();
+      if (returnTo === 'booking' || returnTo === 'vehicles') {
+        router.replace(returnTo === 'booking' ? '/book/vehicle' : '/account/vehicles');
+        return;
+      }
       session.completeOnboarding();
       router.replace('/(tabs)/home');
     } catch (e) {

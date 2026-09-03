@@ -50,7 +50,7 @@ export const PACKAGES: Package[] = [
 // ------------------------------------------------------------------- club
 
 export interface Plan {
-  id: 'basic' | 'plus' | 'max';
+  id: 'basic' | 'basic-3' | 'plus' | 'plus-3';
   price: number;
   /** Washes granted each cycle. */
   credits: number;
@@ -62,8 +62,10 @@ export interface Plan {
 }
 
 export const PLANS: Plan[] = [
-  { id: 'basic', price: 199, credits: 2, weekly: 1, roll: 0 },
-  { id: 'plus', price: 299, credits: 3, weekly: 2, roll: 0, best: true },
+  { id: 'basic', price: 199, credits: 2, weekly: 2, roll: 0 },
+  { id: 'basic-3', price: 269, credits: 3, weekly: 3, roll: 0 },
+  { id: 'plus', price: 299, credits: 2, weekly: 2, roll: 0 },
+  { id: 'plus-3', price: 399, credits: 3, weekly: 3, roll: 0, best: true },
 ];
 
 
@@ -84,8 +86,8 @@ export const SLOTS: Slot[] = [
   { time: '18:00–22:00', period: 'night' },
 ];
 
-/** The address shown in the trial is in Team 1's Riyadh coverage area. */
-export const BOOKING_LOCATION = { lat: 24.735, lng: 46.668 } as const;
+/** The address shown in the trial is in Team 1's Makkah coverage area. */
+export const BOOKING_LOCATION = { lat: 21.4373, lng: 39.8155 } as const;
 
 // ------------------------------------------------------------------- user
 

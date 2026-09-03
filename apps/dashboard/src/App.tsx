@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { auth, token } from './api';
+import { admin, auth, token } from './api';
 
 function Beats() {
   return (
@@ -30,7 +30,7 @@ function Gate({ onIn }: { onIn: () => void }) {
 
   const send = async () => {
     setErr(null); setBusy(true);
-    try { await auth.requestOtp(e164); setSent(true); }
+    try { const result = await auth.requestOtp(e164); setCode(result.developmentCode ?? ''); setSent(true); }
     catch { setErr('تعذّر إرسال الرمز. تأكد من الرقم.'); }
     finally { setBusy(false); }
   };
@@ -40,8 +40,9 @@ function Gate({ onIn }: { onIn: () => void }) {
     try {
       const r = await auth.verify(e164, code);
       token.set(r.accessToken);
+      await admin.bookings();
       onIn();
-    } catch { setErr('الرمز غير صحيح أو انتهت صلاحيته.'); }
+    } catch { token.clear(); setErr('تعذّر الدخول. تأكد أن الحساب بصلاحية مدير وأن الرمز صحيح.'); }
     finally { setBusy(false); }
   };
 
@@ -49,7 +50,7 @@ function Gate({ onIn }: { onIn: () => void }) {
     <div className="gate">
       <div className="gate-card">
         <Beats />
-        <h1>لوحة تحكم سما</h1>
+        <h1>لوحة BubblesCarWash</h1>
         <p>{sent ? 'أدخل الرمز المرسل إلى جوالك.' : 'سجّل دخولك برقم جوالك.'}</p>
 
         {!sent ? (
@@ -71,11 +72,11 @@ function Gate({ onIn }: { onIn: () => void }) {
           <>
             <input
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000"
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              placeholder="1111"
               inputMode="numeric"
             />
-            <button onClick={verify} disabled={busy || code.length < 6}>
+            <button onClick={verify} disabled={busy || code.length < 4}>
               {busy ? 'جارٍ التحقق…' : 'دخول'}
             </button>
             <button className="ghost" onClick={() => { setSent(false); setCode(''); }}>
@@ -101,14 +102,17 @@ export function App() {
       <aside className="rail">
         <div className="brand">
           <Beats />
-          سما
+          BubblesCarWash
         </div>
         <nav>
           <NavLink to="/" end>الباقات</NavLink>
           <NavLink to="/plans">اشتراكات النادي</NavLink>
           <NavLink to="/services">الخدمات</NavLink>
           <NavLink to="/bookings">الحجوزات</NavLink>
+          <NavLink to="/dispatch">توزيع الحجوزات</NavLink>
           <NavLink to="/teams">فرق التشغيل</NavLink>
+          <NavLink to="/drivers">السائقون</NavLink>
+          <NavLink to="/operations">مركز التشغيل</NavLink>
         </nav>
         <div className="foot">
           لوحة التشغيل

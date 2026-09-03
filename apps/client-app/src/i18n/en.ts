@@ -10,10 +10,10 @@ import type { Copy } from './types';
  */
 export const en: Copy = {
   brand: {
-    name: 'Sama',
-    latin: 'Sama Car Wash',
+    name: 'BubblesCarWash',
+    latin: 'BubblesCarWash',
     tagline: 'A shine, right on time',
-    version: 'Sama Car Wash · Version 1.0 · A shine, right on time',
+    version: 'BubblesCarWash · Version 1.0 · A shine, right on time',
   },
 
   common: {
@@ -71,14 +71,15 @@ export const en: Copy = {
 
     signInTitle: 'Sign in',
     phoneTitle: 'Sign in with your mobile number',
-    phoneSub: 'We’ll text you a verification code.',
+    phoneSub: 'We use your mobile number to verify your identity.',
     phonePlaceholder: '5X XXX XXXX',
     sendCode: 'Send code',
     terms: 'By continuing you agree to the Terms and Privacy Policy.',
 
     otpTitle: 'Verification',
     otpHeading: 'Enter your code',
-    otpSentTo: 'We sent it to',
+    otpSentTo: 'Verification code for',
+    developmentCodeHint: (code) => `Current development code: ${code}`,
     resendIn: (time) => `Resend in ${time}`,
     resendNow: 'You can request a new code now',
     resend: 'Resend code',
@@ -91,10 +92,15 @@ export const en: Copy = {
     enterManually: 'Enter address manually',
 
     searchPlaceholder: 'Search for a district or street…',
-    mapNote: 'Illustrative map',
+    mapNote: 'Location map',
     servedHere: 'We serve this area',
+    checkingArea: 'Checking…',
+    outsideArea: 'Outside service area',
+    areaCheckFailed: 'Check unavailable',
     droppedPin: 'Dropped pin',
     confirmLocation: 'Confirm location',
+    useCurrentLocation: 'Use my current location',
+    currentLocationUnavailable: 'We could not access your current location. Check location permission and try again.',
 
     addressTitle: 'Save address',
     addressHeading: 'Save your address',
@@ -105,6 +111,7 @@ export const en: Copy = {
     accessNotes: 'Access notes (optional)',
     accessNotesPlaceholder: 'Blue gate, next to the mosque',
     saveAndContinue: 'Save and continue',
+    saveLocation: 'Save location',
     vehicleTitle: 'Your car',
     vehicleHeading: 'Register your car',
     vehicleSub: 'So the technician recognises it when they arrive.',
@@ -126,7 +133,7 @@ export const en: Copy = {
     packagesBalance: (credits, total, expiry) =>
       `${credits} of ${total} washes left · expires ${expiry}`,
     creditsLeft: (credits) => `${credits} left`,
-    club: 'Sama Club',
+    club: 'Bubbles Club',
     clubTeaser: 'Two monthly plans: two or three washes',
     clubActive: (plan, renews) => `${plan} · renews ${renews}`,
     clubBalance: (plan, credits, leftThisWeek) =>
@@ -186,8 +193,8 @@ export const en: Copy = {
     sourcePackage: 'Use a package credit',
     sourceCash: 'Pay now',
     cashNote: 'The wash and any extras are paid at booking.',
-    clubRemaining: (credits, leftThisWeek) =>
-      `${credits} washes this cycle · ${leftThisWeek} left this week`,
+    clubRemaining: (weekly, leftThisWeek) =>
+      `${leftThisWeek} of ${weekly} washes remain this week`,
     confirmBooking: 'Confirm booking',
     continueToPayment: 'Continue to payment',
 
@@ -196,8 +203,9 @@ export const en: Copy = {
 
     processingPayment: 'Processing your payment…',
     processingPaymentSub: 'Don’t close the app — you won’t be charged twice.',
+    paymentFailed: 'Payment was not completed. The booking was not confirmed and you can try again.',
     processingCredit: 'Confirming your booking…',
-    processingCreditSub: 'Using one wash from your balance.',
+    processingCreditSub: 'Adding this appointment to your weekly washes.',
 
     paidTitle: 'Paid — your booking is confirmed',
     creditTitle: 'Booked — one wash used from your balance',
@@ -235,7 +243,7 @@ export const en: Copy = {
   },
 
   club: {
-    title: 'Sama Club',
+    title: 'Bubbles Club',
     blurb: 'A monthly membership — washes scheduled automatically, and priority on slots.',
     planLine: (credits, weekly) =>
       `${credits} washes a month · up to ${weekly} a week`,
@@ -376,7 +384,7 @@ export const en: Copy = {
   },
 
   addOns: { wax: 'Protective wax layer', tires: 'Tyre shine' },
-  plans: { basic: 'Basic', plus: 'Super Wash', max: 'Max' },
+  plans: { basic: 'Basic', 'basic-3': 'Basic', plus: 'Super Wash', 'plus-3': 'Super Wash' },
   packageLabel: { 3: '3-wash package', 5: '5-wash package', 10: '10-wash package' },
 
   beats: {
@@ -391,10 +399,10 @@ export const en: Copy = {
   customerInitial: 'F',
   vehicleName: 'Lexus LX — White',
   addressLabel: 'Home',
-  addressLine: 'Villa 12, Al Yasmin Street',
-  addressDistrict: 'Al Nakheel, Riyadh',
-  addressFull: 'Villa 12, Al Yasmin Street, Al Nakheel, Riyadh',
-  addressShort: 'Al Nakheel',
+  addressLine: 'Home 12, Ibrahim Al Juffali Street',
+  addressDistrict: 'Al Awali, Makkah',
+  addressFull: 'Home 12, Ibrahim Al Juffali Street, Al Awali, Makkah',
+  addressShort: 'Al Awali',
   days: ['Today, Monday', 'Tomorrow, Tuesday', 'Wednesday 12', 'Thursday 13'],
   pastServices: {
     'BK-4821': 'Exterior wash',
