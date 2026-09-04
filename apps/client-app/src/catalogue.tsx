@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { fetchCatalogue, type Catalogue } from './api';
 
 /**
@@ -8,32 +8,50 @@ import { fetchCatalogue, type Catalogue } from './api';
  * a package and the app would keep quoting the old figure until someone shipped
  * a build. This fetches the real one.
  *
- * `content.ts` is still the fallback: if the network is down the app shows the
- * prices it shipped with rather than an empty screen. They can be stale, which
- * is why anything that actually charges money is priced by the server at
- * booking time, never by whatever the app happens to be displaying.
+ * We never substitute bundled prices. If the request fails, purchase screens
+ * stop and offer a retry so the amount shown always matches the server.
  */
-const CatalogueContext = createContext<Catalogue | null>(null);
+interface CatalogueState {
+  catalogue: Catalogue | null;
+  loading: boolean;
+  error: boolean;
+  reload: () => Promise<void>;
+}
+
+const CatalogueContext = createContext<CatalogueState | null>(null);
 
 export function CatalogueProvider({ children }: { children: ReactNode }) {
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
-    fetchCatalogue()
-      .then((c) => alive && setCatalogue(c))
-      // Deliberately silent: falling back to the bundled list is a normal
-      // outcome offline, not an error worth interrupting anyone over.
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      setCatalogue(await fetchCatalogue());
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return <CatalogueContext.Provider value={catalogue}>{children}</CatalogueContext.Provider>;
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const value = useMemo(() => ({ catalogue, loading, error, reload }), [catalogue, loading, error, reload]);
+  return <CatalogueContext.Provider value={value}>{children}</CatalogueContext.Provider>;
 }
 
-/** Null until the first fetch lands — callers fall back to bundled content. */
+/** Null until the live catalogue is available. */
 export function useCatalogue(): Catalogue | null {
-  return useContext(CatalogueContext);
+  return useCatalogueStatus().catalogue;
+}
+
+export function useCatalogueStatus(): CatalogueState {
+  const value = useContext(CatalogueContext);
+  if (!value) throw new Error('useCatalogueStatus must be inside CatalogueProvider');
+  return value;
 }

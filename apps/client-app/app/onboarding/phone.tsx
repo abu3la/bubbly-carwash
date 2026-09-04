@@ -20,7 +20,7 @@ export default function Phone() {
 
   return (
     <Screen contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.signInTitle} step={1} steps={4} onBack={() => router.back()} />
+      <FlowHeader title={copy.onboarding.signInTitle} step={1} steps={5} onBack={() => router.back()} />
 
       <View style={styles.body}>
         <View style={styles.head}>

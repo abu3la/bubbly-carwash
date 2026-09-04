@@ -40,7 +40,7 @@ export function Teams() {
       <div className="ops-summary" aria-label="ملخص التشغيل">
         <strong>{rows.filter((team) => team.active).length}</strong>
         <span>فريق نشط من أصل {rows.length}</span>
-        <span>الحد اليومي للفريق النشط: 40 حجزًا</span>
+        <span>السعة القصوى لكل فريق: 40 حجزًا يوميًا</span>
       </div>
 
       <div className="sheet">
@@ -84,8 +84,8 @@ export function Teams() {
                   </td>
                 ))}
                 <td>
-                  <button className={team.active ? 'state active' : 'state'} onClick={() => patch(team.id, { active: !team.active })}>
-                    {team.active ? 'نشط الآن' : 'تفعيل هذا الفريق'}
+                  <button className={team.active ? 'state active' : 'state'} disabled={team.active} onClick={() => patch(team.id, { active: true })}>
+                    {team.active ? 'نشط الآن' : 'نقل التشغيل لهذا الفريق'}
                   </button>
                   {saved === team.id ? <span className="saved">تم الحفظ</span> : null}
                 </td>

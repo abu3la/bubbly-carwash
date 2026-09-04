@@ -15,7 +15,6 @@ export default function ClubDashboard() {
   const [busy, setBusy] = useState(false);
   const ar = language === 'ar';
   if (!membership) return <Redirect href="/club" />;
-  const remaining = Math.max(0, membership.plans.weekly - membership.usedThisWeek);
   const renewal = new Intl.DateTimeFormat(ar ? 'ar-SA-u-ca-gregory' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(membership.cycle_end));
 
   return (
@@ -27,8 +26,8 @@ export default function ClubDashboard() {
           <Txt variant="small" tone="inverseSoft">{ar ? `${membership.plans.weekly} غسلات أسبوعيًا، بلا ترحيل` : `${membership.plans.weekly} weekly washes, no rollover`}</Txt>
           <View style={styles.usage}>
             <View>
-              <Num variant="display" weight="bold" tone="inverse">{remaining}</Num>
-              <Txt variant="caption" tone="inverseSoft">{ar ? 'مواعيد متاحة هذا الأسبوع' : 'appointments available this week'}</Txt>
+              <Num variant="display" weight="bold" tone="inverse">{membership.usedThisWeek}</Num>
+              <Txt variant="caption" tone="inverseSoft">{ar ? 'مواعيد مجدولة هذا الأسبوع' : 'appointments scheduled this week'}</Txt>
             </View>
             <Num variant="small" tone="inverseSoft">{membership.usedThisWeek}/{membership.plans.weekly}</Num>
           </View>
@@ -38,8 +37,7 @@ export default function ClubDashboard() {
           <Txt variant="small" tone="secondary">{ar ? 'كل موعد مرتبط بأسبوعه. إذا فات الموعد لا يتحول إلى رصيد ولا ينتقل للأسبوع التالي.' : 'Every appointment belongs to its week. A missed wash never becomes credit and never rolls over.'}</Txt>
           <Txt variant="caption" tone="muted">{ar ? `نهاية الدورة الحالية: ${renewal}` : `Current cycle ends: ${renewal}`}</Txt>
         </Card>
-        <Button label={ar ? 'حجز غسلة من الاشتراك' : 'Book a subscription wash'} size="lg" fullWidth disabled={remaining === 0} onPress={() => router.replace('/book/service')} />
-        <Button label={ar ? 'عرض مواعيدي' : 'View my appointments'} variant="secondary" fullWidth onPress={() => router.replace('/(tabs)/bookings')} />
+        <Button label={ar ? 'عرض جدول غسيلاتي' : 'View my wash schedule'} size="lg" fullWidth onPress={() => router.replace('/(tabs)/bookings')} />
         <Button label={ar ? 'إلغاء الاشتراك' : 'Cancel subscription'} variant="ghost" fullWidth onPress={() => setConfirmCancel(true)} />
       </View>
       <Dialog

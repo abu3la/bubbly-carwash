@@ -5,10 +5,9 @@ import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import { Button, Card, Num, Screen, Txt, useLocale } from '@sama/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel, TickRow } from '../../src/components/Bits';
-import { SERVICES } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
-import { useCatalogue } from '../../src/catalogue';
+import { useCatalogueStatus } from '../../src/catalogue';
 import type { Service } from '../../src/content';
 import { useCustomerData } from '../../src/customerData';
 
@@ -17,7 +16,7 @@ export default function ChooseService() {
   const router = useRouter();
   const draft = useBookingDraft();
   const copy = useCopy();
-  const catalogue = useCatalogue();
+  const { catalogue, loading, error, reload } = useCatalogueStatus();
   const { membership } = useCustomerData();
   const { language } = useLocale();
   const selected = copy.services[draft.serviceKey];
@@ -32,17 +31,15 @@ export default function ChooseService() {
         price: option.priceMinor / 100,
         minutes: option.minutes,
       }))
-    : SERVICES.map((option) => ({
-      ...option,
-      name: copy.services[option.key].name,
-      blurb: copy.services[option.key].blurb,
-    }));
+    : [];
 
   return (
     <Screen scroll contentStyle={styles.page}>
       <FlowHeader title={copy.booking.chooseService} step={1} steps={5} onBack={() => router.back()} />
 
       <View style={styles.body}>
+        {loading ? <Txt variant="small" tone="secondary" center>{language === 'ar' ? 'جارٍ تحميل الخدمات والأسعار…' : 'Loading services and prices…'}</Txt> : null}
+        {error ? <Button label={language === 'ar' ? 'إعادة تحميل الأسعار' : 'Retry prices'} variant="secondary" fullWidth onPress={() => void reload()} /> : null}
         <View style={styles.services}>
           {services.map((option) => (
             <Card
@@ -80,7 +77,7 @@ export default function ChooseService() {
           </Card>
         </View>
 
-        <Button label={copy.booking.continueBooking} size="lg" fullWidth onPress={() => router.push('/book/vehicle')} />
+        <Button label={copy.booking.continueBooking} size="lg" fullWidth disabled={loading || error || services.length === 0} onPress={() => router.push('/book/vehicle')} />
       </View>
     </Screen>
   );

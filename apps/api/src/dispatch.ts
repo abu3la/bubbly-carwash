@@ -2,16 +2,6 @@ import { db } from './db';
 import type { Env } from './env';
 import { notify } from './notifications';
 
-export const ASSIGNMENT_FAILURES = new Set([
-  'bookingNotFound',
-  'bookingNotAssignable',
-  'bookingHasNoTeam',
-  'notATechnician',
-  'technicianNotInTeam',
-  'outsideDriverShift',
-  'technicianBusy',
-]);
-
 interface AssignedBooking {
   id: string;
   ref: string;
@@ -21,48 +11,6 @@ interface AssignedBooking {
   scheduled_at: string;
   ends_at: string;
   status: string;
-}
-
-export function assignmentFailure(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return [...ASSIGNMENT_FAILURES].find((code) => message.includes(code)) ?? null;
-}
-
-export async function assignBooking(
-  env: Env,
-  bookingId: string,
-  technicianId: string,
-  actorId: string,
-) {
-  const [before] = await db<AssignedBooking>(
-    env,
-    `bookings?id=eq.${bookingId}&select=id,ref,profile_id,technician_id,team_id,scheduled_at,ends_at,status`,
-  );
-  if (!before) throw new Error('bookingNotFound');
-
-  const [booking] = await db<AssignedBooking>(env, 'rpc/assign_booking_to_technician', {
-    method: 'POST',
-    body: { p_booking: bookingId, p_technician: technicianId, p_actor: actorId },
-  });
-
-  if (before.technician_id !== technicianId) {
-    const when = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'Asia/Riyadh',
-    }).format(new Date(booking.scheduled_at));
-    await notify(env, {
-      profileId: technicianId,
-      bookingId,
-      kind: 'job_assigned',
-      titleAr: 'مهمة جديدة',
-      titleEn: 'New job',
-      bodyAr: `${booking.ref} في ${when}`,
-      bodyEn: `${booking.ref} has been assigned to you`,
-      data: { route: `/job/${bookingId}` },
-    });
-  }
-  return booking;
 }
 
 /** Notify every available member of the team selected by location/capacity. */

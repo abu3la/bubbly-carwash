@@ -41,7 +41,7 @@ export default function MapStep() {
   const { theme } = useUnistyles();
   const { language, isRTL } = useLocale();
   const router = useRouter();
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const { returnTo, skipCurrent } = useLocalSearchParams<{ returnTo?: string; skipCurrent?: string }>();
   const copy = useCopy();
   const toast = useToast();
   const map = useRef<MapView>(null);
@@ -84,7 +84,7 @@ export default function MapStep() {
   // normal outcome, not an error state.
   useEffect(() => {
     (async () => {
-      const pos = (await currentPosition()) ?? FALLBACK;
+      const pos = skipCurrent === '1' ? FALLBACK : (await currentPosition()) ?? FALLBACK;
       map.current?.animateToRegion(
         { latitude: pos.lat, longitude: pos.lng, latitudeDelta: SPAN, longitudeDelta: SPAN },
         600,
@@ -95,7 +95,7 @@ export default function MapStep() {
       inspection.current += 1;
       if (settle.current) clearTimeout(settle.current);
     };
-  }, [inspect]);
+  }, [inspect, skipCurrent]);
 
   // Suggestions are intentionally delayed: a request on every keystroke is
   // noisy for the customer and needlessly billable. Results are Saudi-only in

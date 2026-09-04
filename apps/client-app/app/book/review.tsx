@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { BookingTicket, Button, Card, Checkbox, Radio, Screen, Tooltip, Txt } from '@sama/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { LedgerRow, SectionLabel } from '../../src/components/Bits';
-import { ADD_ONS, SERVICES, type AddOn } from '../../src/content';
+import { type AddOn } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
 import { useCustomerData } from '../../src/customerData';
@@ -22,13 +22,13 @@ export default function Review() {
   const liveService = catalogue?.services.find((item) => item.key === draft.serviceKey);
   const service = {
     name: liveService?.name[language] ?? copy.services[draft.serviceKey].name,
-    price: (liveService?.priceMinor ?? (SERVICES.find((item) => item.key === draft.serviceKey)?.price ?? 40) * 100) / 100,
+    price: (liveService?.priceMinor ?? 0) / 100,
   };
   const addOns = catalogue?.addOns.map((item) => ({
     key: item.key as AddOn['key'],
     price: item.priceMinor / 100,
     name: item.name[language],
-  })) ?? ADD_ONS.map((item) => ({ ...item, name: copy.addOns[item.key] }));
+  })) ?? [];
   const chosenAddOns = addOns.filter((a) => draft.addOnKeys.includes(a.key));
   const includedService = membership?.plan_id.startsWith('plus') ? 'full' : 'exterior';
   const sameService = Boolean(membership && draft.serviceKey === includedService);
@@ -73,9 +73,7 @@ export default function Review() {
           </Card>
         </View>
 
-        {/* One list rather than a toggle: a member can hold a club membership
-            AND a package balance, and "credit or not" cannot express that. The
-            list is ordered best-value-first and opens on the first entry. */}
+        {/* Keep the real membership and direct-payment choices explicit. */}
         {sources.length > 1 ? (
           <View>
             <SectionLabel>{copy.booking.paySourceSection}</SectionLabel>

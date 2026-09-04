@@ -9,125 +9,29 @@
 
 export interface Service {
   key: 'exterior' | 'full';
-  price: number;
-  minutes: number;
 }
-
-export const SERVICES: Service[] = [
-  { key: 'exterior', price: 40, minutes: 45 },
-];
 
 export interface AddOn {
   key: 'wax' | 'tires';
-  price: number;
 }
 
-export const ADD_ONS: AddOn[] = [
-  { key: 'wax', price: 20 },
-  { key: 'tires', price: 10 },
-];
-
-// ---------------------------------------------------------------- packages
-
+/** Kept only to type translations for retired package deep links. */
 export interface Package {
-  id: number;
-  washes: number;
-  price: number;
-  /** Price per wash once the package is used up. */
-  per: number;
-  save: string;
-  best?: boolean;
+  id: 3 | 5 | 10;
 }
-
-export const PACKAGES: Package[] = [
-  { id: 3, washes: 3, price: 139, per: 46, save: '5%' },
-  { id: 5, washes: 5, price: 219, per: 44, save: '12%', best: true },
-  { id: 10, washes: 10, price: 399, per: 40, save: '18%' },
-];
-
-
 
 // ------------------------------------------------------------------- club
 
 export interface Plan {
   id: 'basic' | 'basic-3' | 'plus' | 'plus-3';
-  price: number;
-  /** Washes granted each cycle. */
-  credits: number;
-  /** How many may be used per week. */
-  weekly: number;
-  /** How many unused washes roll into the next cycle. */
-  roll: number;
-  best?: boolean;
 }
-
-export const PLANS: Plan[] = [
-  { id: 'basic', price: 199, credits: 2, weekly: 2, roll: 0 },
-  { id: 'basic-3', price: 269, credits: 3, weekly: 3, roll: 0 },
-  { id: 'plus', price: 299, credits: 2, weekly: 2, roll: 0 },
-  { id: 'plus-3', price: 399, credits: 3, weekly: 3, roll: 0, best: true },
-];
 
 
 // ------------------------------------------------------------- scheduling
 
 export interface Slot {
-  time: string;
   period: 'morning' | 'afternoon' | 'night';
-  /** Slots the design marks as taken — the app only offers what is real. */
-  taken?: boolean;
-  /** Reserved for club members, who are promised priority on peak slots. */
-  priority?: boolean;
 }
-
-export const SLOTS: Slot[] = [
-  { time: '08:00–12:00', period: 'morning' },
-  { time: '13:00–17:00', period: 'afternoon' },
-  { time: '18:00–22:00', period: 'night' },
-];
-
-/** The address shown in the trial is in Team 1's Makkah coverage area. */
-export const BOOKING_LOCATION = { lat: 21.4373, lng: 39.8155 } as const;
-
-// ------------------------------------------------------------------- user
-
-/** Identifiers, not copy — these read the same in both languages. */
-export const CUSTOMER = { phone: '+966 55 123 4567', memberNo: 'Nº 10100' } as const;
-export const VEHICLE = { plate: '8241', plateLetters: 'د ح ب' } as const;
-
-// --------------------------------------------------------------- pipeline
-
-export interface BeatStep {
-  key: 'arrived' | 'washed' | 'verified';
-  time: string;
-}
-
-export const BEAT_STEPS: BeatStep[] = [
-  { key: 'arrived', time: '10:31' },
-  { key: 'washed', time: '10:52' },
-  { key: 'verified', time: '10:58' },
-];
-
-// --------------------------------------------------------------- payment
-
-export interface PayMethod {
-  key: 'mada' | 'visa' | 'apple';
-}
-
-export const PAY_METHODS: PayMethod[] = [{ key: 'mada' }, { key: 'visa' }, { key: 'apple' }];
-
-// --------------------------------------------------------------- history
-
-export interface PastWash {
-  id: string;
-  slot: string;
-  rating: number;
-}
-
-export const PAST_WASHES: PastWash[] = [
-  { id: 'BK-4821', slot: '09:00–09:30', rating: 5 },
-  { id: 'BK-4770', slot: '16:00–16:30', rating: 4 },
-];
 
 // -------------------------------------------------------------- promises
 

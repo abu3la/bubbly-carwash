@@ -10,7 +10,7 @@ export default function Permission() {
   const router = useRouter();
   const copy = useCopy();
   const openMap = () => router.push('/onboarding/map');
-  const enterManually = () => router.push('/onboarding/address');
+  const chooseOnMap = () => router.push({ pathname: '/onboarding/map', params: { skipCurrent: '1' } });
 
   return (
     <Screen contentStyle={styles.screen}>
@@ -37,7 +37,7 @@ export default function Permission() {
           label={copy.onboarding.enterManually}
           variant="ghost"
           fullWidth
-          onPress={enterManually}
+          onPress={chooseOnMap}
         />
       </View>
     </Screen>

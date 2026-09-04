@@ -1,4 +1,4 @@
-import { loadSession } from './auth';
+import { clearSession, loadSession, refreshSession } from './auth';
 
 /**
  * The API, which is the only thing this app talks to.
@@ -17,11 +17,11 @@ export class ApiError extends Error {
 
 interface ErrorPayload { error?: { code?: string } }
 
-async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function authorizedFetch(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
   const session = await loadSession();
-  let res: Response;
+  let response: Response;
   try {
-    res = await fetch(`${API}${path}`, {
+    response = await fetch(`${API}${path}`, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
@@ -32,6 +32,19 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch {
     throw new ApiError('offline');
   }
+  if (response.status === 401 && retry && session?.refreshToken) {
+    try {
+      await refreshSession(session);
+      return authorizedFetch(path, init, false);
+    } catch {
+      await clearSession();
+    }
+  }
+  return response;
+}
+
+async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await authorizedFetch(path, init);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
   return json as T;
@@ -107,18 +120,10 @@ export interface Profile {
   role: 'customer' | 'driver' | 'admin';
 }
 export const fetchMe = (): Promise<{ profile: Profile }> => call('/me');
+export const updateProfile = (fullName: string, language: 'ar' | 'en'): Promise<{ profile: Profile }> =>
+  call('/me', { method: 'PATCH', body: JSON.stringify({ fullName, language }) });
 
 /* ---------------------------------------------------------------- catalogue */
-
-export interface CataloguePackage {
-  id: number;
-  washes: number;
-  priceMinor: number;
-  perMinor: number;
-  savePct: number;
-  validDays: number;
-  best: boolean;
-}
 
 export interface Catalogue {
   services: Array<{
@@ -129,7 +134,6 @@ export interface Catalogue {
     minutes: number;
   }>;
   addOns: Array<{ key: string; name: { ar: string; en: string }; priceMinor: number }>;
-  packages: CataloguePackage[];
   plans: Array<{
     id: string;
     name: { ar: string; en: string };

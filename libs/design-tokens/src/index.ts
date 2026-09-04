@@ -13,3 +13,5 @@ export {
 export { shadow, border, focusRing } from './effects';
 export { duration, easing, easingPoints, spring } from './motion';
 export { fontFamily, nativeFont } from './type';
+export { cssVariables, themeCss } from './webCss';
+export { waterlinePath, waterlineFillPath } from './waterline';

@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * The technician's app talks to the same Worker as everything else. What it may
- * see is decided server-side by `profiles.role`, not by which app is asking —
- * so a customer signing in here reaches nothing.
+ * see is decided server-side by `profiles.role` and team membership, not by
+ * which app is asking. Unclaimed team jobs are intentionally redacted until a
+ * technician claims one; a customer signing in here reaches nothing.
  */
 const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://sama-api-dev.taz2886.workers.dev';
 const SESSION_KEY = 'sama.driver.session';
@@ -41,13 +42,18 @@ export class ApiError extends Error {
 interface ErrorPayload { error?: { code?: ErrorCode } }
 interface VerifyPayload {
   accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
   user?: { id?: string; phone?: string };
 }
 
 export interface Session {
   accessToken: string;
+  refreshToken: string;
   userId: string;
   phone: string;
+  /** Epoch seconds. */
+  expiresAt: number;
 }
 
 export type Stage = 'booked' | 'arrived' | 'washed' | 'verified';
@@ -65,15 +71,15 @@ export interface Job {
   technician_id: string | null;
   team_id: string;
   customers: { full_name: string; phone: string } | null;
-  vehicles: { make: string; model: string; color: string; plate: string; size: string } | null;
+  vehicles: { make: string; model: string; color: string; plate: string | null; size: string } | null;
   addresses: {
-    label: string;
+    label: string | null;
     line: string;
     district: string;
     city: string;
     lat: number | null;
     lng: number | null;
-    notes: string;
+    notes: string | null;
   } | null;
   booking_add_ons: Array<{ add_on_key: string }>;
   booking_media: Array<{
@@ -87,28 +93,80 @@ export interface Job {
   }>;
 }
 
-async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const session = await loadSession();
+async function authPost<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError('offline');
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
+  }
+  return json as T;
+}
+
+function fromPayload(payload: VerifyPayload, fallback?: Session): Session {
+  return {
+    accessToken: payload.accessToken,
+    refreshToken: payload.refreshToken,
+    userId: payload.user?.id ?? fallback?.userId ?? '',
+    phone: payload.user?.phone ?? fallback?.phone ?? '',
+    expiresAt: Math.floor(Date.now() / 1000) + (payload.expiresIn ?? 3600),
+  };
+}
+
+async function refreshSession(stored: Session) {
+  const refreshed = fromPayload(
+    await authPost<VerifyPayload>('/auth/refresh', { refreshToken: stored.refreshToken }),
+    stored,
+  );
+  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
+  return refreshed;
+}
+
+async function authorizedFetch(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
+  const session = await loadSession();
+  let response: Response;
+  try {
+    response = await fetch(`${API}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
         ...(session ? { Authorization: `Bearer ${session.accessToken}` } : {}),
         ...init.headers,
       },
     });
   } catch {
-    // A technician is often on mobile data in a compound basement. Offline is a
-    // normal condition here, not an exception.
+    // A technician is often on mobile data in a compound basement. Offline is
+    // a normal condition here, not an exceptional crash.
     throw new ApiError('offline');
   }
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    // 403 means signed in but not staff — worth its own message, since the
-    // fix is "you have the wrong app", not "try again".
-    if (res.status === 403) throw new ApiError('notATechnician');
+  if (response.status === 401 && retry && session?.refreshToken) {
+    try {
+      await refreshSession(session);
+      return authorizedFetch(path, init, false);
+    } catch {
+      await AsyncStorage.removeItem(SESSION_KEY).catch(() => undefined);
+    }
+  }
+  return response;
+}
+
+async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await authorizedFetch(path, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...init.headers },
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    // 403 means signed in but not staff. The fix is using the right app, not
+    // repeatedly entering the same code.
+    if (response.status === 403) throw new ApiError('notATechnician');
     throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
   }
   return json as T;
@@ -117,22 +175,12 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const toE164 = (national: string) => `+966${national.replace(/\D/g, '')}`;
 
 export async function requestOtp(phone: string) {
-  return call<{ sent: true; developmentCode?: string }>('/auth/otp', {
-    method: 'POST',
-    body: JSON.stringify({ phone }),
-  });
+  return authPost<{ sent: true; developmentCode?: string }>('/auth/otp', { phone });
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<Session> {
-  const d = await call<VerifyPayload>('/auth/verify', {
-    method: 'POST',
-    body: JSON.stringify({ phone, code }),
-  });
-  const session: Session = {
-    accessToken: d.accessToken,
-    userId: d.user?.id ?? '',
-    phone: d.user?.phone ?? '',
-  };
+  const d = await authPost<VerifyPayload>('/auth/verify', { phone, code });
+  const session = fromPayload(d);
   await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
 }
@@ -140,8 +188,16 @@ export async function verifyOtp(phone: string, code: string): Promise<Session> {
 export async function loadSession(): Promise<Session | null> {
   try {
     const raw = await AsyncStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as Session;
+    if (!stored.refreshToken || !stored.expiresAt) {
+      await AsyncStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    if (stored.expiresAt > Math.floor(Date.now() / 1000) + 60) return stored;
+    return await refreshSession(stored);
   } catch {
+    await AsyncStorage.removeItem(SESSION_KEY).catch(() => undefined);
     return null;
   }
 }
@@ -171,7 +227,7 @@ export interface EvidenceAsset {
 export async function uploadEvidence(
   id: string,
   phase: 'before' | 'after',
-  angle: 'general' | '360',
+  angle: 'front' | 'right' | 'rear' | 'left' | '360',
   asset: EvidenceAsset,
 ) {
   const session = await loadSession();
@@ -185,20 +241,14 @@ export async function uploadEvidence(
   }
 
   const contentType = asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
-  let res: Response;
-  try {
-    res = await fetch(`${API}/driver/jobs/${id}/media?phase=${phase}&angle=${angle}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-        'Content-Type': contentType,
-        'X-File-Size': String(asset.fileSize ?? blob.size),
-      },
-      body: blob,
-    });
-  } catch {
-    throw new ApiError('offline');
-  }
+  const res = await authorizedFetch(`/driver/jobs/${id}/media?phase=${phase}&angle=${angle}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': contentType,
+      'X-File-Size': String(asset.fileSize ?? blob.size),
+    },
+    body: blob,
+  });
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');

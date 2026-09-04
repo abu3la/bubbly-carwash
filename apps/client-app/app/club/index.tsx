@@ -1,29 +1,22 @@
 import { Redirect, useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import { Card, Num, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Card, Num, Screen, Txt, useLocale } from '@sama/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { useCopy } from '../../src/i18n';
 import { useCustomerData } from '../../src/customerData';
-import { useCatalogue } from '../../src/catalogue';
+import { useCatalogueStatus } from '../../src/catalogue';
 import { useClubDraft } from '../../src/clubDraft';
-
-const FALLBACK_PLANS = [
-  { id: 'basic', name: { ar: 'أساسي', en: 'Basic' }, serviceKey: 'exterior' as const, priceMinor: 19900, credits: 2, weekly: 2, roll: 0, best: false },
-  { id: 'basic-3', name: { ar: 'أساسي', en: 'Basic' }, serviceKey: 'exterior' as const, priceMinor: 26900, credits: 3, weekly: 3, roll: 0, best: false },
-  { id: 'plus', name: { ar: 'سوبر ووش', en: 'Super Wash' }, serviceKey: 'full' as const, priceMinor: 29900, credits: 2, weekly: 2, roll: 0, best: false },
-  { id: 'plus-3', name: { ar: 'سوبر ووش', en: 'Super Wash' }, serviceKey: 'full' as const, priceMinor: 39900, credits: 3, weekly: 3, roll: 0, best: true },
-];
 
 export default function ClubPlans() {
   const router = useRouter();
   const { language } = useLocale();
   const copy = useCopy();
-  const catalogue = useCatalogue();
+  const { catalogue, loading, error, reload } = useCatalogueStatus();
   const { membership } = useCustomerData();
   const draft = useClubDraft();
   if (membership) return <Redirect href="/club/dashboard" />;
-  const plans = catalogue?.plans ?? FALLBACK_PLANS;
+  const plans = catalogue?.plans ?? [];
   const families = [
     { key: 'basic', title: ar(language) ? 'أساسي' : 'Basic', plans: plans.filter((plan) => plan.id === 'basic' || plan.id === 'basic-3') },
     { key: 'plus', title: ar(language) ? 'سوبر ووش' : 'Super Wash', plans: plans.filter((plan) => plan.id === 'plus' || plan.id === 'plus-3') },
@@ -33,10 +26,12 @@ export default function ClubPlans() {
     <Screen scroll contentStyle={styles.page}>
       <FlowHeader title={copy.club.title} onBack={() => router.back()} />
       <View style={styles.body}>
+        {loading ? <Txt variant="small" tone="secondary" center>{language === 'ar' ? 'جارٍ تحميل الخطط والأسعار…' : 'Loading plans and prices…'}</Txt> : null}
+        {error ? <Button label={language === 'ar' ? 'إعادة تحميل الخطط' : 'Retry plans'} variant="secondary" fullWidth onPress={() => void reload()} /> : null}
         <Txt variant="small" tone="secondary">
           {language === 'ar' ? 'اختر عدد غسلاتك الأسبوعية. الموعد الذي يمر لا يتحول إلى رصيد ولا ينتقل لأسبوع آخر.' : 'Choose your weekly washes. A missed appointment does not become credit or roll into another week.'}
         </Txt>
-        {families.map((family) => (
+        {!loading && !error ? families.map((family) => (
           <Card key={family.key} style={styles.plan}>
             <View style={styles.planHeading}>
               <Txt variant="heading" weight="bold">{family.title}</Txt>
@@ -69,7 +64,7 @@ export default function ClubPlans() {
               ))}
             </View>
           </Card>
-        ))}
+        )) : null}
       </View>
     </Screen>
   );

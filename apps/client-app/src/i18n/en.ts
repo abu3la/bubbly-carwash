@@ -41,7 +41,8 @@ export const en: Copy = {
   },
 
   addressErrors: {
-    outsideServiceArea: 'We only serve Saudi Arabia right now. Pick a location inside the service area.',
+    outsideServiceArea: 'We currently serve Makkah only. Pick a location inside the service area.',
+    locationRequired: 'Choose the location on the map so the wash team can reach you.',
     badCoordinates: "We couldn't read that location. Move the map and try again.",
     addressLineRequired: 'Enter a clear address so the technician can find you.',
     unauthorized: 'Your session expired. Please sign in again.',
@@ -85,11 +86,16 @@ export const en: Copy = {
     resend: 'Resend code',
     verify: 'Verify',
 
+    profileTitle: 'Your details',
+    profileHeading: 'What is your name?',
+    profileSub: 'Your wash team will see your name with the booking details.',
+    fullNamePlaceholder: 'Full name',
+
     locationTitle: 'Where’s your car?',
     locationBlurb:
       'We use your location to show the prices and slots that are actually available near you — before you commit to anything.',
     allowLocation: 'Allow location',
-    enterManually: 'Enter address manually',
+    enterManually: 'Choose on the map instead',
 
     searchPlaceholder: 'Search for a district or street…',
     mapNote: 'Location map',
@@ -208,7 +214,7 @@ export const en: Copy = {
     processingCreditSub: 'Adding this appointment to your weekly washes.',
 
     paidTitle: 'Paid — your booking is confirmed',
-    creditTitle: 'Booked — one wash used from your balance',
+    creditTitle: 'Your subscription appointment is confirmed',
     successSub: 'We’ll notify you when a technician is assigned and before they arrive.',
     trackWash: 'Track the wash',
     backHome: 'Back to home',

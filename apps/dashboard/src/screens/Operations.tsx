@@ -23,7 +23,8 @@ export function Operations() {
   return <>
     <div className="page-head"><h1>مركز التشغيل</h1><p>المشكلات التي تحتاج تدخلًا، وحالة الخدمات التي يعتمد عليها التشغيل اليومي.</p></div>
     {snapshot ? <div className="metric-grid">
-      <Metric value={snapshot.unassignedBookings} label="حجوزات بلا سائق" alert={snapshot.unassignedBookings > 0} />
+      <Metric value={snapshot.bookingsWithoutTeam} label="حجوزات بلا فريق" alert={snapshot.bookingsWithoutTeam > 0} />
+      <Metric value={snapshot.teamJobsAwaitingDriver} label="مهام بانتظار استلام سائق" alert={false} />
       <Metric value={snapshot.staleActiveBookings} label="غسلات متأخرة" alert={snapshot.staleActiveBookings > 0} />
       <Metric value={snapshot.openIncidents} label="بلاغات مفتوحة" alert={snapshot.openIncidents > 0} />
       <Metric value={snapshot.failedPayments} label="مدفوعات فاشلة" alert={snapshot.failedPayments > 0} />

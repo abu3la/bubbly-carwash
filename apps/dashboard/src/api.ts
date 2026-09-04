@@ -4,12 +4,31 @@
  * role, checked server-side against `profiles.role`.
  */
 const API = import.meta.env.VITE_API_URL ?? 'https://sama-api.samacarwash.workers.dev';
-const TOKEN_KEY = 'sama.admin.token';
+const TOKEN_KEY = 'bubbles.admin.session';
+const LEGACY_TOKEN_KEY = 'sama.admin.token';
+
+export interface AdminSession {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+  user: { id: string };
+}
 
 export const token = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
+  session: (): AdminSession | null => {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (!raw) return null;
+    try { return JSON.parse(raw) as AdminSession; } catch { return null; }
+  },
+  get: () => token.session()?.accessToken ?? localStorage.getItem(LEGACY_TOKEN_KEY),
+  set: (session: AdminSession) => {
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(session));
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  },
+  clear: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  },
 };
 
 export class ApiError extends Error {
@@ -20,7 +39,33 @@ export class ApiError extends Error {
 
 interface ErrorPayload { error?: { code?: string } }
 
-async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function refreshAdminSession() {
+  if (refreshInFlight) return refreshInFlight;
+  const session = token.session();
+  if (!session?.refreshToken) return false;
+  refreshInFlight = (async () => {
+    try {
+      const response = await fetch(`${API}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: session.refreshToken }),
+      });
+      const body = await response.json().catch(() => ({})) as AdminSession;
+      if (!response.ok || !body.accessToken || !body.refreshToken) return false;
+      token.set(body);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+async function request(path: string, init: RequestInit = {}, retry = true) {
   const t = token.get();
   const res = await fetch(`${API}${path}`, {
     ...init,
@@ -30,6 +75,14 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init.headers,
     },
   });
+  if (res.status === 401 && retry && !path.startsWith('/auth/') && await refreshAdminSession()) {
+    return request(path, init, false);
+  }
+  return res;
+}
+
+async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await request(path, init);
   const json = await res.json().catch(() => ({}));
   if (res.status === 401 || res.status === 403) {
     token.clear();
@@ -37,17 +90,6 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown', res.status);
   return json as T;
-}
-
-export interface Package {
-  id: number;
-  washes: number;
-  price_minor: number;
-  per_minor: number;
-  save_pct: number;
-  valid_days: number;
-  best: boolean;
-  active: boolean;
 }
 
 export interface Plan {
@@ -146,7 +188,8 @@ export interface Incident {
 
 export interface OperationsSnapshot {
   checkedAt: string;
-  unassignedBookings: number;
+  bookingsWithoutTeam: number;
+  teamJobsAwaitingDriver: number;
   staleActiveBookings: number;
   openIncidents: number;
   failedPayments: number;
@@ -161,15 +204,12 @@ export const auth = {
     method: 'POST', body: JSON.stringify({ phone }),
   }),
   verify: (phone: string, code: string) =>
-    call<{ accessToken: string; user: { id: string } }>('/auth/verify', {
+    call<AdminSession>('/auth/verify', {
       method: 'POST', body: JSON.stringify({ phone, code }),
     }),
 };
 
 export const admin = {
-  packages: () => call<{ packages: Package[] }>('/admin/packages'),
-  updatePackage: (id: number, patch: Record<string, unknown>) =>
-    call<{ package: Package }>(`/admin/packages/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   plans: () => call<{ plans: Plan[] }>('/admin/plans'),
   updatePlan: (id: string, patch: Record<string, unknown>) =>
     call<{ plan: Plan }>(`/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
@@ -187,8 +227,6 @@ export const admin = {
     call<{ technician: Technician }>(`/admin/technicians/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   setTechnicianTeam: (id: string, patch: { teamId: string | null; available?: boolean; isLead?: boolean; shiftStart?: string; shiftEnd?: string }) =>
     call<{ membership: TeamMember | null }>(`/admin/technicians/${id}/team`, { method: 'PUT', body: JSON.stringify(patch) }),
-  assignBooking: (id: string, technicianId: string | null) =>
-    call<{ booking: AdminBooking }>(`/admin/bookings/${id}/assign`, { method: 'PATCH', body: JSON.stringify({ technicianId }) }),
   incidents: () => call<{ incidents: Incident[] }>('/admin/incidents'),
   resolveIncident: (id: string) =>
     call<{ incident: Incident }>(`/admin/incidents/${id}/resolve`, { method: 'PATCH' }),
@@ -196,10 +234,7 @@ export const admin = {
   refundPayment: (id: string, reason: string) =>
     call<{ refunded: true; amountMinor: number }>(`/admin/payments/${id}/refund`, { method: 'POST', body: JSON.stringify({ reason }) }),
   mediaBlob: async (bookingId: string, mediaId: string) => {
-    const t = token.get();
-    const response = await fetch(`${API}/admin/bookings/${bookingId}/media/${mediaId}/content`, {
-      headers: t ? { Authorization: `Bearer ${t}` } : {},
-    });
+    const response = await request(`/admin/bookings/${bookingId}/media/${mediaId}/content`);
     if (!response.ok) throw new ApiError('mediaUnavailable', response.status);
     return response.blob();
   },

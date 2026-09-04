@@ -50,6 +50,30 @@ driverRoute.get('/jobs', async (c) => {
       timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false,
     }).format(new Date(job.scheduled_at));
     return localTime >= membership.shift_start.slice(0, 5) && localTime < membership.shift_end.slice(0, 5);
+  }).map((job: {
+    technician_id: string | null;
+    customers?: unknown;
+    vehicles?: Record<string, unknown> | null;
+    addresses?: Record<string, unknown> | null;
+    booking_media?: unknown[];
+  }) => {
+    if (job.technician_id === caller.id) return job;
+    const address = job.addresses;
+    return {
+      ...job,
+      customers: null,
+      vehicles: job.vehicles ? { ...job.vehicles, plate: null } : null,
+      addresses: address ? {
+        label: null,
+        line: address.district || address.city || 'مكة المكرمة',
+        district: address.district,
+        city: address.city,
+        lat: null,
+        lng: null,
+        notes: null,
+      } : null,
+      booking_media: [],
+    };
   });
   return c.json({ team: membership.teams, jobs });
 });
@@ -111,11 +135,14 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
   // without an after record.
   const requiredPhase = stage === 'washed' ? 'before' : stage === 'verified' ? 'after' : null;
   if (requiredPhase) {
-    const evidence = await db(
+    const evidence = await db<{ kind: 'photo' | 'video'; angle: string }>(
       c.env,
-      `booking_media?booking_id=eq.${id}&phase=eq.${requiredPhase}&select=id&limit=1`,
+      `booking_media?booking_id=eq.${id}&phase=eq.${requiredPhase}&select=kind,angle`,
     );
-    if (!evidence.length) {
+    const has360 = evidence.some((item) => item.kind === 'video' && item.angle === '360');
+    const photoAngles = new Set(evidence.filter((item) => item.kind === 'photo').map((item) => item.angle));
+    const hasFullPhotoSet = ['front', 'right', 'rear', 'left'].every((angle) => photoAngles.has(angle));
+    if (!has360 && !hasFullPhotoSet) {
       return c.json({ error: { code: `${requiredPhase}MediaRequired` } }, 409);
     }
   }
@@ -236,6 +263,7 @@ const EXTENSIONS: Record<string, string> = {
   'video/quicktime': 'mov',
 };
 const ANGLES = new Set(['general', 'front', 'rear', 'left', 'right', '360']);
+const PHOTO_ANGLES = new Set(['front', 'rear', 'left', 'right']);
 const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
 
 /** Upload private before/after evidence directly into the bound R2 bucket. */
@@ -253,6 +281,10 @@ driverRoute.post('/jobs/:id/media', async (c) => {
   }
   if (!ANGLES.has(angle)) return c.json({ error: { code: 'badMediaAngle' } }, 400);
   if (!ALLOWED_TYPES.has(contentType)) return c.json({ error: { code: 'badMediaType' } }, 415);
+  if ((contentType.startsWith('video/') && angle !== '360')
+    || (contentType.startsWith('image/') && !PHOTO_ANGLES.has(angle))) {
+    return c.json({ error: { code: 'badMediaAngle' } }, 400);
+  }
   if (!Number.isFinite(byteSize) || byteSize <= 0 || byteSize > MAX_MEDIA_BYTES) {
     return c.json({ error: { code: 'badMediaSize' } }, 413);
   }

@@ -1,13 +1,10 @@
 import * as Location from 'expo-location';
 
 /**
- * Places, through the operating system.
- *
- * No Google key: iOS answers these from Apple's geocoder, which costs nothing
- * and needs no billing account. What it does not give is autocomplete — there
- * is no suggestion list, so the customer types an address and we resolve it.
- * Google Places would add that, and knows Saudi districts better; this is the
- * version that works today.
+ * Device geocoding helpers used after the customer moves the map pin or asks
+ * for their current position. Search suggestions themselves come from the
+ * Worker-backed Google Places endpoint, so the restricted key never ships in
+ * the JavaScript bundle.
  */
 export interface Place {
   lat: number;
@@ -45,7 +42,7 @@ export async function describe(lat: number, lng: number): Promise<Place> {
   }
 }
 
-/** Typed address → coordinates. This is the free stand-in for autocomplete. */
+/** Last-resort typed-address lookup when the Places endpoint is unavailable. */
 export async function search(query: string): Promise<Place | null> {
   const q = query.trim();
   if (q.length < 3) return null;

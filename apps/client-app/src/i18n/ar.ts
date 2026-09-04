@@ -35,7 +35,8 @@ export const ar: Copy = {
   },
 
   addressErrors: {
-    outsideServiceArea: 'نخدم داخل السعودية فقط حاليًا. اختر موقعًا داخل نطاق الخدمة.',
+    outsideServiceArea: 'نخدم داخل نطاق مكة المكرمة حاليًا. اختر موقعًا داخل نطاق الخدمة.',
+    locationRequired: 'حدّد الموقع على الخريطة حتى يصل إليك فريق الغسيل.',
     badCoordinates: 'تعذّر تحديد الموقع. حرّك الخريطة وحاول مرة أخرى.',
     addressLineRequired: 'أدخل عنوانًا واضحًا حتى يصل الفنّي.',
     unauthorized: 'انتهت جلستك. سجّل الدخول مرة أخرى.',
@@ -79,10 +80,15 @@ export const ar: Copy = {
     resend: 'إعادة إرسال الرمز',
     verify: 'تحقق',
 
+    profileTitle: 'بياناتك',
+    profileHeading: 'ما اسمك؟',
+    profileSub: 'سيظهر اسمك لفريق الغسيل مع تفاصيل الحجز.',
+    fullNamePlaceholder: 'الاسم الكامل',
+
     locationTitle: 'أين سيارتك؟',
     locationBlurb: 'نستخدم موقعك لنعرض لك الأسعار والمواعيد المتاحة فعلًا في منطقتك — قبل أي التزام.',
     allowLocation: 'السماح بتحديد الموقع',
-    enterManually: 'إدخال العنوان يدويًا',
+    enterManually: 'اختيار الموقع على الخريطة يدويًا',
 
     searchPlaceholder: 'ابحث عن حي أو شارع…',
     mapNote: 'خريطة الموقع',
@@ -201,7 +207,7 @@ export const ar: Copy = {
     processingCreditSub: 'نثبت الموعد ضمن غسلات هذا الأسبوع.',
 
     paidTitle: 'تم الدفع، حجزك مؤكد!',
-    creditTitle: 'تم الحجز — خُصمت غسلة من رصيدك',
+    creditTitle: 'تم تأكيد الموعد ضمن اشتراكك',
     successSub: 'سنرسل إشعارًا عند تعيين الفنّي وقبل وصوله.',
     trackWash: 'تتبع الغسلة',
     backHome: 'العودة للرئيسية',

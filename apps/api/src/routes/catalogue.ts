@@ -4,7 +4,7 @@ import type { Env } from '../env';
 import { db } from '../db';
 
 /**
- * What Sama sells: services, add-ons, packages, club plans, and the bookable
+ * What BubblesCarWash sells: services, add-ons, club plans, and the bookable
  * grid.
  *
  * Public — a price list is not a secret, and requiring a session to see one
@@ -32,10 +32,6 @@ interface ServiceRow extends Named {
   minutes: number;
 }
 interface AddOnRow extends Named { key: string; price_minor: number }
-interface PackageRow {
-  id: number; washes: number; price_minor: number; per_minor: number;
-  save_pct: number; valid_days: number; best: boolean;
-}
 interface PlanRow extends Named {
   id: string; price_minor: number; credits: number; weekly: number; roll: number; best: boolean;
 }
@@ -64,10 +60,9 @@ const bilingual = <T extends Named>(row: T) => ({
 });
 
 catalogueRoute.get('/', async (c) => {
-  const [services, addOns, packages, plans, slots] = await Promise.all([
+  const [services, addOns, plans, slots] = await Promise.all([
     db<ServiceRow>(c.env, 'services?active=eq.true&order=sort'),
     db<AddOnRow>(c.env, 'add_ons?active=eq.true&order=sort'),
-    db<PackageRow>(c.env, 'packages?active=eq.true&order=id'),
     db<PlanRow>(c.env, 'plans?active=eq.true&order=price_minor'),
     db<SlotRow>(c.env, 'slot_templates?active=eq.true&order=starts_at'),
   ]);
@@ -84,15 +79,6 @@ catalogueRoute.get('/', async (c) => {
       key: a.key,
       name: bilingual(a),
       priceMinor: a.price_minor,
-    })),
-    packages: packages.map((p) => ({
-      id: p.id,
-      washes: p.washes,
-      priceMinor: p.price_minor,
-      perMinor: p.per_minor,
-      savePct: p.save_pct,
-      validDays: p.valid_days,
-      best: p.best,
     })),
     plans: plans.map((p) => ({
       id: p.id,

@@ -39,7 +39,7 @@ function Gate({ onIn }: { onIn: () => void }) {
     setErr(null); setBusy(true);
     try {
       const r = await auth.verify(e164, code);
-      token.set(r.accessToken);
+      token.set(r);
       await admin.bookings();
       onIn();
     } catch { token.clear(); setErr('تعذّر الدخول. تأكد أن الحساب بصلاحية مدير وأن الرمز صحيح.'); }

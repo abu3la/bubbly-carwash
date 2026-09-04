@@ -68,7 +68,7 @@ export default function JobScreen() {
     }
   };
 
-  const capture = async (mode: 'photo' | 'video') => {
+  const capture = async (mode: 'photo' | 'video', angle: 'front' | 'right' | 'rear' | 'left' | '360') => {
     if (!job || (job.stage !== 'arrived' && job.stage !== 'washed')) return;
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -88,7 +88,7 @@ export default function JobScreen() {
     setUploading(true);
     try {
       const phase = job.stage === 'arrived' ? 'before' : 'after';
-      await uploadEvidence(job.id, phase, mode === 'video' ? '360' : 'general', result.assets[0]);
+      await uploadEvidence(job.id, phase, angle, result.assets[0]);
       toast.show(copy.evidenceSaved);
       await load();
     } catch (e) {
@@ -132,11 +132,14 @@ export default function JobScreen() {
   const next = nextStage(job.stage);
   const extras = job.booking_add_ons ?? [];
   const media = job.booking_media ?? [];
-  const beforeCount = media.filter((item) => item.phase === 'before').length;
-  const afterCount = media.filter((item) => item.phase === 'after').length;
   const evidencePhase = job.stage === 'arrived' ? 'before' : job.stage === 'washed' ? 'after' : null;
   const claimed = job.technician_id === session?.userId;
-  const requiredEvidenceReady = next === 'washed' ? beforeCount > 0 : next === 'verified' ? afterCount > 0 : true;
+  const phaseMedia = evidencePhase ? media.filter((item) => item.phase === evidencePhase) : [];
+  const capturedPhotoAngles = new Set(phaseMedia.filter((item) => item.kind === 'photo').map((item) => item.angle));
+  const has360 = phaseMedia.some((item) => item.kind === 'video' && item.angle === '360');
+  const fullPhotoSet = ['front', 'right', 'rear', 'left'].every((angle) => capturedPhotoAngles.has(angle));
+  const currentEvidenceReady = has360 || fullPhotoSet;
+  const requiredEvidenceReady = next === 'washed' || next === 'verified' ? currentEvidenceReady : true;
 
   // Google Maps directions by coordinates when we have them, by address text when not.
   const openMaps = () => {
@@ -170,14 +173,14 @@ export default function JobScreen() {
         <Button label={busy ? copy.working : copy.claimJob} fullWidth disabled={busy} onPress={claim} />
       </Card> : null}
 
-      <Card style={styles.block}>
+      {claimed ? <Card style={styles.block}>
         <View style={styles.row}><Phone size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} /><Txt variant="label" weight="semibold" tone="muted">{copy.customer}</Txt></View>
         <Txt variant="body" weight="bold">{job.customers?.full_name || copy.customer}</Txt>
         <Num variant="small" tone="secondary">{job.customers?.phone || '—'}</Num>
         {job.customers?.phone ? <Button label={copy.callCustomer} variant="secondary" size="sm" onPress={() => Linking.openURL(`tel:${job.customers!.phone}`)} /> : null}
-      </Card>
+      </Card> : null}
 
-      <Card style={styles.block}>
+      {claimed ? <Card style={styles.block}>
         <View style={styles.row}>
           <Car size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} />
           <Txt variant="label" weight="semibold" tone="muted">
@@ -197,7 +200,7 @@ export default function JobScreen() {
             {[v?.color, v ? copy.sizes[v.size] : null].filter(Boolean).join(' · ')}
           </Txt>
         </View>
-      </Card>
+      </Card> : null}
 
       {claimed && evidencePhase ? (
         <Card variant="booking" style={styles.block}>
@@ -208,30 +211,34 @@ export default function JobScreen() {
             {copy.evidenceInstruction}
           </Txt>
           <View style={styles.evidenceActions}>
-            <Button
-              label={uploading ? copy.uploadingEvidence : copy.takePhotos}
-              variant="secondary"
-              fullWidth
-              disabled={uploading}
-              icon={<Camera size={theme.scale(17)} color={theme.text.primary} strokeWidth={2} />}
-              onPress={() => capture('photo')}
-            />
+            <View style={styles.photoGrid}>
+              {(['front', 'right', 'rear', 'left'] as const).map((angle) => (
+                <Button
+                  key={angle}
+                  label={capturedPhotoAngles.has(angle) ? `${copy.photoAngles[angle]} ✓` : copy.photoAngles[angle]}
+                  variant="secondary"
+                  disabled={uploading || has360 || capturedPhotoAngles.has(angle)}
+                  icon={<Camera size={theme.scale(16)} color={theme.text.primary} strokeWidth={2} />}
+                  onPress={() => capture('photo', angle)}
+                />
+              ))}
+            </View>
             <Button
               label={uploading ? copy.uploadingEvidence : copy.record360}
               variant="secondary"
               fullWidth
-              disabled={uploading}
+              disabled={uploading || currentEvidenceReady}
               icon={<Video size={theme.scale(17)} color={theme.text.primary} strokeWidth={2} />}
-              onPress={() => capture('video')}
+              onPress={() => capture('video', '360')}
             />
           </View>
-          <Txt variant="caption" tone={requiredEvidenceReady ? 'action' : 'muted'}>
-            {copy.evidenceCount(beforeCount, afterCount)}
+          <Txt variant="caption" tone={currentEvidenceReady ? 'action' : 'muted'}>
+            {currentEvidenceReady ? copy.evidenceReady : copy.evidenceProgress(capturedPhotoAngles.size)}
           </Txt>
         </Card>
       ) : null}
 
-      <Card style={styles.block}>
+      {claimed ? <Card style={styles.block}>
         <View style={styles.row}>
           <MapPin size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} />
           <Txt variant="label" weight="semibold" tone="muted">
@@ -253,7 +260,7 @@ export default function JobScreen() {
           </View>
         ) : null}
         <Button label="الاتجاهات" variant="secondary" size="sm" onPress={openMaps} />
-      </Card>
+      </Card> : null}
 
       {claimed ? <Card style={styles.block}>
         <View style={styles.row}><AlertTriangle size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} /><Txt variant="body" weight="bold">{copy.reportProblem}</Txt></View>
@@ -323,5 +330,6 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.surface.bookingSoft,
   },
   evidenceActions: { gap: theme.spacing[2] },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
   incidentKinds: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
 }));

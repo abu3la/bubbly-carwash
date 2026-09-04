@@ -50,6 +50,7 @@ export interface Copy {
   /** Failures while saving the address, worded for the customer. */
   addressErrors: {
     outsideServiceArea: string;
+    locationRequired: string;
     badCoordinates: string;
     addressLineRequired: string;
     unauthorized: string;
@@ -98,6 +99,11 @@ export interface Copy {
     resendNow: string;
     resend: string;
     verify: string;
+
+    profileTitle: string;
+    profileHeading: string;
+    profileSub: string;
+    fullNamePlaceholder: string;
 
     locationTitle: string;
     locationBlurb: string;

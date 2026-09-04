@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { db } from '../db';
-import { assignBooking, assignmentFailure } from '../dispatch';
 import { refundInvoice } from '../moyasar';
 import { notify } from '../notifications';
 
@@ -20,94 +19,6 @@ adminRoute.use('*', requireAuth(), requireRole('admin'));
 /** Money arrives as SAR from a form; the database stores halalas. */
 const toMinor = (sar: unknown) =>
   typeof sar === 'number' && Number.isFinite(sar) ? Math.round(sar * 100) : undefined;
-
-/* ------------------------------------------------------------------ packages */
-
-adminRoute.get('/packages', async (c) => {
-  // Inactive ones included: the dashboard needs to see what it has retired.
-  const rows = await db(c.env, 'packages?order=id');
-  return c.json({ packages: rows });
-});
-
-adminRoute.patch('/packages/:id', async (c) => {
-  const id = Number(c.req.param('id'));
-  if (!Number.isInteger(id)) return c.json({ error: { code: 'badId' } }, 400);
-
-  const b = await c.req.json<{
-    priceSar?: number;
-    perSar?: number;
-    savePct?: number;
-    validDays?: number;
-    best?: boolean;
-    active?: boolean;
-  }>();
-
-  const patch: Record<string, unknown> = {};
-  const price = toMinor(b.priceSar);
-  const per = toMinor(b.perSar);
-  if (price !== undefined) patch.price_minor = price;
-  if (per !== undefined) patch.per_minor = per;
-  if (typeof b.savePct === 'number') patch.save_pct = Math.round(b.savePct);
-  if (typeof b.validDays === 'number') patch.valid_days = Math.round(b.validDays);
-  if (typeof b.active === 'boolean') patch.active = b.active;
-
-  if (typeof b.best === 'boolean') {
-    patch.best = b.best;
-    // Only one package can wear the "best value" badge. Clearing the others
-    // first stops the dashboard from producing two highlighted cards, which
-    // reads as a bug to a customer.
-    if (b.best) {
-      await db(c.env, 'packages?best=eq.true', {
-        method: 'PATCH',
-        prefer: 'return=minimal',
-        body: { best: false },
-      });
-    }
-  }
-
-  if (Object.keys(patch).length === 0) {
-    return c.json({ error: { code: 'nothingToUpdate' } }, 400);
-  }
-
-  const [row] = await db(c.env, `packages?id=eq.${id}`, {
-    method: 'PATCH',
-    prefer: 'return=representation',
-    body: patch,
-  });
-  if (!row) return c.json({ error: { code: 'notFound' } }, 404);
-  return c.json({ package: row });
-});
-
-adminRoute.post('/packages', async (c) => {
-  const b = await c.req.json<{
-    id?: number;
-    washes?: number;
-    priceSar?: number;
-    perSar?: number;
-    savePct?: number;
-    validDays?: number;
-  }>();
-
-  const price = toMinor(b.priceSar);
-  if (!b.washes || b.washes < 1) return c.json({ error: { code: 'washesRequired' } }, 400);
-  if (price === undefined) return c.json({ error: { code: 'priceRequired' } }, 400);
-
-  const [row] = await db(c.env, 'packages', {
-    method: 'POST',
-    prefer: 'return=representation',
-    body: {
-      // The id doubles as the wash count in the seeded data, which keeps the
-      // URL readable. Explicit id wins when given.
-      id: b.id ?? b.washes,
-      washes: b.washes,
-      price_minor: price,
-      per_minor: toMinor(b.perSar) ?? Math.round(price / b.washes),
-      save_pct: b.savePct ?? 0,
-      valid_days: b.validDays ?? 90,
-    },
-  });
-  return c.json({ package: row }, 201);
-});
 
 /* ------------------------------------------------------ services and plans */
 
@@ -197,7 +108,7 @@ adminRoute.get('/teams', async (c) => {
 
 adminRoute.patch('/teams/:id', async (c) => {
   const teamId = c.req.param('id');
-  const [existing] = await db(c.env, `teams?id=eq.${teamId}&select=id`);
+  const [existing] = await db<{ id: string; active: boolean }>(c.env, `teams?id=eq.${teamId}&select=id,active`);
   if (!existing) return c.json({ error: { code: 'notFound' } }, 404);
 
   const b = await c.req.json<{
@@ -221,24 +132,21 @@ adminRoute.patch('/teams/:id', async (c) => {
   } else if (b.dailyCapacity !== undefined) {
     return c.json({ error: { code: 'dailyCapacityOutOfRange' } }, 400);
   }
-  if (typeof b.active === 'boolean') patch.active = b.active;
-  if (!Object.keys(patch).length) return c.json({ error: { code: 'nothingToUpdate' } }, 400);
-
-  // The trial deliberately runs one team. Activating another team hands the
-  // pilot to it instead of accidentally leaving two teams live.
-  if (b.active) {
-    await db(c.env, `teams?id=neq.${teamId}&active=eq.true`, {
-      method: 'PATCH',
-      prefer: 'return=minimal',
-      body: { active: false },
-    });
+  if (b.active === false && existing.active) {
+    return c.json({ error: { code: 'activateAnotherTeam' } }, 409);
+  }
+  if (!Object.keys(patch).length && b.active !== true) {
+    return c.json({ error: { code: 'nothingToUpdate' } }, 400);
   }
 
-  const [row] = await db(c.env, `teams?id=eq.${teamId}`, {
-    method: 'PATCH',
-    prefer: 'return=representation',
-    body: patch,
-  });
+  if (Object.keys(patch).length) {
+    await db(c.env, `teams?id=eq.${teamId}`, {
+      method: 'PATCH', prefer: 'return=minimal', body: patch,
+    });
+  }
+  const [row] = b.active === true
+    ? await db(c.env, 'rpc/activate_pilot_team', { method: 'POST', body: { p_team: teamId } })
+    : await db(c.env, `teams?id=eq.${teamId}`);
   return c.json({ team: row });
 });
 
@@ -399,27 +307,6 @@ adminRoute.patch('/technicians/:id', async (c) => {
   return c.json({ technician: row });
 });
 
-/** Dispatch: put a booking in a technician's list. */
-adminRoute.patch('/bookings/:id/assign', async (c) => {
-  const b = await c.req.json<{ technicianId?: string | null }>();
-  if (!b.technicianId) {
-    const [row] = await db(c.env, `bookings?id=eq.${c.req.param('id')}&status=in.(scheduled,active)`, {
-      method: 'PATCH',
-      prefer: 'return=representation',
-      body: { technician_id: null },
-    });
-    if (!row) return c.json({ error: { code: 'notFound' } }, 404);
-    return c.json({ booking: row });
-  }
-  try {
-    return c.json({ booking: await assignBooking(c.env, c.req.param('id'), b.technicianId, c.get('caller').id) });
-  } catch (error) {
-    const code = assignmentFailure(error);
-    if (code) return c.json({ error: { code } }, code === 'bookingNotFound' ? 404 : 409);
-    throw error;
-  }
-});
-
 adminRoute.get('/bookings/:id/media/:mediaId/content', async (c) => {
   if (!c.env.MEDIA) return c.json({ error: { code: 'storageUnavailable' } }, 503);
   const [media] = await db<{ object_key: string; content_type: string }>(
@@ -458,8 +345,9 @@ adminRoute.patch('/incidents/:id/resolve', async (c) => {
 adminRoute.get('/operations', async (c) => {
   const now = new Date().toISOString();
   const stale = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const [unassigned, active, incidents, failedPayments, disabledTokens] = await Promise.all([
-    db(c.env, `bookings?payment_confirmed=eq.true&status=eq.scheduled&technician_id=is.null&scheduled_at=gte.${encodeURIComponent(now)}&select=id`),
+  const [withoutTeam, awaitingDriver, active, incidents, failedPayments, disabledTokens] = await Promise.all([
+    db(c.env, `bookings?payment_confirmed=eq.true&status=eq.scheduled&team_id=is.null&scheduled_at=gte.${encodeURIComponent(now)}&select=id`),
+    db(c.env, `bookings?payment_confirmed=eq.true&status=eq.scheduled&team_id=not.is.null&technician_id=is.null&scheduled_at=gte.${encodeURIComponent(now)}&select=id`),
     db(c.env, `bookings?status=eq.active&scheduled_at=lt.${encodeURIComponent(stale)}&select=id`),
     db(c.env, 'operations_incidents?status=eq.open&select=id'),
     db(c.env, 'payments?state=eq.failed&select=id'),
@@ -467,7 +355,8 @@ adminRoute.get('/operations', async (c) => {
   ]);
   return c.json({
     checkedAt: now,
-    unassignedBookings: unassigned.length,
+    bookingsWithoutTeam: withoutTeam.length,
+    teamJobsAwaitingDriver: awaitingDriver.length,
     staleActiveBookings: active.length,
     openIncidents: incidents.length,
     failedPayments: failedPayments.length,

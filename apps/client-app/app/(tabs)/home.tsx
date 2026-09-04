@@ -12,7 +12,7 @@ import {
   Screen,
   Txt,
 } from '@sama/ui-native';
-import { PROMISE_ICONS, SERVICES } from '../../src/content';
+import { PROMISE_ICONS } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { SectionLabel, Stagger } from '../../src/components/Bits';
 import { useCustomerData } from '../../src/customerData';
@@ -28,7 +28,7 @@ export default function Home() {
   const copy = useCopy();
   const { profile, addresses, bookings, membership, refresh } = useCustomerData();
   const catalogue = useCatalogue();
-  const cheapest = catalogue?.services[0] ?? { priceMinor: SERVICES[0].price * 100, minutes: SERVICES[0].minutes };
+  const cheapest = catalogue?.services.find((service) => service.key === 'exterior') ?? null;
   const address = addresses.find((item) => item.is_default) ?? addresses[0] ?? null;
   const booking = bookings.find((item) => item.payment_confirmed && item.status === 'scheduled') ?? null;
 
@@ -40,7 +40,7 @@ export default function Home() {
   const labelIndex = address?.label === 'work' ? 1 : address?.label === 'other' ? 2 : 0;
   const locationLabel = address
     ? `${copy.onboarding.addressLabels[labelIndex]} · ${address.district || address.city || address.line}`
-    : `${copy.addressLabel} · ${copy.addressShort}`;
+    : (language === 'ar' ? 'أضف عنوان الخدمة' : 'Add a service address');
 
   return (
     <Screen scroll bottomInset={theme.spacing[6]} contentStyle={styles.page}>
@@ -103,12 +103,14 @@ export default function Home() {
                 </Txt>
               </View>
               <View style={styles.optionPrice}>
-                <Num variant="bodyLg" weight="bold">
-                  {copy.common.fromPrice(cheapest.priceMinor / 100)}
-                </Num>
-                <Num variant="caption" tone="muted">
-                  {copy.common.minutes(cheapest.minutes)}
-                </Num>
+                {cheapest ? <>
+                  <Num variant="bodyLg" weight="bold">
+                    {copy.common.fromPrice(cheapest.priceMinor / 100)}
+                  </Num>
+                  <Num variant="caption" tone="muted">
+                    {copy.common.minutes(cheapest.minutes)}
+                  </Num>
+                </> : <Txt variant="caption" tone="muted">{language === 'ar' ? 'جارٍ تحميل السعر…' : 'Loading price…'}</Txt>}
               </View>
             </Card>
           </Stagger>
@@ -122,7 +124,7 @@ export default function Home() {
                 </Txt>
                 <Txt variant="caption" tone="inverseSoft">
                   {membership
-                    ? (language === 'ar' ? `${membership.plans.weekly - membership.usedThisWeek} مواعيد متاحة هذا الأسبوع` : `${membership.plans.weekly - membership.usedThisWeek} appointments available this week`)
+                    ? (language === 'ar' ? `${membership.usedThisWeek} من ${membership.plans.weekly} مواعيد مجدولة هذا الأسبوع` : `${membership.usedThisWeek} of ${membership.plans.weekly} appointments scheduled this week`)
                     : copy.home.clubTeaser}
                 </Txt>
               </View>

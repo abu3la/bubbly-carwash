@@ -8,6 +8,7 @@ import { useCopy } from '../../src/i18n';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { AuthError, requestOtp, toE164, verifyOtp } from '../../src/auth';
 import { useAuthSession } from '../../src/authSession';
+import { fetchMe, listAddresses, listVehicles } from '../../src/api';
 
 const LIVE_OTP_LENGTH = 6;
 const RESEND_SECONDS = 24;
@@ -37,7 +38,7 @@ export default function Otp() {
 
   return (
     <Screen contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.otpTitle} step={2} steps={4} onBack={() => router.back()} />
+      <FlowHeader title={copy.onboarding.otpTitle} step={2} steps={5} onBack={() => router.back()} />
 
       <View style={styles.body}>
         <View style={styles.head}>
@@ -101,7 +102,13 @@ export default function Otp() {
               // which is the whole point of the screen.
               const verified = await verifyOtp(toE164(national), code);
               authSession.signedIn(verified);
-              router.push('/onboarding/permission');
+              const [me, addresses, vehicles] = await Promise.all([
+                fetchMe(), listAddresses(), listVehicles(),
+              ]);
+              if (!me.profile.full_name?.trim()) router.replace('/onboarding/profile');
+              else if (!addresses.addresses.length) router.replace('/onboarding/permission');
+              else if (!vehicles.vehicles.length) router.replace('/onboarding/vehicle');
+              else router.replace('/(tabs)/home');
             } catch (e) {
               setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);
               setCode('');

@@ -12,6 +12,25 @@ meRoute.get('/', async (c) => {
   return c.json({ profile: { ...profile, phone: profile?.phone || caller.phone } });
 });
 
+meRoute.patch('/', async (c) => {
+  const caller = c.get('caller');
+  const body = await c.req.json<{ fullName?: string; language?: 'ar' | 'en' }>();
+  const fullName = body.fullName?.trim();
+  if (!fullName || fullName.length < 2 || fullName.length > 80) {
+    return c.json({ error: { code: 'invalidName' } }, 400);
+  }
+  if (body.language !== undefined && !['ar', 'en'].includes(body.language)) {
+    return c.json({ error: { code: 'invalidLanguage' } }, 400);
+  }
+  const [profile] = await db(c.env, `profiles?id=eq.${caller.id}`, {
+    method: 'PATCH',
+    prefer: 'return=representation',
+    body: { full_name: fullName, ...(body.language ? { language: body.language } : {}) },
+  });
+  if (!profile) return c.json({ error: { code: 'notFound' } }, 404);
+  return c.json({ profile });
+});
+
 /* ------------------------------------------------------------ notifications */
 
 meRoute.get('/notifications', async (c) => {
@@ -100,12 +119,14 @@ meRoute.post('/addresses', async (c) => {
 
   if (!body.line?.trim()) return c.json({ error: { code: 'addressLineRequired' } }, 400);
 
-  // Coordinates are optional, but a coordinate that IS sent has to be real.
-  // Rejecting (0,0) matters: it is what a broken location permission produces,
-  // and it is in the Gulf of Guinea — a technician would be dispatched to the
-  // middle of the Atlantic.
+  // A service address without coordinates cannot be assigned to a team or
+  // opened in driver navigation. Keep it out of storage instead of letting a
+  // customer discover the problem at the final booking step.
   const hasCoords = body.lat !== undefined && body.lng !== undefined;
-  if (hasCoords) {
+  if (!hasCoords) {
+    return c.json({ error: { code: 'locationRequired' } }, 400);
+  }
+  {
     const { lat, lng } = body as { lat: number; lng: number };
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return c.json({ error: { code: 'badCoordinates' } }, 400);
@@ -140,8 +161,8 @@ meRoute.post('/addresses', async (c) => {
       line: body.line.trim(),
       district: body.district?.trim() ?? '',
       city: body.city?.trim() ?? '',
-      lat: hasCoords ? body.lat : null,
-      lng: hasCoords ? body.lng : null,
+      lat: body.lat,
+      lng: body.lng,
       notes: body.notes?.trim() ?? '',
       is_default: makeDefault,
     },

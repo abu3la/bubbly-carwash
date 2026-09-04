@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { clearSession, loadSession, type Session } from './auth';
+import { clearSession, loadSession, onSessionCleared, type Session } from './auth';
 
 interface AuthSessionValue {
   loading: boolean;
@@ -16,13 +16,16 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let live = true;
+    const unsubscribe = onSessionCleared(() => {
+      if (live) setSession(null);
+    });
     loadSession().then((value) => {
       if (live) {
         setSession(value);
         setLoading(false);
       }
     });
-    return () => { live = false; };
+    return () => { live = false; unsubscribe(); };
   }, []);
 
   const signOut = useCallback(async () => {

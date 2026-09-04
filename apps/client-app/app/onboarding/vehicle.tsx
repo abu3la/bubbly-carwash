@@ -55,7 +55,7 @@ export default function RegisterVehicle() {
 
   return (
     <Screen scroll contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.vehicleTitle} step={4} steps={4} onBack={() => router.back()} />
+      <FlowHeader title={copy.onboarding.vehicleTitle} step={returnTo ? undefined : 5} steps={returnTo ? undefined : 5} onBack={() => router.back()} />
 
       <View style={styles.body}>
         <View style={styles.head}>

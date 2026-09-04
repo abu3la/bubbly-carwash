@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://sama-api-dev.taz2886.workers.dev';
 
 const SESSION_KEY = 'sama.session';
+const sessionClearedListeners = new Set<() => void>();
+let refreshInFlight: Promise<Session> | null = null;
 
 /** The failures the interface has words for. Anything else is `unknown`. */
 export type AuthErrorCode = 'wrongCode' | 'tooManyRequests' | 'invalidPhone' | 'offline' | 'unknown';
@@ -79,26 +81,50 @@ export async function verifyOtp(phoneE164: string, code: string): Promise<Sessio
   return session;
 }
 
-export async function loadSession(): Promise<Session | null> {
-  try {
-    const raw = await AsyncStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const stored = JSON.parse(raw) as Session;
-    if (stored.expiresAt > Math.floor(Date.now() / 1000) + 60) return stored;
+async function readStoredSession(): Promise<Session | null> {
+  const raw = await AsyncStorage.getItem(SESSION_KEY);
+  if (!raw) return null;
+  const stored = JSON.parse(raw) as Session;
+  if (!stored.accessToken || !stored.refreshToken || !stored.expiresAt) return null;
+  return stored;
+}
+
+/** Force a new access token after an unexpected 401, shared by concurrent calls. */
+export async function refreshSession(fallback?: Session): Promise<Session> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const stored = fallback ?? await readStoredSession();
+    if (!stored?.refreshToken) throw new AuthError('unknown');
     const refreshed = fromPayload(
       await post<VerifyPayload>('/auth/refresh', { refreshToken: stored.refreshToken }),
       stored,
     );
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
     return refreshed;
+  })().finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
+}
+
+export async function loadSession(): Promise<Session | null> {
+  try {
+    const stored = await readStoredSession();
+    if (!stored) return null;
+    if (stored.expiresAt > Math.floor(Date.now() / 1000) + 60) return stored;
+    return await refreshSession(stored);
   } catch {
-    await AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
+    await clearSession();
     return null;
   }
 }
 
 export async function clearSession(): Promise<void> {
   await AsyncStorage.removeItem(SESSION_KEY);
+  sessionClearedListeners.forEach((listener) => listener());
+}
+
+export function onSessionCleared(listener: () => void) {
+  sessionClearedListeners.add(listener);
+  return () => sessionClearedListeners.delete(listener);
 }
 
 /** The API wants E.164; the field only collects the national part. */

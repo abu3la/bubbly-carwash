@@ -19,8 +19,7 @@ export default function ClubReview() {
   const ar = language === 'ar';
   const plan = catalogue?.plans.find((item) => item.id === draft.planId);
   const weekly = plan?.weekly ?? (draft.planId.endsWith('-3') ? 3 : 2);
-  const fallbackPrices: Record<string, number> = { basic: 19900, 'basic-3': 26900, plus: 29900, 'plus-3': 39900 };
-  const priceMinor = plan?.priceMinor ?? fallbackPrices[draft.planId] ?? 19900;
+  const priceMinor = plan?.priceMinor ?? 0;
   const name = plan?.name[language] ?? (draft.planId.startsWith('basic') ? (ar ? 'أساسي' : 'Basic') : (ar ? 'سوبر ووش' : 'Super Wash'));
 
   return (
@@ -51,7 +50,7 @@ export default function ClubReview() {
         <Card style={styles.consent}>
           <Checkbox label={ar ? `أوافق على اشتراك لمدة 30 يومًا بقيمة ${priceMinor / 100} ر.س.` : `I agree to a 30-day subscription of ${priceMinor / 100} SAR.`} checked={consented} onChange={setConsented} />
         </Card>
-        <Button label={ar ? 'الانتقال للدفع' : 'Continue to payment'} size="lg" fullWidth disabled={!consented || draft.slots.length !== weekly} onPress={() => router.push('/club/processing')} />
+        <Button label={ar ? 'الانتقال للدفع' : 'Continue to payment'} size="lg" fullWidth disabled={!plan || !consented || draft.slots.length !== weekly} onPress={() => router.push('/club/processing')} />
       </View>
     </Screen>
   );

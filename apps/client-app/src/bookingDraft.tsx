@@ -1,7 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { type AddOn, type PayMethod, type Service } from './content';
+import { type AddOn, type Service } from './content';
 import { type PaySource } from './session';
-import { useCopy } from './i18n';
 import type { SavedAddress, SavedVehicle } from './api';
 import { useCatalogue } from './catalogue';
 
@@ -22,7 +21,6 @@ interface Draft {
   addressLng: number | null;
   /** Which balance pays for the wash itself. */
   source: PaySource;
-  method: PayMethod['key'];
 }
 
 interface DraftApi extends Draft {
@@ -35,7 +33,6 @@ interface DraftApi extends Draft {
   setVehicle: (vehicle: SavedVehicle) => void;
   setAddress: (address: SavedAddress) => void;
   setSource: (source: PaySource) => void;
-  setMethod: (method: PayMethod['key']) => void;
   reset: () => void;
 }
 
@@ -55,7 +52,6 @@ const INITIAL: Draft = {
   addressLat: null,
   addressLng: null,
   source: 'cash',
-  method: 'mada',
 };
 
 const DraftContext = createContext<DraftApi | null>(null);
@@ -77,10 +73,9 @@ export function BookingDraftProvider({
    */
   sources: PaySource[];
 }) {
-  const copy = useCopy();
   const catalogue = useCatalogue();
   const preferred = sources[0] ?? 'cash';
-  const defaults = { ...INITIAL, source: preferred, day: copy.days[1] };
+  const defaults = { ...INITIAL, source: preferred };
   const [draft, setDraft] = useState<Draft>(defaults);
 
   const value = useMemo<DraftApi>(
@@ -88,11 +83,10 @@ export function BookingDraftProvider({
       ...draft,
       total: (
         (draft.source === 'cash'
-          ? (catalogue?.services.find((service) => service.key === draft.serviceKey)?.priceMinor ?? 4000)
+          ? (catalogue?.services.find((service) => service.key === draft.serviceKey)?.priceMinor ?? 0)
           : 0)
         + draft.addOnKeys.reduce((sum, key) => (
-          sum + (catalogue?.addOns.find((addOn) => addOn.key === key)?.priceMinor
-            ?? (key === 'wax' ? 2000 : 1000))
+          sum + (catalogue?.addOns.find((addOn) => addOn.key === key)?.priceMinor ?? 0)
         ), 0)
       ) / 100,
       setService: (serviceKey) => setDraft((d) => ({ ...d, serviceKey })),
@@ -123,10 +117,9 @@ export function BookingDraftProvider({
         addressLng: address.lng,
       })),
       setSource: (source) => setDraft((d) => ({ ...d, source })),
-      setMethod: (method) => setDraft((d) => ({ ...d, method })),
-      reset: () => setDraft({ ...INITIAL, source: preferred, day: copy.days[1] }),
+      reset: () => setDraft({ ...INITIAL, source: preferred }),
     }),
-    [draft, preferred, copy, catalogue],
+    [draft, preferred, catalogue],
   );
 
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;

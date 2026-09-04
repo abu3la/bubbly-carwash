@@ -27,7 +27,7 @@ export default function Done() {
     >
       <BookingTicket
         time={draft.slot}
-        meta={`${draft.day} · ${copy.vehicleName} · ${copy.addressLine}`}
+        meta={`${draft.day} · ${draft.vehicleLabel} · ${draft.addressLabel}`}
       />
     </SuccessScreen>
   );

@@ -2,7 +2,7 @@
  * BubblesCarWash back office.
  *
  * The tokens are the app's, restated as CSS custom properties so the two
- * surfaces cannot drift: the same violet, the same cloud, the same ink. What
+ * surfaces cannot drift: the same water tones, foam surface and deep ink. What
  * differs is density — a phone shows one booking at a time, a back office shows
  * forty rows and needs to stay readable at that scale.
  *
@@ -10,20 +10,20 @@
  * English back office over an Arabic product is a seam nobody benefits from.
  */
 :root {
-  --violet: #5a42ff;
-  --violet-600: #4a33e6;
-  --violet-100: #eeebff;
-  --yellow: #ffd84d;
-  --guava: #ff5e7e;
-  --ice: #bdeeff;
-  --ice-100: #eafaff;
-  --ink: #17162e;
-  --ink-72: rgba(23, 22, 46, 0.72);
-  --ink-56: rgba(23, 22, 46, 0.56);
-  --ink-12: rgba(23, 22, 46, 0.12);
-  --ink-06: rgba(23, 22, 46, 0.06);
-  --cloud: #fafaf5;
-  --white: #fff;
+  --violet: #0d7e8f;
+  --violet-600: #0a5f6c;
+  --violet-100: #dcecea;
+  --yellow: #d1a54c;
+  --guava: #a83a32;
+  --ice: #7fcbd0;
+  --ice-100: #e2efed;
+  --ink: #142b30;
+  --ink-72: rgba(20, 43, 48, 0.72);
+  --ink-56: rgba(20, 43, 48, 0.58);
+  --ink-12: rgba(20, 43, 48, 0.12);
+  --ink-06: rgba(20, 43, 48, 0.06);
+  --cloud: #eaf2f1;
+  --white: #f8fbfa;
   --radius: 14px;
 }
 
@@ -36,7 +36,7 @@ body {
   direction: rtl;
   background: var(--cloud);
   color: var(--ink);
-  font-family: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
 }
@@ -94,7 +94,6 @@ body {
   border-radius: var(--radius);
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  box-shadow: 0 1px 2px rgba(23, 22, 46, 0.05), 0 8px 24px -14px rgba(23, 22, 46, 0.22);
 }
 
 table { width: 100%; border-collapse: collapse; }
@@ -196,26 +195,55 @@ button.state.active:hover:not(:disabled) { background: var(--ink-72); }
 
 /* ------------------------------------------------------------------ login */
 
-.gate { display: grid; place-items: center; min-height: 100vh; padding: 20px; }
+.gate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  justify-items: start;
+  min-height: 100vh;
+  padding: clamp(24px, 5vw, 72px);
+  position: relative;
+  overflow: hidden;
+  background: #0d1c1f;
+}
+.gate::before {
+  content: 'BubblesCarWash';
+  position: absolute;
+  inset-inline-start: clamp(24px, 5vw, 72px);
+  bottom: -0.19em;
+  color: rgba(217, 233, 231, 0.12);
+  font-size: clamp(64px, 12vw, 180px);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  direction: ltr;
+  white-space: nowrap;
+}
 .gate-card {
   width: 100%;
-  max-width: 372px;
-  background: var(--white);
-  border-radius: 18px;
-  padding: 34px 30px;
-  box-shadow: 0 1px 2px rgba(23, 22, 46, 0.05), 0 20px 50px -24px rgba(23, 22, 46, 0.3);
+  max-width: 410px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  background: #16363a;
+  color: #f4fbfa;
+  border-radius: 28px 28px 8px 28px;
+  padding: 38px 34px;
 }
 .gate-card h1 { margin: 16px 0 4px; font-size: 22px; }
-.gate-card p { margin: 0 0 22px; color: var(--ink-56); font-size: 14px; }
+.gate-card p { margin: 0 0 22px; color: rgba(217, 233, 231, 0.68); font-size: 14px; }
 .gate-card input { width: 100%; margin-bottom: 12px; }
 .gate-card button { width: 100%; }
+.gate-card button.ghost { color: #9ddde1; }
+.gate-card button.ghost:hover:not(:disabled) { background: rgba(125, 211, 222, 0.10); }
 
 .dial {
   display: flex; align-items: center; gap: 8px; direction: ltr;
-  border: 1px solid var(--ink-12); border-radius: 9px; padding: 0 10px; margin-bottom: 12px;
+  min-height: 44px; background: var(--white); border: 1px solid var(--ink-12); border-radius: 9px; padding: 0 10px; margin-bottom: 12px;
 }
 .dial span { font-weight: 600; color: var(--ink-72); font-variant-numeric: tabular-nums; }
 .dial input { border: 0; margin: 0; width: 100%; text-align: left; }
+.dial input { min-width: 0; }
 .dial input:focus { outline: none; }
 
 .empty { padding: 40px; text-align: center; color: var(--ink-56); }
@@ -229,6 +257,9 @@ button.state.active:hover:not(:disabled) { background: var(--ink-72); }
   .sheet table { min-width: 780px; }
   .ops-summary { grid-template-columns: auto 1fr; }
   .ops-summary span:last-child { grid-column: 1 / -1; }
+  .gate { padding: 20px; }
+  .gate-card { padding: 30px 24px; border-radius: 22px 22px 7px 22px; }
+  .gate::before { inset-inline-start: 20px; font-size: clamp(56px, 20vw, 96px); }
 }
 .team-jobs { display: grid; gap: 18px; margin-top: 24px; }
 .team-jobs-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px 10px; }
@@ -255,8 +286,8 @@ button.state.active:hover:not(:disabled) { background: var(--ink-72); }
 .dispatch-summary { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; color: var(--ink-72); }
 .dispatch-summary strong { font-size: 32px; color: var(--ink); }
 
-.metric-grid { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px; }
-.metric { min-height: 105px; padding: 17px; border-radius: 12px; background: var(--white); display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 7px -5px rgba(23, 22, 46, 0.28); }
+.metric-grid { display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.metric { min-height: 105px; padding: 17px; border-radius: 12px; background: var(--white); display: flex; flex-direction: column; justify-content: space-between; }
 .metric.alert { background: #fff3ea; }
 .metric strong { font-size: 30px; }
 .metric span { color: var(--ink-72); font-size: 13px; }

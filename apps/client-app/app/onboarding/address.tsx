@@ -65,8 +65,8 @@ export default function SaveAddress() {
     <Screen contentStyle={styles.screen}>
       <FlowHeader
         title={copy.onboarding.addressTitle}
-        step={picked.returnTo ? undefined : 3}
-        steps={picked.returnTo ? undefined : 4}
+        step={picked.returnTo ? undefined : 4}
+        steps={picked.returnTo ? undefined : 5}
         onBack={() => router.back()}
       />
 
