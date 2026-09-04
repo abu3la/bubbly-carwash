@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
 import { BeatIcon, Button, Input, Num, Screen, Txt } from '@sama/ui-native';
@@ -8,18 +8,21 @@ import { useSession } from '../src/session';
 import { copy } from '../src/copy';
 
 const NATIONAL_DIGITS = 9;
-const CODE_DIGITS = 6;
+const LIVE_CODE_DIGITS = 6;
 
 export default function SignIn() {
   const { session, ready, setSession } = useSession();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
+  const [developmentCode, setDevelopmentCode] = useState<string | undefined>();
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requiredDigits = developmentCode?.length ?? LIVE_CODE_DIGITS;
 
-  // Nothing is rendered until we know — see SessionProvider.
-  if (!ready) return <View style={styles.blank} />;
+  // Storage is quick but asynchronous. Keep an honest loading state on screen
+  // rather than flashing sign-in or leaving a blank white view.
+  if (!ready) return <View style={styles.loading}><ActivityIndicator /></View>;
   if (session) return <Redirect href="/jobs" />;
 
   const run = async (fn: () => Promise<void>) => {
@@ -80,7 +83,8 @@ export default function SignIn() {
               fullWidth
               disabled={busy || phone.replace(/\D/g, '').length !== NATIONAL_DIGITS}
               onPress={() => run(async () => {
-                await requestOtp(toE164(phone));
+                const result = await requestOtp(toE164(phone));
+                setDevelopmentCode(result.developmentCode);
                 setSent(true);
               })}
             />
@@ -89,16 +93,22 @@ export default function SignIn() {
           <>
             <Input
               value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, CODE_DIGITS))}
-              placeholder="000000"
+              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, requiredDigits))}
+              placeholder={developmentCode ?? '000000'}
               keyboardType="number-pad"
+              maxLength={requiredDigits}
               ltr
             />
+            {developmentCode ? (
+              <Txt variant="small" weight="semibold" tone="action" center>
+                {copy.developmentCode(developmentCode)}
+              </Txt>
+            ) : null}
             <Button
               label={busy ? copy.verifying : copy.verify}
               size="lg"
               fullWidth
-              disabled={busy || code.length < CODE_DIGITS}
+              disabled={busy || code.length < requiredDigits}
               onPress={() => run(async () => {
                 setSession(await verifyOtp(toE164(phone), code));
               })}
@@ -107,7 +117,7 @@ export default function SignIn() {
               label={copy.changeNumber}
               variant="ghost"
               fullWidth
-              onPress={() => { setSent(false); setCode(''); setError(null); }}
+              onPress={() => { setSent(false); setCode(''); setDevelopmentCode(undefined); setError(null); }}
             />
           </>
         )}
@@ -123,7 +133,7 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  blank: { flex: 1, backgroundColor: theme.surface.page },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page },
   screen: { padding: theme.spacing[6], justifyContent: 'center', gap: theme.spacing[8] },
   head: { alignItems: 'center', gap: theme.spacing[2] },
   form: { gap: theme.spacing[3] },

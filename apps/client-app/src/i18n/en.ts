@@ -169,7 +169,7 @@ export const en: Copy = {
     takenNote: 'Faded slots are already taken.',
     takenNoteMember: 'Faded slots are booked · the peak slot is open to you as a member.',
     prioritySlot: 'Priority',
-    holdNote: 'We hold your slot while you pay.',
+    holdNote: 'We hold your slot for 15 minutes while you pay.',
     periods: { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' },
     fridayOff: 'Teams are off on Friday',
     checkingAvailability: 'Checking the nearest team…',

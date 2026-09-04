@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import Constants from 'expo-constants';
-import { LocateFixed, MapPin } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, LocateFixed, MapPin } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import { Badge, Button, IconButton, Input, Txt, useLocale, useToast } from '@sama/ui-native';
 import { useCopy } from '../../src/i18n';
@@ -14,6 +14,7 @@ import {
   fetchGooglePlace,
   type PlaceSuggestion,
 } from '../../src/api';
+import { nextBookableDateKey } from '../../src/dates';
 
 /** Roughly a neighbourhood — close enough to place a car, wide enough to pan. */
 const SPAN = 0.008;
@@ -36,19 +37,9 @@ const HAS_NATIVE_GOOGLE_MAPS = Platform.OS === 'ios'
 type Coverage = 'checking' | 'covered' | 'outside' | 'error';
 
 /** The next date on which a team can operate, expressed in Riyadh time. */
-function nextOperatingDate() {
-  const parts = new Intl.DateTimeFormat('en', {
-    timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(new Date());
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  const date = new Date(Date.UTC(Number(value.year), Number(value.month) - 1, Number(value.day)));
-  if (date.getUTCDay() === 5) date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
 export default function MapStep() {
   const { theme } = useUnistyles();
-  const { language } = useLocale();
+  const { language, isRTL } = useLocale();
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const copy = useCopy();
@@ -73,7 +64,7 @@ export default function MapStep() {
 
     const [nextPlace, availability] = await Promise.allSettled([
       describe(lat, lng),
-      fetchAvailability(lat, lng, nextOperatingDate()),
+      fetchAvailability(lat, lng, nextBookableDateKey()),
     ]);
     if (request !== inspection.current) return;
 
@@ -220,6 +211,20 @@ export default function MapStep() {
           toolbarEnabled={false}
         />
 
+        <IconButton
+          label={copy.common.back}
+          variant="secondary"
+          size="lg"
+          onPress={() => router.back()}
+          style={styles.back}
+        >
+          {isRTL ? (
+            <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+          ) : (
+            <ArrowLeft size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+          )}
+        </IconButton>
+
         <View style={styles.search}>
           <Input
             value={query}
@@ -338,10 +343,16 @@ const styles = StyleSheet.create((theme, rt) => ({
   search: {
     position: 'absolute',
     top: rt.insets.top + theme.spacing[3],
-    start: theme.spacing[5],
+    start: theme.spacing[5] + theme.scale(52),
     end: theme.spacing[5],
     gap: theme.spacing[2],
     zIndex: 2,
+  },
+  back: {
+    position: 'absolute',
+    top: rt.insets.top + theme.spacing[3],
+    start: theme.spacing[5],
+    zIndex: 3,
   },
   suggestions: {
     paddingVertical: theme.spacing[1],

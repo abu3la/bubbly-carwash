@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, withSpring } from 'react-native-reanimated';
-import { ArrowRight } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { IconButton, Num, Txt } from '@sama/ui-native';
+import { IconButton, Num, Txt, useLocale } from '@sama/ui-native';
 import { useCopy } from '../i18n';
 
 interface FlowHeaderProps {
@@ -24,6 +24,7 @@ export function FlowHeader({ title, step, steps, onBack }: FlowHeaderProps) {
   const router = useRouter();
   const reduced = useReducedMotion();
   const copy = useCopy();
+  const { isRTL } = useLocale();
 
   const progress = steps && step ? Math.min(1, step / steps) : 0;
   const rail = useAnimatedStyle(() => ({
@@ -35,9 +36,12 @@ export function FlowHeader({ title, step, steps, onBack }: FlowHeaderProps) {
   return (
     <View style={styles.header}>
       <View style={styles.row}>
-        {/* In Arabic, back points right — the direction you actually came from. */}
         <IconButton label={copy.common.back} variant="ghost" size="md" onPress={onBack ?? (() => router.back())}>
-          <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+          {isRTL ? (
+            <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+          ) : (
+            <ArrowLeft size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+          )}
         </IconButton>
 
         <Txt variant="heading" weight="bold" numberOfLines={1} style={styles.title}>

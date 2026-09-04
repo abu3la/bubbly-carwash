@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AlertTriangle, ArrowRight, Camera, Car, MapPin, Phone, Sparkles, Video } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { BeatIcon, Button, Card, Input, Num, Screen, Txt, useToast } from '@sama/ui-native';
+import { BeatIcon, Button, Card, IconButton, Input, Num, Screen, Txt, useToast } from '@sama/ui-native';
 import { ApiError, advance, claimJob, jobs as fetchJobs, nextStage, reportIncident, uploadEvidence, type Job } from '../../src/api';
 import { copy } from '../../src/copy';
 import { useSession } from '../../src/session';
@@ -147,8 +147,9 @@ export default function JobScreen() {
   return (
     <Screen scroll contentStyle={styles.page} bottomInset={theme.spacing[6]}>
       <View style={styles.top}>
-        <Button label="" variant="ghost" size="sm" onPress={() => router.back()} />
-        <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+        <IconButton label={copy.backToJobs} variant="ghost" size="md" onPress={() => router.back()}>
+          <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
+        </IconButton>
         <Num variant="body" weight="bold" style={styles.grow}>
           {job.ref}
         </Num>

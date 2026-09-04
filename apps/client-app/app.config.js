@@ -38,6 +38,7 @@ export default {
                   }
             ],
             "./plugins/with-google-maps-init-first",
+            "./plugins/with-rnfirebase-ios-linkage",
             ...(FIREBASE_CONFIGURED ? ["@react-native-firebase/app", "@react-native-firebase/messaging"] : [])
       ]
     },

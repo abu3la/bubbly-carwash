@@ -162,7 +162,7 @@ export const ar: Copy = {
     takenNote: 'المواعيد الباهتة محجوزة.',
     takenNoteMember: 'المواعيد الباهتة محجوزة · موعد الذروة مفتوح لك كعضو.',
     prioritySlot: 'أولوية',
-    holdNote: 'نحجز لك الموعد مؤقتًا أثناء إتمام الدفع.',
+    holdNote: 'نحجز لك الموعد لمدة 15 دقيقة أثناء إتمام الدفع.',
     periods: { morning: 'صباحًا', afternoon: 'ظهرًا', night: 'مساءً' },
     fridayOff: 'الجمعة إجازة للفرق',
     checkingAvailability: 'نتحقق من أقرب فريق…',

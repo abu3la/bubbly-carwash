@@ -117,7 +117,10 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const toE164 = (national: string) => `+966${national.replace(/\D/g, '')}`;
 
 export async function requestOtp(phone: string) {
-  await call('/auth/otp', { method: 'POST', body: JSON.stringify({ phone }) });
+  return call<{ sent: true; developmentCode?: string }>('/auth/otp', {
+    method: 'POST',
+    body: JSON.stringify({ phone }),
+  });
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<Session> {
@@ -220,6 +223,8 @@ export const notifications = () => call<{ notifications: DriverNotification[] }>
 export const readNotification = (id: string) => call(`/me/notifications/${id}/read`, { method: 'PATCH' });
 export const registerPushToken = (token: string, platform: 'ios' | 'android') =>
   call<{ registered: boolean }>('/me/push-token', { method: 'POST', body: JSON.stringify({ token, platform, app: 'driver' }) });
+export const unregisterPushToken = (token: string) =>
+  call<{ unregistered: boolean }>('/me/push-token', { method: 'DELETE', body: JSON.stringify({ token }) });
 
 export interface DriverIncident {
   id: string;

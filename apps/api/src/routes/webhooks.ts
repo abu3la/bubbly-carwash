@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { db } from '../db';
-import { getInvoice, invoiceMatches } from '../moyasar';
+import { getInvoice, invoiceMatches, refundInvoice } from '../moyasar';
 import { notifyTeamOfBooking } from '../dispatch';
+import { notify } from '../notifications';
 
 /**
  * Moyasar payment webhooks.
@@ -19,6 +20,27 @@ import { notifyTeamOfBooking } from '../dispatch';
  *    second membership.
  */
 export const webhooksRoute = new Hono<{ Bindings: Env }>();
+
+const terminalScheduleErrors = [
+  'slotFull',
+  'outsideServiceArea',
+  'slotInPast',
+  'weeklyCapReached',
+  'scheduleIncomplete',
+  'vehicleNotYours',
+  'addressNotYours',
+  'vehicleUnavailable',
+  'addressUnavailable',
+  'unknownService',
+  'unknownSlot',
+  'fridayClosed',
+  'noMembership',
+] as const;
+
+function isTerminalScheduleError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return terminalScheduleErrors.some((code) => message.includes(code));
+}
 
 /**
  * Hosted-invoice callback. The incoming body is never trusted: its id is used
@@ -42,7 +64,6 @@ webhooksRoute.post('/moyasar/invoice', async (c) => {
     id: string; profile_id: string; booking_id: string | null; membership_id: string | null; state: string; amount_minor: number;
   }>(c.env, `payments?provider=eq.moyasar&provider_ref=eq.${encodeURIComponent(ref)}&select=id,profile_id,booking_id,membership_id,state,amount_minor`);
   if (!payment) return c.json({ received: true, known: false });
-  if (payment.state === 'paid') return c.json({ received: true, known: true, paid: true });
   if (!invoiceMatches(invoice, {
     amount: payment.amount_minor,
     profileId: payment.profile_id,
@@ -51,6 +72,52 @@ webhooksRoute.post('/moyasar/invoice', async (c) => {
   })) {
     console.error('[moyasar] verified invoice did not match local payment', { ref });
     return c.json({ error: 'invoice mismatch' }, 409);
+  }
+
+  let alreadyActivated = false;
+  let targetCancelled = false;
+  if (payment.booking_id) {
+    const [target] = await db<{ payment_confirmed: boolean; status: string }>(
+      c.env,
+      `bookings?id=eq.${payment.booking_id}&select=payment_confirmed,status`,
+    );
+    alreadyActivated = Boolean(target?.payment_confirmed);
+    targetCancelled = target?.status === 'cancelled';
+  } else if (payment.membership_id) {
+    const [target] = await db<{ payment_confirmed: boolean; state: string }>(
+      c.env,
+      `memberships?id=eq.${payment.membership_id}&select=payment_confirmed,state`,
+    );
+    alreadyActivated = Boolean(target?.payment_confirmed);
+    targetCancelled = target?.state === 'cancelled';
+  }
+
+  if (targetCancelled) {
+    try {
+      await refundInvoice(c.env, ref);
+      await db(c.env, `payments?id=eq.${payment.id}`, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: { state: 'refunded', updated_at: new Date().toISOString() },
+      });
+      await notify(c.env, {
+        profileId: payment.profile_id,
+        bookingId: payment.booking_id,
+        kind: 'payment_refunded',
+        titleAr: 'تم إرجاع الدفع',
+        titleEn: 'Payment refunded',
+        bodyAr: 'وصل الدفع بعد إلغاء العملية، لذلك أرسلنا طلب الإرجاع إلى ميسر.',
+        bodyEn: 'Payment arrived after cancellation, so it was refunded through Moyasar.',
+      }).catch((error) => console.warn('[moyasar] refund notification failed', error));
+      return c.json({ received: true, known: true, paid: true, refunded: true });
+    } catch (error) {
+      console.error('[moyasar] cancelled target refund failed', error);
+      return c.json({ error: 'refund failed' }, 500);
+    }
+  }
+
+  if (alreadyActivated && payment.state === 'paid') {
+    return c.json({ received: true, known: true, paid: true });
   }
 
   try {
@@ -77,6 +144,37 @@ webhooksRoute.post('/moyasar/invoice', async (c) => {
       method: 'PATCH', prefer: 'return=minimal', body: { state: 'paid', updated_at: new Date().toISOString() },
     });
   } catch (error) {
+    const membershipId = payment.membership_id;
+    if (membershipId && isTerminalScheduleError(error)) {
+      try {
+        await refundInvoice(c.env, ref);
+        const now = new Date().toISOString();
+        await Promise.all([
+          db(c.env, `payments?id=eq.${payment.id}`, {
+            method: 'PATCH',
+            prefer: 'return=minimal',
+            body: { state: 'refunded', failure: 'scheduleUnavailable', updated_at: now },
+          }),
+          db(c.env, `memberships?id=eq.${membershipId}`, {
+            method: 'PATCH',
+            prefer: 'return=minimal',
+            body: { state: 'cancelled', cancelled_at: now },
+          }),
+        ]);
+        await notify(c.env, {
+          profileId: payment.profile_id,
+          kind: 'payment_refunded',
+          titleAr: 'أُعيد مبلغ الاشتراك',
+          titleEn: 'Subscription payment refunded',
+          bodyAr: 'تعذر تثبيت جميع مواعيدك، لذلك أرسلنا طلب استرجاع المبلغ إلى ميسر.',
+          bodyEn: 'We could not secure every appointment, so the payment was refunded through Moyasar.',
+        }).catch((notifyError) => console.warn('[moyasar] schedule refund notification failed', notifyError));
+        return c.json({ received: true, known: true, paid: true, refunded: true });
+      } catch (refundError) {
+        console.error('[moyasar] schedule refund failed', { error, refundError });
+        return c.json({ error: 'activation and refund failed' }, 500);
+      }
+    }
     console.error('[moyasar] paid invoice activation failed', error);
     return c.json({ error: 'activation failed' }, 500);
   }
@@ -184,6 +282,12 @@ webhooksRoute.post('/moyasar', async (c) => {
       type: event.type,
     });
     return c.json({ received: true, known: false });
+  }
+
+  // A late or replayed paid event must never undo a refund recorded after a
+  // failed booking activation.
+  if (existing[0].state === 'refunded' && state === 'paid') {
+    return c.json({ received: true, known: true, state: 'refunded' });
   }
 
   // Idempotent by construction: a replayed event writes the same state to the

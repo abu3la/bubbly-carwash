@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Car, ChevronLeft, Clock, MapPin } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -7,6 +7,7 @@ import { BeatIcon, Button, Card, Num, Screen, Txt } from '@sama/ui-native';
 import { ApiError, jobs as fetchJobs, type Job } from '../src/api';
 import { useSession } from '../src/session';
 import { copy } from '../src/copy';
+import { unregisterFirebaseMessaging } from '../src/firebase';
 
 /** How far along the three beats a job is, for the mark. */
 const LIT: Record<string, 0 | 1 | 2 | 3> = { booked: 0, arrived: 1, washed: 2, verified: 3 };
@@ -46,7 +47,7 @@ export default function Jobs() {
     }, [load]),
   );
 
-  if (!ready) return <View style={styles.blank} />;
+  if (!ready) return <View style={styles.loading}><ActivityIndicator /></View>;
   if (!session) return <Redirect href="/" />;
 
   return (
@@ -63,7 +64,10 @@ export default function Jobs() {
         <View style={styles.actions}>
           <Button label={copy.notifications} variant="ghost" size="sm" onPress={() => router.push('/notifications')} />
           <Button label={copy.history} variant="ghost" size="sm" onPress={() => router.push('/history')} />
-          <Button label={copy.signOut} variant="ghost" size="sm" onPress={signOut} />
+          <Button label={copy.signOut} variant="ghost" size="sm" onPress={async () => {
+            await unregisterFirebaseMessaging().catch(() => undefined);
+            await signOut();
+          }} />
         </View>
       </View>
 
@@ -132,7 +136,7 @@ export default function Jobs() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  blank: { flex: 1, backgroundColor: theme.surface.page },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page },
   page: {
     paddingHorizontal: theme.spacing[5],
     paddingTop: theme.spacing[4],

@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
 import { Button, Screen, Txt, useLocale } from '@sama/ui-native';
 import { Processing } from '../../src/components/Processing';
-import { confirmMembership, createMembershipCheckout } from '../../src/api';
+import { ApiError, confirmMembership, createMembershipCheckout } from '../../src/api';
 import { useClubDraft } from '../../src/clubDraft';
 import { useCustomerData } from '../../src/customerData';
 
@@ -14,7 +14,7 @@ export default function ProcessingClub() {
   const draft = useClubDraft();
   const { refresh } = useCustomerData();
   const started = useRef(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<'general' | 'refunded' | 'refundPending' | null>(null);
   const ar = language === 'ar';
 
   useEffect(() => {
@@ -27,7 +27,9 @@ export default function ProcessingClub() {
           const checkout = await createMembershipCheckout({
             planId: draft.planId,
             slots: draft.slots.map((slot) => ({
-              vehicleId: draft.vehicleId, addressId: draft.addressId, serviceKey: 'exterior',
+              vehicleId: draft.vehicleId,
+              addressId: draft.addressId,
+              serviceKey: draft.planId.startsWith('plus') ? 'full' : 'exterior',
               slotStart: slot.slotStart, addOns: [],
             })),
           });
@@ -43,8 +45,14 @@ export default function ProcessingClub() {
         await refresh();
         draft.reset();
         router.replace('/club/dashboard');
-      } catch {
-        setError(true);
+      } catch (caught) {
+        if (caught instanceof ApiError && caught.code === 'scheduleUnavailableRefunded') {
+          setError('refunded');
+        } else if (caught instanceof ApiError && caught.code === 'scheduleUnavailableRefundPending') {
+          setError('refundPending');
+        } else {
+          setError('general');
+        }
       }
     };
     void run();
@@ -54,7 +62,13 @@ export default function ProcessingClub() {
     return (
       <Screen contentStyle={styles.error}>
         <Txt variant="heading" weight="bold" center>{ar ? 'لم يكتمل الاشتراك' : 'Subscription was not completed'}</Txt>
-        <Txt variant="small" tone="secondary" center>{ar ? 'لم نفعّل الاشتراك. ارجع وحاول الدفع مرة أخرى.' : 'The subscription was not activated. Go back and try payment again.'}</Txt>
+        <Txt variant="small" tone="secondary" center>
+          {error === 'refunded'
+            ? (ar ? 'تعذر تثبيت جميع المواعيد، لذلك أرسلنا استرجاع المبلغ إلى ميسر.' : 'We could not secure every appointment, so the payment was refunded through Moyasar.')
+            : error === 'refundPending'
+              ? (ar ? 'تعذر تثبيت المواعيد. لم يكتمل الاسترجاع بعد وسيعيد النظام المحاولة تلقائياً.' : 'We could not secure the appointments. The refund is pending and the system will retry automatically.')
+              : (ar ? 'لم نفعّل الاشتراك. ارجع وحاول الدفع مرة أخرى.' : 'The subscription was not activated. Go back and try payment again.')}
+        </Txt>
         <Button label={ar ? 'رجوع للمراجعة' : 'Back to review'} fullWidth onPress={() => router.replace('/club/review')} />
       </Screen>
     );

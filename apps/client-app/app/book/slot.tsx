@@ -10,6 +10,7 @@ import { SectionLabel } from '../../src/components/Bits';
 import { fetchAvailability, type Availability } from '../../src/api';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
+import { addCalendarDays, isFriday, nextBookableDateKey, riyadhDateKey } from '../../src/dates';
 
 LocaleConfig.locales.ar = {
   monthNames: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
@@ -19,17 +20,6 @@ LocaleConfig.locales.ar = {
   today: 'اليوم',
 };
 
-const dateKey = (date: Date) => date.toISOString().slice(0, 10);
-const today = dateKey(new Date());
-const maxDate = dateKey(new Date(Date.now() + 90 * 86_400_000));
-
-function nextOpenDate() {
-  const value = new Date();
-  value.setUTCHours(12, 0, 0, 0);
-  while (value.getUTCDay() === 5) value.setUTCDate(value.getUTCDate() + 1);
-  return dateKey(value);
-}
-
 export default function ChooseSlot() {
   const { theme } = useUnistyles();
   const { language } = useLocale();
@@ -37,7 +27,15 @@ export default function ChooseSlot() {
   const draft = useBookingDraft();
   const copy = useCopy();
   LocaleConfig.defaultLocale = language === 'ar' ? 'ar' : '';
-  const [selectedDate, setSelectedDate] = useState(draft.date || nextOpenDate());
+  const [bookingWindow] = useState(() => {
+    const minDate = riyadhDateKey();
+    return { minDate, maxDate: addCalendarDays(minDate, 90) };
+  });
+  const [selectedDate, setSelectedDate] = useState(() => (
+    draft.date && draft.date >= bookingWindow.minDate && !isFriday(draft.date)
+      ? draft.date
+      : nextBookableDateKey()
+  ));
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -45,6 +43,17 @@ export default function ChooseSlot() {
   const dateLabel = useMemo(() => new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   }).format(new Date(`${selectedDate}T12:00:00Z`)), [language, selectedDate]);
+  const markedDates = useMemo(() => {
+    const days: Record<string, { disabled?: boolean; disableTouchEvent?: boolean; selected?: boolean; selectedColor?: string }> = {};
+    // Include neighbouring dates rendered by the calendar as well as the
+    // booking window, so even "today" is visibly disabled when it is Friday.
+    for (let offset = -35; offset <= 125; offset += 1) {
+      const key = addCalendarDays(bookingWindow.minDate, offset);
+      if (isFriday(key)) days[key] = { disabled: true, disableTouchEvent: true };
+    }
+    days[selectedDate] = { ...days[selectedDate], selected: true, selectedColor: theme.action.primary };
+    return days;
+  }, [bookingWindow.minDate, selectedDate, theme.action.primary]);
 
   useEffect(() => {
     draft.setDay(selectedDate, dateLabel);
@@ -82,13 +91,15 @@ export default function ChooseSlot() {
           <Calendar
             key={language}
             current={selectedDate}
-            minDate={today}
-            maxDate={maxDate}
+            minDate={bookingWindow.minDate}
+            maxDate={bookingWindow.maxDate}
             firstDay={0}
             disabledByWeekDays={[5]}
             disableAllTouchEventsForDisabledDays
-            onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
-            markedDates={{ [selectedDate]: { selected: true, selectedColor: theme.action.primary } }}
+            onDayPress={(day: DateData) => {
+              if (!isFriday(day.dateString)) setSelectedDate(day.dateString);
+            }}
+            markedDates={markedDates}
             theme={{
               calendarBackground: theme.surface.card,
               textSectionTitleColor: theme.text.secondary,

@@ -17,6 +17,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      "./plugins/with-rnfirebase-ios-linkage",
       [
         "expo-image-picker",
         {

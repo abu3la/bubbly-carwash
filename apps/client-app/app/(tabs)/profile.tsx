@@ -7,6 +7,7 @@ import { useCopy } from '../../src/i18n';
 import { useSession } from '../../src/session';
 import { useAuthSession } from '../../src/authSession';
 import { useCustomerData } from '../../src/customerData';
+import { unregisterFirebaseMessaging } from '../../src/firebase';
 
 export default function Profile() {
   const { theme } = useUnistyles();
@@ -68,6 +69,7 @@ export default function Profile() {
       </Card>
 
       <Button label={copy.profile.signOut} variant="ghost" fullWidth onPress={async () => {
+        await unregisterFirebaseMessaging().catch(() => undefined);
         await auth.signOut();
         toast.show(copy.profile.signedOut, 'washed');
         router.replace('/onboarding');

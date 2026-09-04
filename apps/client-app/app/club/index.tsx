@@ -9,10 +9,10 @@ import { useCatalogue } from '../../src/catalogue';
 import { useClubDraft } from '../../src/clubDraft';
 
 const FALLBACK_PLANS = [
-  { id: 'basic', name: { ar: 'أساسي', en: 'Basic' }, priceMinor: 19900, credits: 2, weekly: 2, roll: 0, best: false },
-  { id: 'basic-3', name: { ar: 'أساسي', en: 'Basic' }, priceMinor: 26900, credits: 3, weekly: 3, roll: 0, best: false },
-  { id: 'plus', name: { ar: 'سوبر ووش', en: 'Super Wash' }, priceMinor: 29900, credits: 2, weekly: 2, roll: 0, best: false },
-  { id: 'plus-3', name: { ar: 'سوبر ووش', en: 'Super Wash' }, priceMinor: 39900, credits: 3, weekly: 3, roll: 0, best: true },
+  { id: 'basic', name: { ar: 'أساسي', en: 'Basic' }, serviceKey: 'exterior' as const, priceMinor: 19900, credits: 2, weekly: 2, roll: 0, best: false },
+  { id: 'basic-3', name: { ar: 'أساسي', en: 'Basic' }, serviceKey: 'exterior' as const, priceMinor: 26900, credits: 3, weekly: 3, roll: 0, best: false },
+  { id: 'plus', name: { ar: 'سوبر ووش', en: 'Super Wash' }, serviceKey: 'full' as const, priceMinor: 29900, credits: 2, weekly: 2, roll: 0, best: false },
+  { id: 'plus-3', name: { ar: 'سوبر ووش', en: 'Super Wash' }, serviceKey: 'full' as const, priceMinor: 39900, credits: 3, weekly: 3, roll: 0, best: true },
 ];
 
 export default function ClubPlans() {
@@ -41,7 +41,9 @@ export default function ClubPlans() {
             <View style={styles.planHeading}>
               <Txt variant="heading" weight="bold">{family.title}</Txt>
               <Txt variant="small" tone="secondary">
-                {language === 'ar' ? 'اختر غسلتين أو 3 غسلات أسبوعيًا.' : 'Choose two or three washes per week.'}
+                {language === 'ar'
+                  ? `${family.plans[0]?.serviceKey === 'full' ? 'غسيل داخلي وخارجي' : 'غسيل خارجي'} · اختر غسلتين أو 3 أسبوعيًا.`
+                  : `${family.plans[0]?.serviceKey === 'full' ? 'Inside and outside' : 'Exterior wash'} · choose two or three weekly.`}
               </Txt>
             </View>
             <View style={styles.options}>

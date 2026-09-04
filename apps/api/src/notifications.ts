@@ -99,7 +99,9 @@ async function sendFcm(env: Env, token: string, input: NotificationInput, notifi
             kind: input.kind,
             ...input.data,
           },
-          android: { priority: 'high', notification: { channel_id: 'operations' } },
+          // Let Android use Firebase's default channel. Naming a channel that
+          // the native app has not created makes some devices drop the alert.
+          android: { priority: 'high' },
           apns: { payload: { aps: { sound: 'default' } } },
         },
       }),

@@ -133,6 +133,7 @@ export interface Catalogue {
   plans: Array<{
     id: string;
     name: { ar: string; en: string };
+    serviceKey: 'exterior' | 'full';
     priceMinor: number;
     credits: number;
     weekly: number;
@@ -223,6 +224,7 @@ export interface RealBooking {
   status: 'scheduled' | 'active' | 'done' | 'cancelled';
   stage: 'booked' | 'arrived' | 'washed' | 'verified';
   source: 'club' | 'package' | 'cash';
+  membership_id: string | null;
   total_minor: number;
   payment_confirmed: boolean;
   vehicles: Pick<SavedVehicle, 'id' | 'make' | 'model' | 'color' | 'plate' | 'size'>;
@@ -275,6 +277,10 @@ export const registerPushToken = (deviceToken: string, platform: 'ios' | 'androi
   call<{ registered: boolean }>('/me/push-token', {
     method: 'POST', body: JSON.stringify({ token: deviceToken, platform, app: 'customer' }),
   });
+export const unregisterPushToken = (deviceToken: string) =>
+  call<{ unregistered: boolean }>('/me/push-token', {
+    method: 'DELETE', body: JSON.stringify({ token: deviceToken }),
+  });
 
 /* ------------------------------------------------------------- memberships */
 
@@ -294,7 +300,7 @@ export const fetchMembership = (): Promise<{ membership: RealMembership | null }
 export const createMembershipCheckout = (input: {
   planId: string;
   slots: Array<{ vehicleId: string; addressId: string; serviceKey: string; slotStart: string; addOns: string[] }>;
-}): Promise<{ membershipId: string; checkoutUrl: string }> =>
+}): Promise<{ membershipId: string; checkoutUrl: string; occurrenceCount: number }> =>
   call('/memberships/checkout', { method: 'POST', body: JSON.stringify(input) });
 export const confirmMembership = (id: string): Promise<{ membership: RealMembership; bookings: RealBooking[] }> =>
   call(`/memberships/${id}/confirm`, { method: 'POST' });

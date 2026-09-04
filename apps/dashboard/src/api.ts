@@ -31,6 +31,10 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   const json = await res.json().catch(() => ({}));
+  if (res.status === 401 || res.status === 403) {
+    token.clear();
+    window.dispatchEvent(new Event('bubbles:session-expired'));
+  }
   if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown', res.status);
   return json as T;
 }

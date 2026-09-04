@@ -30,6 +30,7 @@ const KNOWN_FAILURES = new Set([
   'fridayClosed',
   'unknownService',
   'unknownSlot',
+  'slotInPast',
   'slotFull',
   'noMembership',
   'noClubCredits',
@@ -43,7 +44,7 @@ interface CreateBody {
   serviceKey?: string;
   /** ISO-8601 with offset, e.g. 2026-08-25T08:00:00+03:00. */
   slotStart?: string;
-  source?: 'club' | 'package' | 'cash';
+  source?: 'club' | 'cash';
   addOns?: string[];
 }
 
@@ -120,11 +121,29 @@ bookingsRoute.post('/', async (c) => {
   }
 
   const source = b.source ?? 'cash';
-  if (!['club', 'package', 'cash'].includes(source)) {
+  if (!['club', 'cash'].includes(source)) {
     return c.json({ error: { code: 'badSource' } }, 400);
+  }
+  if (source === 'cash' && b.serviceKey !== 'exterior') {
+    return c.json({ error: { code: 'serviceNotAvailableForSingleWash' } }, 409);
+  }
+
+  if (source === 'club') {
+    const [membership] = await db<{ plan_id: string }>(
+      c.env,
+      `memberships?profile_id=eq.${caller.id}&state=eq.active&payment_confirmed=eq.true` +
+        `&cycle_start=lte.${encodeURIComponent(b.slotStart)}&cycle_end=gt.${encodeURIComponent(b.slotStart)}` +
+        '&select=plan_id&limit=1',
+    );
+    if (!membership) return c.json({ error: { code: 'noMembership' } }, 409);
+    const includedService = membership.plan_id.startsWith('plus') ? 'full' : 'exterior';
+    if (b.serviceKey !== includedService) {
+      return c.json({ error: { code: 'serviceNotInPlan' } }, 409);
+    }
   }
 
   try {
+    await db(c.env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} });
     // The profile comes from the verified token, never from the body —
     // otherwise anyone could book against someone else's membership.
     const [booking] = await db(c.env, 'rpc/create_booking', {

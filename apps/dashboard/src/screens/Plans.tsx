@@ -40,21 +40,18 @@ export function Plans() {
                   <strong className="headline">{p.name_ar}</strong>
                   <span className="row-detail">{p.weekly === 2 ? 'خيار الغسلتين' : 'خيار الثلاث غسلات'}</span>
                 </td>
-                {([
-                  ['priceSar', (p.price_minor / 100).toFixed(0)],
-                  ['weekly', String(p.weekly)],
-                ] as const).map(([field, value]) => (
-                  <td key={field}>
-                    <input
-                      type="number"
-                      defaultValue={value}
-                      onBlur={(e) => {
-                        const v = Number(e.target.value);
-                        if (String(v) !== value) patch(p.id, { [field]: v });
-                      }}
-                    />
-                  </td>
-                ))}
+                <td>
+                  <input
+                    type="number"
+                    min="1"
+                    defaultValue={(p.price_minor / 100).toFixed(0)}
+                    onBlur={(e) => {
+                      const v = Number(e.target.value);
+                      if (v > 0 && v * 100 !== p.price_minor) patch(p.id, { priceSar: v });
+                    }}
+                  />
+                </td>
+                <td className="num">{p.weekly}</td>
                 <td>
                   <button className="ghost" onClick={() => patch(p.id, { active: !p.active })}>
                     {p.active ? 'إخفاء' : 'إظهار'}

@@ -7,14 +7,12 @@ import { useCopy } from '../../src/i18n';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { ApiError, saveVehicle } from '../../src/api';
-import { useSession } from '../../src/session';
 import { useCustomerData } from '../../src/customerData';
 
 const SIZES = ['sedan', 'suv', 'pickup'] as const;
 
 export default function RegisterVehicle() {
   const router = useRouter();
-  const session = useSession();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { refresh } = useCustomerData();
   const copy = useCopy();
@@ -41,7 +39,6 @@ export default function RegisterVehicle() {
         router.replace(returnTo === 'booking' ? '/book/vehicle' : '/account/vehicles');
         return;
       }
-      session.completeOnboarding();
       router.replace('/(tabs)/home');
     } catch (e) {
       setError(

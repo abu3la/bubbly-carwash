@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../db';
-import { createInvoice, getInvoice, invoiceMatches } from '../moyasar';
+import { createInvoice, getInvoice, invoiceMatches, refundInvoice } from '../moyasar';
 import { notifyTeamOfBooking } from '../dispatch';
+import { notify } from '../notifications';
 
 export const membershipsRoute = new Hono<{ Bindings: Env }>();
 membershipsRoute.use('*', requireAuth());
@@ -14,6 +15,43 @@ interface SignupSlot {
   serviceKey?: string;
   slotStart?: string;
   addOns?: string[];
+}
+
+interface ValidatedSignupSlot {
+  vehicleId: string;
+  addressId: string;
+  serviceKey: string;
+  slotStart: string;
+  addOns: string[];
+}
+
+const DAY_MS = 86_400_000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const terminalScheduleErrors = [
+  'slotFull',
+  'outsideServiceArea',
+  'slotInPast',
+  'weeklyCapReached',
+  'scheduleIncomplete',
+  'vehicleNotYours',
+  'addressNotYours',
+  'vehicleUnavailable',
+  'addressUnavailable',
+  'unknownService',
+  'unknownSlot',
+  'fridayClosed',
+  'noMembership',
+] as const;
+
+function isTerminalScheduleError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return terminalScheduleErrors.some((code) => message.includes(code));
+}
+
+/** Saudi Arabia has no DST, so shifting three hours yields stable local parts. */
+function riyadhSlotParts(stamp: number) {
+  const local = new Date(stamp + 3 * 60 * 60 * 1000).toISOString();
+  return { date: local.slice(0, 10), time: local.slice(11, 16) };
 }
 
 interface MembershipRow {
@@ -46,6 +84,7 @@ membershipsRoute.get('/current', async (c) => {
 membershipsRoute.post('/checkout', async (c) => {
   const caller = c.get('caller');
   const body = await c.req.json<{ planId?: string; slots?: SignupSlot[] }>();
+  await db(c.env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} });
   const [plan] = await db<{ id: string; name_ar: string; price_minor: number; weekly: number }>(
     c.env,
     `plans?id=eq.${encodeURIComponent(body.planId ?? '')}&active=eq.true&select=id,name_ar,price_minor,weekly`,
@@ -54,18 +93,71 @@ membershipsRoute.post('/checkout', async (c) => {
   if (!Array.isArray(body.slots) || body.slots.length !== plan.weekly) {
     return c.json({ error: { code: 'scheduleIncomplete' } }, 400);
   }
+  const includedService = plan.id.startsWith('plus') ? 'full' : 'exterior';
 
+  const now = Date.now();
+  const cycleEnd = new Date(now + 30 * DAY_MS);
+  const firstWeekEnd = now + 7 * DAY_MS;
   const seen = new Set<string>();
+  const seenDays = new Set<string>();
+  const baseSlots: ValidatedSignupSlot[] = [];
   for (const slot of body.slots) {
     if (!slot.vehicleId || !slot.addressId || !slot.serviceKey || !slot.slotStart) {
       return c.json({ error: { code: 'scheduleIncomplete' } }, 400);
     }
+    if (slot.serviceKey !== includedService) {
+      return c.json({ error: { code: 'serviceNotInPlan' } }, 400);
+    }
+    if (slot.addOns?.length) {
+      return c.json({ error: { code: 'addOnsNotAllowedAtSignup' } }, 400);
+    }
+    if (!UUID.test(slot.vehicleId) || !UUID.test(slot.addressId)) {
+      return c.json({ error: { code: 'scheduleIncomplete' } }, 400);
+    }
     const time = Date.parse(slot.slotStart);
-    if (!Number.isFinite(time) || time <= Date.now()) return c.json({ error: { code: 'slotInPast' } }, 400);
+    if (!Number.isFinite(time) || time <= now) return c.json({ error: { code: 'slotInPast' } }, 400);
+    if (time > firstWeekEnd) return c.json({ error: { code: 'scheduleOutsideFirstWeek' } }, 400);
     const riyadh = new Date(new Date(slot.slotStart).toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
     if (riyadh.getDay() === 5) return c.json({ error: { code: 'fridayClosed' } }, 400);
     if (seen.has(slot.slotStart)) return c.json({ error: { code: 'duplicateSlot' } }, 400);
+    const localDay = riyadhSlotParts(time).date;
+    if (seenDays.has(localDay)) return c.json({ error: { code: 'oneWashPerDay' } }, 400);
     seen.add(slot.slotStart);
+    seenDays.add(localDay);
+    baseSlots.push({
+      vehicleId: slot.vehicleId,
+      addressId: slot.addressId,
+      serviceKey: slot.serviceKey,
+      slotStart: slot.slotStart,
+      addOns: [],
+    });
+  }
+
+  const expandedSlots: ValidatedSignupSlot[] = [];
+  for (const slot of baseSlots) {
+    const [[vehicle], [address]] = await Promise.all([
+      db<{ id: string }>(c.env, `vehicles?id=eq.${slot.vehicleId}&profile_id=eq.${caller.id}&archived_at=is.null&select=id`),
+      db<{ id: string; lat: number | null; lng: number | null }>(
+        c.env,
+        `addresses?id=eq.${slot.addressId}&profile_id=eq.${caller.id}&archived_at=is.null&select=id,lat,lng`,
+      ),
+    ]);
+    if (!vehicle) return c.json({ error: { code: 'vehicleUnavailable' } }, 409);
+    if (address?.lat == null || address.lng == null) {
+      return c.json({ error: { code: 'addressUnavailable' } }, 409);
+    }
+
+    for (let stamp = Date.parse(slot.slotStart); stamp < cycleEnd.getTime(); stamp += 7 * DAY_MS) {
+      const local = riyadhSlotParts(stamp);
+      const available = await db<{ starts_at: string }>(c.env, 'rpc/available_slots', {
+        method: 'POST',
+        body: { p_lat: address.lat, p_lng: address.lng, p_date: local.date },
+      });
+      if (!available.some((row) => String(row.starts_at).slice(0, 5) === local.time)) {
+        return c.json({ error: { code: 'scheduleUnavailable', date: local.date } }, 409);
+      }
+      expandedSlots.push({ ...slot, slotStart: new Date(stamp).toISOString() });
+    }
   }
 
   const existing = await db<{ id: string; payment_confirmed: boolean }>(
@@ -81,8 +173,6 @@ membershipsRoute.post('/checkout', async (c) => {
     });
   }
 
-  const cycleEnd = new Date();
-  cycleEnd.setDate(cycleEnd.getDate() + 30);
   const [membership] = await db<{ id: string }>(c.env, 'memberships', {
     method: 'POST',
     prefer: 'return=representation',
@@ -100,7 +190,7 @@ membershipsRoute.post('/checkout', async (c) => {
   try {
     await db(c.env, 'membership_signup_slots', {
       method: 'POST', prefer: 'return=minimal',
-      body: body.slots.map((slot) => ({
+      body: expandedSlots.map((slot) => ({
         membership_id: membership.id,
         vehicle_id: slot.vehicleId,
         address_id: slot.addressId,
@@ -130,7 +220,11 @@ membershipsRoute.post('/checkout', async (c) => {
         provider_ref: invoice.id,
       },
     });
-    return c.json({ membershipId: membership.id, checkoutUrl: invoice.url }, 201);
+    return c.json({
+      membershipId: membership.id,
+      checkoutUrl: invoice.url,
+      occurrenceCount: expandedSlots.length,
+    }, 201);
   } catch (error) {
     console.error('[memberships] checkout failed', error);
     await db(c.env, `memberships?id=eq.${membership.id}`, {
@@ -138,6 +232,16 @@ membershipsRoute.post('/checkout', async (c) => {
     });
     return c.json({ error: { code: 'paymentUnavailable' } }, 503);
   }
+});
+
+membershipsRoute.post('/current/cancel', async (c) => {
+  const caller = c.get('caller');
+  const [membership] = await db(c.env, `memberships?profile_id=eq.${caller.id}&state=eq.active&payment_confirmed=eq.true&select=id`);
+  if (!membership) return c.json({ error: { code: 'notFound' } }, 404);
+  await db(c.env, `memberships?id=eq.${membership.id}`, {
+    method: 'PATCH', prefer: 'return=minimal', body: { state: 'cancelled', cancelled_at: new Date().toISOString() },
+  });
+  return c.json({ cancelled: true });
 });
 
 membershipsRoute.post('/:id/confirm', async (c) => {
@@ -150,9 +254,9 @@ membershipsRoute.post('/:id/confirm', async (c) => {
   if (!membership) return c.json({ error: { code: 'notFound' } }, 404);
 
   if (!membership.payment_confirmed) {
-    const [payment] = await db<{ id: string; provider_ref: string; amount_minor: number }>(
+    const [payment] = await db<{ id: string; provider_ref: string; amount_minor: number; state: string }>(
       c.env,
-      `payments?membership_id=eq.${id}&provider=eq.moyasar&select=id,provider_ref,amount_minor&order=created_at.desc&limit=1`,
+      `payments?membership_id=eq.${id}&provider=eq.moyasar&select=id,provider_ref,amount_minor,state&order=created_at.desc&limit=1`,
     );
     if (!payment?.provider_ref) return c.json({ error: { code: 'paymentNotFound' } }, 409);
     const invoice = await getInvoice(c.env, payment.provider_ref);
@@ -168,6 +272,36 @@ membershipsRoute.post('/:id/confirm', async (c) => {
         method: 'PATCH', prefer: 'return=minimal', body: { state: 'paid', updated_at: new Date().toISOString() },
       });
     } catch (error) {
+      if (isTerminalScheduleError(error)) {
+        try {
+          if (payment.state !== 'refunded') await refundInvoice(c.env, payment.provider_ref);
+          const now = new Date().toISOString();
+          await Promise.all([
+            db(c.env, `payments?id=eq.${payment.id}`, {
+              method: 'PATCH',
+              prefer: 'return=minimal',
+              body: { state: 'refunded', failure: 'scheduleUnavailable', updated_at: now },
+            }),
+            db(c.env, `memberships?id=eq.${id}`, {
+              method: 'PATCH',
+              prefer: 'return=minimal',
+              body: { state: 'cancelled', cancelled_at: now },
+            }),
+          ]);
+          await notify(c.env, {
+            profileId: caller.id,
+            kind: 'payment_refunded',
+            titleAr: 'أُعيد مبلغ الاشتراك',
+            titleEn: 'Subscription payment refunded',
+            bodyAr: 'تعذر تثبيت جميع مواعيدك، لذلك أرسلنا طلب استرجاع المبلغ إلى ميسر.',
+            bodyEn: 'We could not secure every appointment, so the payment was refunded through Moyasar.',
+          }).catch((notifyError) => console.warn('[memberships] refund notification failed', notifyError));
+          return c.json({ error: { code: 'scheduleUnavailableRefunded' } }, 409);
+        } catch (refundError) {
+          console.error('[memberships] activation refund failed', { error, refundError });
+          return c.json({ error: { code: 'scheduleUnavailableRefundPending' } }, 503);
+        }
+      }
       console.error('[memberships] activation failed', error);
       return c.json({ error: { code: 'scheduleUnavailable' } }, 409);
     }
@@ -194,16 +328,6 @@ membershipsRoute.post('/:id/abandon', async (c) => {
     method: 'PATCH',
     prefer: 'return=minimal',
     body: { state: 'cancelled', cancelled_at: new Date().toISOString() },
-  });
-  return c.json({ cancelled: true });
-});
-
-membershipsRoute.post('/current/cancel', async (c) => {
-  const caller = c.get('caller');
-  const [membership] = await db(c.env, `memberships?profile_id=eq.${caller.id}&state=eq.active&payment_confirmed=eq.true&select=id`);
-  if (!membership) return c.json({ error: { code: 'notFound' } }, 404);
-  await db(c.env, `memberships?id=eq.${membership.id}`, {
-    method: 'PATCH', prefer: 'return=minimal', body: { state: 'cancelled', cancelled_at: new Date().toISOString() },
   });
   return c.json({ cancelled: true });
 });

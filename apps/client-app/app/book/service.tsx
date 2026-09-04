@@ -2,19 +2,41 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Droplets } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Num, Screen, Txt } from '@sama/ui-native';
+import { Button, Card, Num, Screen, Txt, useLocale } from '@sama/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel, TickRow } from '../../src/components/Bits';
 import { SERVICES } from '../../src/content';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
+import { useCatalogue } from '../../src/catalogue';
+import type { Service } from '../../src/content';
+import { useCustomerData } from '../../src/customerData';
 
 export default function ChooseService() {
   const { theme } = useUnistyles();
   const router = useRouter();
   const draft = useBookingDraft();
   const copy = useCopy();
+  const catalogue = useCatalogue();
+  const { membership } = useCustomerData();
+  const { language } = useLocale();
   const selected = copy.services[draft.serviceKey];
+  const services = catalogue?.services.length
+    ? catalogue.services
+      .filter((option) => option.key in copy.services
+        && (option.key === 'exterior' || membership?.plan_id.startsWith('plus')))
+      .map((option) => ({
+        key: option.key as Service['key'],
+        name: option.name[language],
+        blurb: option.blurb[language],
+        price: option.priceMinor / 100,
+        minutes: option.minutes,
+      }))
+    : SERVICES.map((option) => ({
+      ...option,
+      name: copy.services[option.key].name,
+      blurb: copy.services[option.key].blurb,
+    }));
 
   return (
     <Screen scroll contentStyle={styles.page}>
@@ -22,7 +44,7 @@ export default function ChooseService() {
 
       <View style={styles.body}>
         <View style={styles.services}>
-          {SERVICES.map((option) => (
+          {services.map((option) => (
             <Card
               key={option.key}
               onPress={() => draft.setService(option.key)}
@@ -32,10 +54,10 @@ export default function ChooseService() {
             >
               <Droplets size={theme.scale(26)} color={theme.action.primary} strokeWidth={2} />
               <Txt variant="heading" weight="bold">
-                {copy.services[option.key].name}
+                {option.name}
               </Txt>
               <Txt variant="small" tone="secondary">
-                {copy.services[option.key].blurb}
+                {option.blurb}
               </Txt>
               <View style={styles.priceRow}>
                 <Num variant="small" weight="bold">

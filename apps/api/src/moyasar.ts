@@ -84,8 +84,25 @@ export async function refundInvoice(env: Env, invoiceId: string, amount?: number
   if (!env.MOYASAR_SECRET_KEY) throw new Error('moyasarNotConfigured');
   const invoice = await getInvoice(env, invoiceId);
   const payment = invoice.payments?.find((item) => item.status === 'paid' || item.status === 'captured');
-  if (!payment) throw new Error('paymentNotRefundable');
-  const refundable = payment.amount - Number(payment.refunded ?? 0);
+  if (!payment) {
+    const alreadyRefunded = invoice.payments?.find((item) => item.status === 'refunded');
+    if (alreadyRefunded) {
+      return {
+        paymentId: alreadyRefunded.id,
+        amount: Number(alreadyRefunded.refunded ?? alreadyRefunded.amount),
+        status: 'refunded',
+      };
+    }
+    throw new Error('paymentNotRefundable');
+  }
+  const refunded = Number(payment.refunded ?? 0);
+  const refundable = payment.amount - refunded;
+  // Moyasar can keep the payment status as `paid` while reporting the whole
+  // amount in `refunded`. Treat a replay after that state as success instead
+  // of attempting a zero-value second refund.
+  if (refundable <= 0 && refunded > 0) {
+    return { paymentId: payment.id, amount: refunded, status: 'refunded' };
+  }
   const requested = amount ?? refundable;
   if (!Number.isInteger(requested) || requested <= 0 || requested > refundable) {
     throw new Error('badRefundAmount');

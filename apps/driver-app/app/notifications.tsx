@@ -9,10 +9,15 @@ import { copy } from '../src/copy';
 export default function Notifications() {
   const router = useRouter();
   const [rows, setRows] = useState<DriverNotification[] | null>(null);
-  const load = useCallback(async () => setRows((await notifications()).notifications), []);
+  const [error, setError] = useState(false);
+  const load = useCallback(async () => {
+    try { setRows((await notifications()).notifications); setError(false); }
+    catch { setError(true); }
+  }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   return <Screen scroll contentStyle={styles.page}>
     <View style={styles.head}><Txt variant="title" weight="bold">{copy.notifications}</Txt><Button label="رجوع" variant="ghost" size="sm" onPress={() => router.back()} /></View>
+    {error ? <Button label="إعادة المحاولة" variant="secondary" onPress={() => void load()} /> : null}
     {rows?.length === 0 ? <Txt variant="small" tone="secondary" center>لا توجد تنبيهات.</Txt> : null}
     {(rows ?? []).map((item) => <Card key={item.id} variant={item.read_at ? 'default' : 'booking'} onPress={async () => {
       if (!item.read_at) await readNotification(item.id);

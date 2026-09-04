@@ -73,6 +73,8 @@ export function Teams() {
                     <input
                       type="number"
                       step={field === 'dailyCapacity' ? 1 : 0.0001}
+                      min={field === 'dailyCapacity' ? 1 : undefined}
+                      max={field === 'dailyCapacity' ? 40 : undefined}
                       defaultValue={value}
                       onBlur={(event) => {
                         const next = Number(event.target.value);

@@ -136,18 +136,17 @@ adminRoute.get('/plans', async (c) => c.json({ plans: await db(c.env, 'plans?ord
 adminRoute.patch('/plans/:id', async (c) => {
   const b = await c.req.json<{
     priceSar?: number;
-    credits?: number;
     weekly?: number;
-    roll?: number;
     active?: boolean;
   }>();
   const patch: Record<string, unknown> = {};
   const price = toMinor(b.priceSar);
   if (price !== undefined) patch.price_minor = price;
-  for (const k of ['credits', 'weekly', 'roll'] as const) {
-    if (typeof b[k] === 'number') patch[k] = Math.round(b[k]!);
-  }
   if (typeof b.weekly === 'number') {
+    if (![2, 3].includes(Math.round(b.weekly))) {
+      return c.json({ error: { code: 'weeklyMustBeTwoOrThree' } }, 400);
+    }
+    patch.weekly = Math.round(b.weekly);
     patch.credits = Math.round(b.weekly);
     patch.roll = 0;
   }
@@ -214,8 +213,13 @@ adminRoute.patch('/teams/:id', async (c) => {
   if (typeof b.serviceRadiusKm === 'number' && b.serviceRadiusKm > 0) {
     patch.service_radius_km = b.serviceRadiusKm;
   }
-  if (typeof b.dailyCapacity === 'number' && b.dailyCapacity > 0) {
+  if (typeof b.dailyCapacity === 'number'
+    && Number.isFinite(b.dailyCapacity)
+    && b.dailyCapacity >= 1
+    && b.dailyCapacity <= 40) {
     patch.daily_capacity = Math.round(b.dailyCapacity);
+  } else if (b.dailyCapacity !== undefined) {
+    return c.json({ error: { code: 'dailyCapacityOutOfRange' } }, 400);
   }
   if (typeof b.active === 'boolean') patch.active = b.active;
   if (!Object.keys(patch).length) return c.json({ error: { code: 'nothingToUpdate' } }, 400);

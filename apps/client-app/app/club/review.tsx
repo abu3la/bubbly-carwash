@@ -32,6 +32,7 @@ export default function ClubReview() {
           <Txt variant="small" tone="secondary">{ar ? `${weekly} غسلات أسبوعيًا، بلا رصيد وبلا ترحيل` : `${weekly} weekly washes, no credits and no rollover`}</Txt>
         </Card>
         <Card style={styles.slots}>
+          <Txt variant="caption" tone="secondary">{ar ? 'الجدول أسبوعي ويتكرر كل 7 أيام حتى نهاية الدورة.' : 'This weekly schedule repeats every 7 days until the cycle ends.'}</Txt>
           {draft.slots.map((slot) => (
             <View key={slot.slotStart} style={styles.slotRow}>
               <Txt variant="small" weight="semibold" style={styles.slotLabel}>{slot.label}</Txt>

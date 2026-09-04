@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { admin, auth, token } from './api';
 
@@ -95,6 +95,12 @@ export function App() {
   const [signedIn, setSignedIn] = useState(Boolean(token.get()));
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const expire = () => setSignedIn(false);
+    window.addEventListener('bubbles:session-expired', expire);
+    return () => window.removeEventListener('bubbles:session-expired', expire);
+  }, []);
+
   if (!signedIn) return <Gate onIn={() => setSignedIn(true)} />;
 
   return (
@@ -105,10 +111,9 @@ export function App() {
           BubblesCarWash
         </div>
         <nav>
-          <NavLink to="/" end>الباقات</NavLink>
+          <NavLink to="/" end>الحجوزات</NavLink>
           <NavLink to="/plans">اشتراكات النادي</NavLink>
           <NavLink to="/services">الخدمات</NavLink>
-          <NavLink to="/bookings">الحجوزات</NavLink>
           <NavLink to="/dispatch">توزيع الحجوزات</NavLink>
           <NavLink to="/teams">فرق التشغيل</NavLink>
           <NavLink to="/drivers">السائقون</NavLink>

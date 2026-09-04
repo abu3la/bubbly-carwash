@@ -11,6 +11,7 @@ import { useClubDraft } from '../../src/clubDraft';
 import { useCustomerData } from '../../src/customerData';
 import { fetchAvailability, type Availability } from '../../src/api';
 import { useCatalogue } from '../../src/catalogue';
+import { addCalendarDays, isFriday, nextBookableDateKey } from '../../src/dates';
 
 LocaleConfig.locales.ar = {
   monthNames: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
@@ -19,16 +20,6 @@ LocaleConfig.locales.ar = {
   dayNamesShort: ['أحد', 'اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
   today: 'اليوم',
 };
-
-const key = (date: Date) => date.toISOString().slice(0, 10);
-const TODAY = key(new Date());
-const MAX = key(new Date(Date.now() + 30 * 86_400_000));
-function firstOpen() {
-  const d = new Date();
-  d.setUTCHours(12, 0, 0, 0);
-  while (d.getUTCDay() === 5) d.setUTCDate(d.getUTCDate() + 1);
-  return key(d);
-}
 
 export default function ClubSchedule() {
   const { theme } = useUnistyles();
@@ -39,7 +30,11 @@ export default function ClubSchedule() {
   const catalogue = useCatalogue();
   const plan = catalogue?.plans.find((item) => item.id === draft.planId);
   const quota = plan?.weekly ?? (draft.planId.endsWith('-3') ? 3 : 2);
-  const [date, setDate] = useState(firstOpen());
+  const [bookingWindow] = useState(() => {
+    const minDate = nextBookableDateKey();
+    return { minDate, maxDate: addCalendarDays(minDate, 6) };
+  });
+  const [date, setDate] = useState(bookingWindow.minDate);
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [loading, setLoading] = useState(false);
   const address = addresses.find((item) => item.id === draft.addressId);
@@ -65,7 +60,23 @@ export default function ClubSchedule() {
   const label = useMemo(() => new Intl.DateTimeFormat(ar ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC',
   }).format(new Date(`${date}T12:00:00Z`)), [ar, date]);
-  const marked = Object.fromEntries(draft.slots.map((slot) => [slot.date, { marked: true, dotColor: theme.action.primary }]));
+  const marked: Record<string, {
+    disabled?: boolean;
+    disableTouchEvent?: boolean;
+    marked?: boolean;
+    dotColor?: string;
+    selected?: boolean;
+    selectedColor?: string;
+  }> = {};
+  // react-native-calendars still exposes a Friday just before minDate as a
+  // button when it is today. Mark the surrounding visible dates explicitly.
+  for (let offset = -35; offset <= 41; offset += 1) {
+    const key = addCalendarDays(bookingWindow.minDate, offset);
+    if (isFriday(key)) marked[key] = { disabled: true, disableTouchEvent: true };
+  }
+  draft.slots.forEach((slot) => {
+    marked[slot.date] = { ...marked[slot.date], marked: true, dotColor: theme.action.primary };
+  });
   marked[date] = { ...marked[date], selected: true, selectedColor: theme.action.primary } as never;
 
   return (
@@ -73,13 +84,19 @@ export default function ClubSchedule() {
       <FlowHeader title={ar ? 'مواعيد الاشتراك' : 'Subscription appointments'} onBack={() => router.back()} />
       <View style={styles.body}>
         <Txt variant="small" tone="secondary">
-          {ar ? `اختر ${quota} مواعيد أولى. كل موعد يُحتسب في أسبوعه وإذا مرّ لا يتحول إلى رصيد.` : `Choose your first ${quota} appointments. Each one belongs to its week and never becomes credit.`}
+          {ar ? `اختر ${quota} أيام لجدولك الأسبوعي. سنكرر نفس المواعيد كل 7 أيام طوال دورة الـ30 يومًا.` : `Choose ${quota} days for your weekly schedule. The same appointments repeat every 7 days through the 30-day cycle.`}
         </Txt>
 
         <View style={styles.section}>
           <SectionLabel>{ar ? 'السيارة' : 'Vehicle'}</SectionLabel>
           {vehicles.map((vehicle) => (
-            <Pressable key={vehicle.id} onPress={() => draft.setVehicleId(vehicle.id)} style={styles.choice(draft.vehicleId === vehicle.id)}>
+            <Pressable
+              key={vehicle.id}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: draft.vehicleId === vehicle.id }}
+              onPress={() => draft.setVehicleId(vehicle.id)}
+              style={styles.choice(draft.vehicleId === vehicle.id)}
+            >
               <Car size={theme.scale(18)} color={theme.text.secondary} strokeWidth={2} />
               <Txt variant="small" weight="semibold" style={styles.choiceText}>{vehicle.make} {vehicle.model} · {vehicle.plate}</Txt>
             </Pressable>
@@ -88,7 +105,13 @@ export default function ClubSchedule() {
         <View style={styles.section}>
           <SectionLabel>{ar ? 'العنوان' : 'Address'}</SectionLabel>
           {addresses.map((item) => (
-            <Pressable key={item.id} onPress={() => draft.setAddressId(item.id)} style={styles.choice(draft.addressId === item.id)}>
+            <Pressable
+              key={item.id}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: draft.addressId === item.id }}
+              onPress={() => draft.setAddressId(item.id)}
+              style={styles.choice(draft.addressId === item.id)}
+            >
               <MapPin size={theme.scale(18)} color={theme.text.secondary} strokeWidth={2} />
               <Txt variant="small" weight="semibold" style={styles.choiceText}>{item.line}</Txt>
             </Pressable>
@@ -98,11 +121,13 @@ export default function ClubSchedule() {
         <Calendar
           key={language}
           current={date}
-          minDate={TODAY}
-          maxDate={MAX}
+          minDate={bookingWindow.minDate}
+          maxDate={bookingWindow.maxDate}
           disabledByWeekDays={[5]}
           disableAllTouchEventsForDisabledDays
-          onDayPress={(day: DateData) => setDate(day.dateString)}
+          onDayPress={(day: DateData) => {
+            if (!isFriday(day.dateString)) setDate(day.dateString);
+          }}
           markedDates={marked}
           theme={{
             calendarBackground: theme.surface.card, textSectionTitleColor: theme.text.secondary,
@@ -122,12 +147,23 @@ export default function ClubSchedule() {
           {!loading && availability?.slots.map((slot) => {
             const slotStart = `${date}T${slot.startsAt}:00+03:00`;
             const chosen = draft.slots.some((item) => item.slotStart === slotStart);
-            const full = draft.slots.length >= quota && !chosen;
+            const sameDay = draft.slots.find((item) => item.date === date && item.slotStart !== slotStart);
+            const full = draft.slots.length >= quota && !chosen && !sameDay;
             return (
-              <Pressable key={slot.period} disabled={full} onPress={() => {
+              <Pressable
+                key={slot.period}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: chosen, disabled: full }}
+                disabled={full}
+                onPress={() => {
                 if (chosen) draft.removeSlot(slotStart);
-                else draft.addSlot({ date, label, period: slot.period, startsAt: slot.startsAt, endsAt: slot.endsAt, slotStart });
-              }} style={styles.slot(chosen, full)}>
+                else {
+                  if (sameDay) draft.removeSlot(sameDay.slotStart);
+                  draft.addSlot({ date, label, period: slot.period, startsAt: slot.startsAt, endsAt: slot.endsAt, slotStart });
+                }
+                }}
+                style={styles.slot(chosen, full)}
+              >
                 <View style={styles.choiceText}>
                   <Txt variant="body" weight="bold" tone={chosen ? 'inverse' : 'primary'}>{ar ? ({ morning: 'صباحًا', afternoon: 'ظهرًا', night: 'مساءً' } as const)[slot.period] : slot.period}</Txt>
                   <Txt variant="caption" tone={chosen ? 'inverseSoft' : 'muted'}>{ar ? `${slot.remaining} متاح` : `${slot.remaining} available`}</Txt>
@@ -142,6 +178,7 @@ export default function ClubSchedule() {
         {draft.slots.length ? (
           <Card style={styles.selected}>
             <Txt variant="body" weight="bold">{ar ? `تم اختيار ${draft.slots.length} من ${quota}` : `${draft.slots.length} of ${quota} selected`}</Txt>
+            <Txt variant="caption" tone="secondary">{ar ? 'يتكرر كل موعد أسبوعيًا حتى نهاية الدورة.' : 'Each appointment repeats weekly until the cycle ends.'}</Txt>
             {draft.slots.map((slot) => (
               <View key={slot.slotStart} style={styles.selectedRow}>
                 <View style={styles.choiceText}>

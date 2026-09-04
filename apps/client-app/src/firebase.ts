@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { PermissionsAndroid, Platform } from 'react-native';
-import { registerPushToken } from './api';
+import { registerPushToken, unregisterPushToken } from './api';
 
 /** Register the native FCM token only in builds carrying Firebase config. */
 export async function registerFirebaseMessaging(onOpen?: (route: string) => void) {
@@ -30,4 +30,12 @@ export async function registerFirebaseMessaging(onOpen?: (route: string) => void
   const initial = await getInitialNotification(messaging);
   if (initial) setTimeout(() => open(initial), 0);
   return () => { stopRefresh(); stopOpen(); };
+}
+
+/** Stop a signed-out device from receiving the previous customer's alerts. */
+export async function unregisterFirebaseMessaging() {
+  if (!Constants.expoConfig?.extra?.firebaseConfigured || Platform.OS === 'web') return;
+  const { getMessaging, getToken } = await import('@react-native-firebase/messaging');
+  const token = await getToken(getMessaging());
+  if (token) await unregisterPushToken(token);
 }

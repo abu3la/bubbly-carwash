@@ -1,6 +1,6 @@
-# Bubbly Carwash
+# BubblesCarWash
 
-A monorepo for the Bubbly mobile car-wash platform, structured per
+A monorepo for the BubblesCarWash mobile car-wash platform, structured per
 [`docs/ARCHITECTURE_GUIDE.md`](docs/ARCHITECTURE_GUIDE.md).
 
 ## What's inside
@@ -27,11 +27,11 @@ A monorepo for the Bubbly mobile car-wash platform, structured per
 pnpm install
 pnpm dev          # every app in dev mode (or target one, below)
 
-pnpm --filter @bubbly/api dev        # Hono API on http://localhost:8787
-pnpm --filter @bubbly/dashboard dev  # dashboard on http://localhost:5173
-pnpm --filter @bubbly/landing dev    # landing on http://localhost:3000
-pnpm --filter @bubbly/client-app dev # Expo dev server (customer app)
-pnpm --filter @bubbly/driver-app dev # Expo dev server (driver app)
+pnpm --filter @sama/api dev        # Hono API on http://localhost:8787
+pnpm --filter @sama/dashboard dev  # dashboard on http://localhost:5173
+pnpm --filter @sama/landing dev    # landing on http://localhost:3000
+pnpm --filter @sama/client-app dev # Expo dev server (customer app)
+pnpm --filter @sama/driver-app dev # Expo dev server (driver app)
 ```
 
 Workspace-wide checks:
@@ -44,11 +44,11 @@ pnpm lint
 
 ## Database (Supabase)
 
-The API reads and writes Supabase Postgres. Without credentials it falls back to an
-in-memory seeded dataset, so the workspace runs out of the box.
+The API reads and writes Supabase Postgres. Local API work requires the
+gitignored `apps/api/.dev.vars` credentials.
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Run the migration in `apps/api/supabase/migrations/0001_init.sql` (SQL editor or `supabase db push`).
+2. Apply the ordered SQL files in `apps/api/supabase/migrations/`.
 3. Copy `apps/api/.dev.vars.example` to `apps/api/.dev.vars` and fill in
    `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 
@@ -57,9 +57,9 @@ in-memory seeded dataset, so the workspace runs out of the box.
 Deploys are manual and need `wrangler login` first:
 
 ```bash
-pnpm --filter @bubbly/api deploy        # Worker
-pnpm --filter @bubbly/dashboard deploy  # static assets Worker
-pnpm --filter @bubbly/landing deploy    # OpenNext build + Worker
+pnpm --filter @sama/api deploy        # Worker
+pnpm --filter @sama/dashboard deploy  # static assets Worker
+pnpm --filter @sama/landing deploy    # OpenNext build + Worker
 ```
 
 Production secrets for the API: `wrangler secret put SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
@@ -72,8 +72,5 @@ from `apps/api/`.
 - `ui-web` and `ui-native` share `design-tokens`, never component implementations.
 - Every package declares its own dependencies — no hoisting reliance.
 
-## Not built yet (deliberate)
-
-- **Auth** — Supabase Auth as Hono middleware.
-- **Live driver tracking** — Supabase Realtime on `driver_locations`.
-- **Payments** — `Booking` already snapshots the price for this.
+See [`STATUS.md`](STATUS.md) for current deployed URLs, verified features and
+the remaining external configuration.

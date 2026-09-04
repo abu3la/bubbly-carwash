@@ -97,6 +97,7 @@ catalogueRoute.get('/', async (c) => {
     plans: plans.map((p) => ({
       id: p.id,
       name: bilingual(p),
+      serviceKey: p.id.startsWith('plus') ? 'full' : 'exterior',
       priceMinor: p.price_minor,
       credits: p.credits,
       weekly: p.weekly,
@@ -149,10 +150,11 @@ catalogueRoute.get('/availability', async (c) => {
   }
 
   const [rows, teams] = await Promise.all([
-    db<AvailabilityRow>(c.env, 'rpc/available_slots', {
-      method: 'POST',
-      body: { p_lat: lat, p_lng: lng, p_date: date },
-    }),
+    db(c.env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} }).then(() =>
+      db<AvailabilityRow>(c.env, 'rpc/available_slots', {
+        method: 'POST',
+        body: { p_lat: lat, p_lng: lng, p_date: date },
+      })),
     db<{ id: string; lat: number; lng: number; service_radius_km: number }>(
       c.env,
       'teams?active=eq.true&select=id,lat,lng,service_radius_km',
@@ -162,13 +164,21 @@ catalogueRoute.get('/availability', async (c) => {
   const covered = teams.some(
     (team) => distanceKm({ lat, lng }, team) <= Number(team.service_radius_km),
   );
-  const first = rows[0];
+  // `available_slots` protects capacity, while this edge check keeps today's
+  // already-started periods out of every client. Booking creation repeats the
+  // past-time guard, so this is UX correctness rather than a security boundary.
+  const now = Date.now();
+  const futureRows = rows.filter((row) => {
+    const startsAt = String(row.starts_at).slice(0, 8);
+    return Date.parse(`${date}T${startsAt}+03:00`) > now;
+  });
+  const first = futureRows[0];
 
   c.header('Cache-Control', 'no-store');
   return c.json({
     date,
     closed: false,
-    reason: covered ? (rows.length ? null : 'full') : 'outsideServiceArea',
+    reason: covered ? (futureRows.length ? null : 'full') : 'outsideServiceArea',
     covered,
     team: first
       ? {
@@ -178,7 +188,7 @@ catalogueRoute.get('/availability', async (c) => {
           dailyCapacity: first.daily_capacity,
         }
       : null,
-    slots: rows.map((row) => ({
+    slots: futureRows.map((row) => ({
       period: row.period,
       startsAt: String(row.starts_at).slice(0, 5),
       endsAt: String(row.ends_at).slice(0, 5),

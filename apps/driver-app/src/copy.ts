@@ -12,6 +12,7 @@ export const copy = {
   sendCode: 'إرسال الرمز',
   sending: 'جارٍ الإرسال…',
   codeSentTo: 'أرسلنا الرمز إلى',
+  developmentCode: (code: string) => `رمز التطوير: ${code}`,
   verify: 'دخول',
   verifying: 'جارٍ التحقق…',
   changeNumber: 'تغيير الرقم',

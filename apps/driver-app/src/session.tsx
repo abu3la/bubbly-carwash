@@ -6,7 +6,7 @@ interface Api {
   /** False until the stored session has been read from disk. */
   ready: boolean;
   setSession: (s: Session) => void;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const Ctx = createContext<Api | null>(null);
@@ -25,8 +25,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const signOut = useCallback(() => {
-    clear();
+  const signOut = useCallback(async () => {
+    await clear();
     setSession(null);
   }, []);
 
