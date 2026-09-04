@@ -11,6 +11,7 @@
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "test": "turbo test",
+    "verify:dev": "node scripts/verify-dev.mjs",
     "format": "prettier --write ."
   },
   "devDependencies": {

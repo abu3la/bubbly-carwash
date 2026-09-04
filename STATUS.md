@@ -46,6 +46,9 @@ names. The product name shown to customers, drivers and admins is
   minutes even when no client is making requests.
 - API and mobile TypeScript checks, repository lint, both iOS JavaScript bundle
   exports and the dashboard production build pass.
+- `pnpm verify:dev` rechecks the deployed API, catalogue and plan matrix,
+  Friday closure, Makkah coverage and Team 1 capacity, authenticated Google
+  Places, customer/driver/admin role boundaries, and the deployed dashboard.
 
 ## External configuration still required
 
