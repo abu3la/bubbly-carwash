@@ -8,6 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 const API = process.env.EXPO_PUBLIC_API_URL ?? 'https://sama-api-dev.taz2886.workers.dev';
 const SESSION_KEY = 'sama.driver.session';
+const sessionClearedListeners = new Set<() => void>();
+let refreshInFlight: Promise<Session> | null = null;
 
 export type ErrorCode =
   | 'wrongCode'
@@ -121,13 +123,17 @@ function fromPayload(payload: VerifyPayload, fallback?: Session): Session {
   };
 }
 
-async function refreshSession(stored: Session) {
-  const refreshed = fromPayload(
-    await authPost<VerifyPayload>('/auth/refresh', { refreshToken: stored.refreshToken }),
-    stored,
-  );
-  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
-  return refreshed;
+async function refreshSession(stored: Session): Promise<Session> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const refreshed = fromPayload(
+      await authPost<VerifyPayload>('/auth/refresh', { refreshToken: stored.refreshToken }),
+      stored,
+    );
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
+    return refreshed;
+  })().finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
 }
 
 async function authorizedFetch(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
@@ -151,7 +157,7 @@ async function authorizedFetch(path: string, init: RequestInit = {}, retry = tru
       await refreshSession(session);
       return authorizedFetch(path, init, false);
     } catch {
-      await AsyncStorage.removeItem(SESSION_KEY).catch(() => undefined);
+      await clearSession().catch(() => undefined);
     }
   }
   return response;
@@ -197,12 +203,22 @@ export async function loadSession(): Promise<Session | null> {
     if (stored.expiresAt > Math.floor(Date.now() / 1000) + 60) return stored;
     return await refreshSession(stored);
   } catch {
-    await AsyncStorage.removeItem(SESSION_KEY).catch(() => undefined);
+    await clearSession().catch(() => undefined);
     return null;
   }
 }
 
-export const signOut = () => AsyncStorage.removeItem(SESSION_KEY);
+export async function clearSession() {
+  await AsyncStorage.removeItem(SESSION_KEY);
+  sessionClearedListeners.forEach((listener) => listener());
+}
+
+export function onSessionCleared(listener: () => void) {
+  sessionClearedListeners.add(listener);
+  return () => sessionClearedListeners.delete(listener);
+}
+
+export const signOut = clearSession;
 
 export const jobs = () => call<{ team: { id: string; name_ar: string } | null; jobs: Job[] }>('/driver/jobs');
 export const doneJobs = () => call<{ jobs: Job[] }>('/driver/jobs/done');

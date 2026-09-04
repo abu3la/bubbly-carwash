@@ -1,5 +1,6 @@
-import { Stack, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect, type ReactNode } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -36,13 +37,15 @@ export default function RootLayout() {
               <SessionProvider>
                 <FirebaseRegistration />
                 <StatusBar style="dark" />
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: theme.surface.page },
-                    animation: 'slide_from_left',
-                  }}
-                />
+                <DriverAuthGate>
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: theme.surface.page },
+                      animation: 'slide_from_left',
+                    }}
+                  />
+                </DriverAuthGate>
               </SessionProvider>
             </ToastProvider>
           </DirectionRoot>
@@ -50,6 +53,17 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+function DriverAuthGate({ children }: { children: ReactNode }) {
+  const { ready, session } = useSession();
+  const segments = useSegments() as string[];
+  if (!ready) {
+    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page }}><ActivityIndicator /></View>;
+  }
+  const signInScreen = segments.length === 0 || segments[0] === 'index';
+  if (!session && !signInScreen) return <Redirect href="/" />;
+  return children;
 }
 
 function FirebaseRegistration() {

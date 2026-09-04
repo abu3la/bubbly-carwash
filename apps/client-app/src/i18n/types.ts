@@ -1,4 +1,4 @@
-import type { AddOn, Package, Plan, Service, Slot } from '../content';
+import type { AddOn, Plan, Service, Slot } from '../content';
 import type { BeatKey } from '@sama/design-tokens';
 
 /**
@@ -147,15 +147,8 @@ export interface Copy {
     chooseWhatSuits: string;
     singleWash: string;
     singleWashSub: string;
-    packages: string;
-    packagesTeaser: (save: string) => string;
-    packagesBalance: (credits: number, total: number, expiry: string) => string;
-    creditsLeft: (credits: number) => string;
     club: string;
     clubTeaser: string;
-    clubActive: (plan: string, renews: string) => string;
-    /** A member's card leads with what they can still use, not the renewal date. */
-    clubBalance: (plan: string, credits: number, leftThisWeek: number) => string;
     join: string;
     myClub: string;
     promises: { onTime: string; documented: string; support: string };
@@ -229,136 +222,18 @@ export interface Copy {
     backHome: string;
   };
 
-  packages: {
-    title: string;
-    blurb: string;
-    washes: string;
-    /** The price half of a package row — the saving figure is rendered beside it in `Num`. */
-    perWash: (per: number) => string;
-    /** Precedes the saving figure. Kept apart from it so the number can live in `Num`. */
-    saveLabel: string;
-    bestValue: string;
-    detailTitle: (washes: number) => string;
-    exteriorWashes: (washes: number) => string;
-    savingLine: (per: number) => string;
-    rulesSection: string;
-    rules: string[];
-    buy: (amount: string) => string;
-    lineItem: (washes: number) => string;
-    creditNote: string;
-    processing: string;
-    processingSub: string;
-    doneTitle: (washes: number) => string;
-    doneSub: (expiry: string) => string;
-    bookNow: string;
-  };
-
   club: {
     title: string;
-    blurb: string;
-    planLine: (credits: number, weekly: number, roll: number) => string;
-    mostPopular: string;
-    perksSection: string;
-    perks: string[];
-
-    reviewTitle: string;
-    paymentSection: string;
-    monthlyFee: string;
-    firstRenewal: string;
-    consent: (amount: string) => string;
-    activate: string;
-
-    processing: string;
-    processingSub: string;
-
-    member: string;
-    renewsLine: (renews: string, amount: string) => string;
-    creditsAvailable: (credits: number) => string;
-    usageThisWeek: string;
-    usageOf: (used: number, total: number) => string;
-    cycleCredits: string;
-    washesCount: (count: number) => string;
-    rolledOver: string;
-    preferredSlot: string;
-    preferredSlotValue: string;
-    bookFromClub: string;
-    pause: string;
-    paused: string;
-    cancelSubscription: string;
-    cancelTitle: string;
-    cancelBody: (credits: number, renews: string) => string;
-    keep: string;
-    confirmCancel: string;
-    cancelled: string;
-  };
-
-  bookings: {
-    title: string;
-    tabUpcoming: string;
-    tabActive: string;
-    tabPast: string;
-
-    emptyUpcoming: string;
-    emptyActive: string;
-
-    vehicleLabel: string;
-    locationLabel: string;
-    paymentLabel: string;
-    packageCredit: string;
-    clubWash: string;
-    reschedule: string;
-    rescheduleSoon: string;
-    cancelBooking: string;
-    cancelled: string;
-    freeCancelNote: string;
-
-    onTheWay: string;
-    onSite: string;
-    arrivingIn: string;
-    started: string;
-    washStatus: string;
-    waiting: string;
-    simulateNext: string;
-    replay: string;
-
-    documentation: string;
-    documentationNote: (technician: string) => string;
-
-    rateTechnician: (technician: string) => string;
-    commentPlaceholder: string;
-    attachPhotos: string;
-    submitRating: string;
-    ratingStars: (value: number) => string;
-    thanksTitle: string;
-    thanksBody: string;
-    ratingSent: string;
   };
 
   profile: {
     verified: string;
-    walletBalance: string;
-    ofTotal: (total: number) => string;
-    expires: (date: string) => string;
-    clubCredits: string;
-    renews: (date: string) => string;
-    noBalanceTitle: string;
-    noBalanceSub: (amount: string) => string;
-
     rows: {
       vehicles: string;
       addresses: string;
-      cards: string;
-      invoices: string;
       language: string;
-      notifications: string;
-      support: string;
-      terms: string;
     };
-    addressesValue: string;
-    cardValue: string;
-    notificationsOn: string;
     languageName: string;
-
     signOut: string;
     signedOut: string;
   };
@@ -367,23 +242,5 @@ export interface Copy {
   services: Record<Service['key'], { name: string; blurb: string; includes: string[] }>;
   addOns: Record<AddOn['key'], string>;
   plans: Record<Plan['id'], string>;
-  packageLabel: Record<Package['id'], string>;
   beats: Record<BeatKey, { title: string; copy: string }>;
-  technicianName: string;
-  customerName: string;
-  customerShort: string;
-  customerInitial: string;
-  vehicleName: string;
-  addressLabel: string;
-  addressLine: string;
-  addressDistrict: string;
-  /** Street and district joined with the right punctuation for the language. */
-  addressFull: string;
-  addressShort: string;
-  days: string[];
-  pastServices: Record<string, string>;
-  pastDates: Record<string, string>;
-  payMethods: Record<'mada' | 'visa' | 'apple', { label: string; detail: string }>;
-  renewalDate: string;
-  packageExpiry: string;
 }

@@ -1,35 +1,119 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useRouter } from 'expo-router';
-import { StyleSheet } from 'react-native-unistyles';
+import { Calendar, LocaleConfig, type DateData } from 'react-native-calendars';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { BookingTicket, Button, Card, Num, Screen, Tabs, Txt, useLocale } from '@sama/ui-native';
 import { bookingMediaSource, cancelBooking, type RealBooking } from '../../src/api';
 import { useCustomerData } from '../../src/customerData';
+import { addCalendarDays, isFriday, riyadhDateKey } from '../../src/dates';
+
+LocaleConfig.locales.ar = {
+  monthNames: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+  monthNamesShort: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+  dayNames: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+  dayNamesShort: ['أحد', 'اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
+  today: 'اليوم',
+};
 
 type TabKey = 'upcoming' | 'active' | 'past';
 
 export default function Bookings() {
+  const { theme } = useUnistyles();
   const { language } = useLocale();
   const { bookings, loading, error, refresh } = useCustomerData();
   const [tab, setTab] = useState<TabKey>('upcoming');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const ar = language === 'ar';
+  LocaleConfig.defaultLocale = ar ? 'ar' : '';
   useEffect(() => { void refresh(); }, [refresh]);
   const labels: Record<TabKey, string> = ar
     ? { upcoming: 'القادمة', active: 'الجارية', past: 'السابقة' }
     : { upcoming: 'Upcoming', active: 'Active', past: 'Past' };
   const keys = Object.keys(labels) as TabKey[];
   const paid = bookings.filter((booking) => booking.payment_confirmed);
-  const rows = tab === 'upcoming'
+  const tabRows = tab === 'upcoming'
     ? paid.filter((b) => b.status === 'scheduled')
     : tab === 'active'
       ? paid.filter((b) => b.status === 'active')
       : paid.filter((b) => b.status === 'done' || b.status === 'cancelled');
+  const rows = selectedDate
+    ? tabRows.filter((booking) => riyadhDateKey(new Date(booking.scheduled_at)) === selectedDate)
+    : tabRows;
+  const calendarDate = selectedDate
+    ?? paid.find((booking) => booking.status === 'scheduled')?.scheduled_at
+    ?? new Date().toISOString();
+  const currentMonth = /^\d{4}-\d{2}-\d{2}$/.test(calendarDate)
+    ? calendarDate
+    : riyadhDateKey(new Date(calendarDate));
+  const markedDates = useMemo(() => {
+    const marked: Record<string, {
+      disabled?: boolean;
+      disableTouchEvent?: boolean;
+      marked?: boolean;
+      dotColor?: string;
+      selected?: boolean;
+      selectedColor?: string;
+    }> = {};
+    for (let offset = -370; offset <= 370; offset += 1) {
+      const key = addCalendarDays(currentMonth, offset);
+      if (isFriday(key)) marked[key] = { disabled: true, disableTouchEvent: true };
+    }
+    paid.forEach((booking) => {
+      const key = riyadhDateKey(new Date(booking.scheduled_at));
+      marked[key] = { ...marked[key], marked: true, dotColor: theme.action.primary };
+    });
+    if (selectedDate) {
+      marked[selectedDate] = {
+        ...marked[selectedDate], selected: true, selectedColor: theme.action.primary,
+      };
+    }
+    return marked;
+  }, [currentMonth, paid, selectedDate, theme.action.primary]);
 
   return (
     <Screen scroll contentStyle={styles.page}>
       <Txt variant="title" weight="bold">{ar ? 'حجوزاتي' : 'My bookings'}</Txt>
-      <Tabs tabs={keys.map((key) => labels[key])} value={labels[tab]} onChange={(label) => setTab(keys.find((key) => labels[key] === label) ?? 'upcoming')} />
+      <Calendar
+        key={language}
+        current={currentMonth}
+        firstDay={0}
+        disabledByWeekDays={[5]}
+        disableAllTouchEventsForDisabledDays
+        onDayPress={(day: DateData) => {
+          if (!isFriday(day.dateString)) setSelectedDate(day.dateString);
+        }}
+        markedDates={markedDates}
+        theme={{
+          calendarBackground: theme.surface.card,
+          textSectionTitleColor: theme.text.secondary,
+          selectedDayBackgroundColor: theme.action.primary,
+          selectedDayTextColor: theme.text.inverse,
+          todayTextColor: theme.action.primary,
+          dayTextColor: theme.text.primary,
+          textDisabledColor: theme.text.faint,
+          monthTextColor: theme.text.primary,
+          arrowColor: theme.action.primary,
+          textDayFontFamily: 'IBMPlexSansArabic_500Medium',
+          textMonthFontFamily: 'IBMPlexSansArabic_700Bold',
+          textDayHeaderFontFamily: 'IBMPlexSansArabic_600SemiBold',
+          textDayFontSize: theme.scale(14),
+          textMonthFontSize: theme.scale(17),
+          textDayHeaderFontSize: theme.scale(12),
+        }}
+        style={styles.calendar}
+      />
+      <View style={styles.calendarFoot}>
+        <Txt variant="caption" tone="muted" style={styles.calendarHint}>
+          {ar ? 'النقطة تعني وجود حجز. الجمعة غير متاحة.' : 'A dot marks a booking. Friday is unavailable.'}
+        </Txt>
+        {selectedDate ? <Button label={ar ? 'عرض الكل' : 'Show all'} variant="ghost" size="sm" onPress={() => setSelectedDate(null)} /> : null}
+      </View>
+      <Tabs tabs={keys.map((key) => labels[key])} value={labels[tab]} onChange={(label) => {
+        setTab(keys.find((key) => labels[key] === label) ?? 'upcoming');
+        setSelectedDate(null);
+      }} />
       {loading && rows.length === 0 ? <Txt variant="small" tone="secondary">{ar ? 'جارٍ تحميل الحجوزات…' : 'Loading bookings…'}</Txt> : null}
       {error ? <Button label={ar ? 'إعادة المحاولة' : 'Retry'} variant="secondary" onPress={() => void refresh()} /> : null}
       {!loading && rows.length === 0 ? <Empty ar={ar} /> : null}
@@ -103,6 +187,9 @@ function Empty({ ar }: { ar: boolean }) {
 
 const styles = StyleSheet.create((theme) => ({
   page: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[4], paddingBottom: theme.spacing[7], gap: theme.spacing[4] },
+  calendar: { borderRadius: theme.radius.md, borderCurve: 'continuous', paddingBottom: theme.spacing[2] },
+  calendarFoot: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[2] },
+  calendarHint: { flex: 1 },
   stack: { gap: theme.spacing[4] },
   booking: { gap: theme.spacing[2] },
   details: { gap: theme.spacing[2] },

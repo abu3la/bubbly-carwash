@@ -7,9 +7,9 @@ import { notify } from '../notifications';
 /**
  * The technician's app.
  *
- * Every query is scoped to the caller's own `technician_id`. A technician sees
- * the customer's address and phone — which they need to do the job and must not
- * have for anyone else's job.
+ * Every query is scoped to the caller's team. Unclaimed jobs expose only the
+ * district and service window; the exact customer, vehicle and location become
+ * visible only after this technician atomically claims the job.
  */
 export const driverRoute = new Hono<{ Bindings: Env }>();
 driverRoute.use('*', requireAuth(), requireRole('driver'));

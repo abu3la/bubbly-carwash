@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { loadSession, signOut as clear, type Session } from './api';
+import { loadSession, onSessionCleared, signOut as clear, type Session } from './api';
 
 interface Api {
   session: Session | null;
@@ -19,10 +19,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // whether anyone is signed in. Routing on that unknown state would flash the
   // sign-in screen at someone who is already signed in.
   useEffect(() => {
-    loadSession().then((s) => {
-      setSession(s);
-      setReady(true);
+    let live = true;
+    const unsubscribe = onSessionCleared(() => {
+      if (live) setSession(null);
     });
+    loadSession().then((s) => {
+      if (live) {
+        setSession(s);
+        setReady(true);
+      }
+    });
+    return () => { live = false; unsubscribe(); };
   }, []);
 
   const signOut = useCallback(async () => {

@@ -15,11 +15,6 @@ export interface AddOn {
   key: 'wax' | 'tires';
 }
 
-/** Kept only to type translations for retired package deep links. */
-export interface Package {
-  id: 3 | 5 | 10;
-}
-
 // ------------------------------------------------------------------- club
 
 export interface Plan {
