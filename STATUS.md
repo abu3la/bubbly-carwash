@@ -33,6 +33,8 @@ names. The product name shown to customers, drivers and admins is
 - Both booking calendars are Gregorian and make Fridays unavailable.
 - Four teams exist, only Team 1 is enabled, and capacity is limited to 40 per
   team. Booking assigns a team automatically by coverage and capacity.
+- A development driver account is active, belongs to Team 1, and has been
+  verified through the fixed-OTP login and team-first claim flow.
 - Team members see their team's jobs in the driver app. The first available
   member to claim a job becomes its executing driver.
 - The driver workflow supports job stages, customer calling, navigation,
@@ -44,20 +46,22 @@ names. The product name shown to customers, drivers and admins is
   payments are verified against Moyasar and refunded instead of granting an
   invalid reservation. A Cloudflare cron runs the expiry sweep every five
   minutes even when no client is making requests.
-- API and mobile TypeScript checks, repository lint, both iOS JavaScript bundle
-  exports and the dashboard production build pass.
+- API and mobile TypeScript checks, repository lint, both native iOS builds,
+  both iOS JavaScript bundle exports and the dashboard production build pass.
 - `pnpm verify:dev` rechecks the deployed API, catalogue and plan matrix,
   Friday closure, Makkah coverage and Team 1 capacity, authenticated Google
   Places, customer/driver/admin role boundaries, and the deployed dashboard.
 
-## External configuration still required
+## Notifications
 
-Firebase Cloud Messaging code is implemented in both mobile apps and the API,
-but the Firebase iOS/Android app registrations, native config files and Worker
-service-account secrets still need to be created. Until then `/health` reports
-`notifications: "not-configured"` and notification history remains available
-inside the apps. Foreground alerts and Arabic/English message selection are
-already wired and activate when those credentials are installed.
+- Firebase project `bubblescarwash-cbb8a` has separate iOS and Android app
+  registrations for both the customer and driver applications.
+- Native Firebase config files are installed locally and remain gitignored.
+- The development Worker has the Firebase service-account secrets and `/health`
+  reports `notifications: "firebase"`.
+- Android FCM and the in-app notification history are configured. iOS external
+  push delivery still requires an APNs authentication key or certificate from
+  the Apple Developer account and a physical-device acceptance test.
 
 ## Deliberate boundaries
 

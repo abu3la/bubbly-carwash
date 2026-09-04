@@ -23,6 +23,15 @@ The API Worker needs these encrypted secrets:
 - `SUPABASE_AUTH_HOOK_SECRET`
 - `MOYASAR_SECRET_KEY`
 - `MOYASAR_WEBHOOK_SECRET`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+
+Firebase native config belongs in the gitignored `firebase/` directory of each
+mobile app. The development Firebase project is `bubblescarwash-cbb8a`, with a
+separate iOS and Android registration for each customer and driver bundle.
+Android delivery uses FCM directly. iOS delivery additionally needs an APNs
+authentication key or certificate configured in Firebase.
 
 Never commit their values. Deploy from the repository root with:
 

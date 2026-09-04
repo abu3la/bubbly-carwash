@@ -163,7 +163,7 @@ adminRoute.patch('/teams/:id', async (c) => {
  */
 adminRoute.get('/technicians', async (c) => {
   const [rows, invites] = await Promise.all([
-    db(c.env,
+    db<{ team_members: Record<string, unknown> | Record<string, unknown>[] | null; [key: string]: unknown }>(c.env,
       'profiles?role=eq.driver&select=id,full_name,phone,active,created_at,' +
         'team_members(team_id,active,available,is_lead,shift_start,shift_end,teams(id,name_ar,active))' +
         '&order=created_at'),
@@ -173,7 +173,17 @@ adminRoute.get('/technicians', async (c) => {
     ),
   ]);
   return c.json({ technicians: [
-    ...rows,
+    // `team_members.profile_id` is unique, so PostgREST embeds this relation
+    // as a to-one object. Keep the public API stable for the dashboard, which
+    // deliberately models memberships as an array to also represent none.
+    ...rows.map((row) => ({
+      ...row,
+      team_members: Array.isArray(row.team_members)
+        ? row.team_members
+        : row.team_members
+          ? [row.team_members]
+          : [],
+    })),
     ...invites.map((invite) => ({
       id: `invite:${invite.phone}`,
       full_name: invite.full_name,

@@ -7,14 +7,13 @@ export async function registerFirebaseMessaging(onOpen?: (route: string) => void
   if (!Constants.expoConfig?.extra?.firebaseConfigured || Platform.OS === 'web') return null;
   const {
     getInitialNotification, getMessaging, getToken, onMessage, onNotificationOpenedApp,
-    onTokenRefresh, registerDeviceForRemoteMessages, requestPermission, AuthorizationStatus,
+    onTokenRefresh, requestPermission, AuthorizationStatus,
   } = await import('@react-native-firebase/messaging');
   const messaging = getMessaging();
   if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
     const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
     if (granted !== PermissionsAndroid.RESULTS.GRANTED) return null;
   }
-  await registerDeviceForRemoteMessages(messaging);
   const status = await requestPermission(messaging);
   if (status !== AuthorizationStatus.AUTHORIZED && status !== AuthorizationStatus.PROVISIONAL) return null;
   const token = await getToken(messaging);
