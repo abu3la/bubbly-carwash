@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { admin, sar, type AdminBooking } from '../api';
 
 const STATUS_AR: Record<string, string> = {
-  scheduled: 'مجدول', active: 'جارٍ', done: 'مكتمل', cancelled: 'ملغى',
+  scheduled: 'مجدول', active: 'جارٍ', done: 'مكتمل', cancelled: 'ملغى', missed: 'فات الموعد',
 };
 const SOURCE_AR: Record<string, string> = {
   club: 'النادي', package: 'باقة', cash: 'دفع مباشر',

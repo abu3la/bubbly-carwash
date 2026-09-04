@@ -37,7 +37,7 @@ export default function Bookings() {
     ? paid.filter((b) => b.status === 'scheduled')
     : tab === 'active'
       ? paid.filter((b) => b.status === 'active')
-      : paid.filter((b) => b.status === 'done' || b.status === 'cancelled');
+      : paid.filter((b) => b.status === 'done' || b.status === 'cancelled' || b.status === 'missed');
   const rows = selectedDate
     ? tabRows.filter((booking) => riyadhDateKey(new Date(booking.scheduled_at)) === selectedDate)
     : tabRows;
@@ -135,8 +135,8 @@ function BookingRow({ booking, onRefresh }: { booking: RealBooking; onRefresh: (
   const before = booking.booking_media?.filter((item) => item.phase === 'before').length ?? 0;
   const after = booking.booking_media?.filter((item) => item.phase === 'after').length ?? 0;
   const state = ar
-    ? ({ scheduled: 'مجدول', active: 'قيد التنفيذ', done: 'مكتمل', cancelled: 'ملغى' } as const)[booking.status]
-    : booking.status;
+    ? ({ scheduled: 'مجدول', active: 'قيد التنفيذ', done: 'مكتمل', cancelled: 'ملغى', missed: 'فات الموعد' } as const)[booking.status]
+    : ({ scheduled: 'Scheduled', active: 'In progress', done: 'Completed', cancelled: 'Cancelled', missed: 'Missed' } as const)[booking.status];
   return (
     <View style={styles.booking}>
       <BookingTicket time={time} meta={`${date} · ${service} · ${booking.addresses.line}`} />

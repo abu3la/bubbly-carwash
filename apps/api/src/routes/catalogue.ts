@@ -137,10 +137,11 @@ catalogueRoute.get('/availability', async (c) => {
 
   const [rows, teams] = await Promise.all([
     db(c.env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} }).then(() =>
-      db<AvailabilityRow>(c.env, 'rpc/available_slots', {
-        method: 'POST',
-        body: { p_lat: lat, p_lng: lng, p_date: date },
-      })),
+      db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} }))
+      .then(() => db<AvailabilityRow>(c.env, 'rpc/available_slots', {
+          method: 'POST',
+          body: { p_lat: lat, p_lng: lng, p_date: date },
+        })),
     db<{ id: string; lat: number; lng: number; service_radius_km: number }>(
       c.env,
       'teams?active=eq.true&select=id,lat,lng,service_radius_km',

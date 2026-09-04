@@ -8,6 +8,9 @@
   "account_id": "de8c4462ba0c1c0449f99aa8dbb71870",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   // Secrets are never in this file. It is committed; secrets are not.
   //   local dev  -> apps/api/.dev.vars (gitignored)
   //   production -> wrangler secret put SUPABASE_URL

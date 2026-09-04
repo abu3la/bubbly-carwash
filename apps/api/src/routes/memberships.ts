@@ -236,12 +236,16 @@ membershipsRoute.post('/checkout', async (c) => {
 
 membershipsRoute.post('/current/cancel', async (c) => {
   const caller = c.get('caller');
-  const [membership] = await db(c.env, `memberships?profile_id=eq.${caller.id}&state=eq.active&payment_confirmed=eq.true&select=id`);
+  const [membership] = await db<{ id: string }>(
+    c.env,
+    `memberships?profile_id=eq.${caller.id}&state=eq.active&payment_confirmed=eq.true&select=id`,
+  );
   if (!membership) return c.json({ error: { code: 'notFound' } }, 404);
-  await db(c.env, `memberships?id=eq.${membership.id}`, {
-    method: 'PATCH', prefer: 'return=minimal', body: { state: 'cancelled', cancelled_at: new Date().toISOString() },
+  const [futureBookingsCancelled] = await db<number>(c.env, 'rpc/cancel_membership', {
+    method: 'POST',
+    body: { p_membership: membership.id, p_profile: caller.id },
   });
-  return c.json({ cancelled: true });
+  return c.json({ cancelled: true, futureBookingsCancelled: Number(futureBookingsCancelled ?? 0) });
 });
 
 membershipsRoute.post('/:id/confirm', async (c) => {

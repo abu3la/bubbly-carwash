@@ -26,6 +26,7 @@ type Stage = (typeof ORDER)[number];
 
 driverRoute.get('/jobs', async (c) => {
   const caller = c.get('caller');
+  await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
   const [membership] = await db<{ team_id: string; shift_start: string; shift_end: string; teams: { id: string; name_ar: string } }>(
     c.env,
     `team_members?profile_id=eq.${caller.id}&active=eq.true&available=eq.true&select=team_id,shift_start,shift_end,teams(id,name_ar)&limit=1`,
@@ -90,6 +91,7 @@ driverRoute.get('/jobs/done', async (c) => {
 driverRoute.post('/jobs/:id/claim', async (c) => {
   const caller = c.get('caller');
   try {
+    await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
     const [booking] = await db(c.env, 'rpc/claim_team_booking', {
       method: 'POST', body: { p_booking: c.req.param('id'), p_technician: caller.id },
     });

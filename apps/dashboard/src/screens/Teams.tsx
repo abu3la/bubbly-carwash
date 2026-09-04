@@ -120,7 +120,7 @@ export function Teams() {
                       <td><div className="headline">{job.profiles?.full_name || 'عميل'}</div><div className="note num">{job.profiles?.phone || 'لا يوجد رقم'}</div></td>
                       <td>{job.vehicles.make} {job.vehicles.model}<div className="note num">{job.vehicles.plate}</div></td>
                       <td>{job.addresses.line}<div className="note">{job.addresses.district}</div></td>
-                      <td>{job.status === 'scheduled' ? 'مجدول' : job.status === 'active' ? 'جارٍ' : 'مكتمل'}</td>
+                      <td>{job.status === 'scheduled' ? 'مجدول' : job.status === 'active' ? 'جارٍ' : job.status === 'missed' ? 'فات الموعد' : job.status === 'cancelled' ? 'ملغى' : 'مكتمل'}</td>
                     </tr>
                   ))}</tbody>
                 </table>

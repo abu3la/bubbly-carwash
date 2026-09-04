@@ -30,7 +30,9 @@ export default function Home() {
   const catalogue = useCatalogue();
   const cheapest = catalogue?.services.find((service) => service.key === 'exterior') ?? null;
   const address = addresses.find((item) => item.is_default) ?? addresses[0] ?? null;
-  const booking = bookings.find((item) => item.payment_confirmed && item.status === 'scheduled') ?? null;
+  const booking = bookings.find((item) => item.payment_confirmed
+    && item.status === 'scheduled'
+    && Date.parse(item.ends_at) > Date.now()) ?? null;
 
   useFocusEffect(useCallback(() => {
     void refresh();

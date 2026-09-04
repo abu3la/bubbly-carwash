@@ -225,7 +225,7 @@ export interface RealBooking {
   ref: string;
   scheduled_at: string;
   ends_at: string;
-  status: 'scheduled' | 'active' | 'done' | 'cancelled';
+  status: 'scheduled' | 'active' | 'done' | 'cancelled' | 'missed';
   stage: 'booked' | 'arrived' | 'washed' | 'verified';
   source: 'club' | 'package' | 'cash';
   membership_id: string | null;

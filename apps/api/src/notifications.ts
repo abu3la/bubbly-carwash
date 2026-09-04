@@ -78,7 +78,13 @@ async function firebaseAccessToken(env: Env) {
   return result.access_token;
 }
 
-async function sendFcm(env: Env, token: string, input: NotificationInput, notificationId: string) {
+async function sendFcm(
+  env: Env,
+  token: string,
+  input: NotificationInput,
+  notificationId: string,
+  language: 'ar' | 'en',
+) {
   if (!env.FIREBASE_PROJECT_ID) throw new Error('firebaseNotConfigured');
   const accessToken = await firebaseAccessToken(env);
   const response = await fetch(
@@ -92,7 +98,10 @@ async function sendFcm(env: Env, token: string, input: NotificationInput, notifi
       body: JSON.stringify({
         message: {
           token,
-          notification: { title: input.titleAr, body: input.bodyAr },
+          notification: {
+            title: language === 'en' ? input.titleEn : input.titleAr,
+            body: language === 'en' ? input.bodyEn : input.bodyAr,
+          },
           data: {
             notificationId,
             bookingId: input.bookingId ?? '',
@@ -135,12 +144,20 @@ export async function notify(env: Env, input: NotificationInput) {
     },
   });
 
-  const tokens = await db<{ token: string }>(
-    env,
-    `device_push_tokens?profile_id=eq.${input.profileId}&active=eq.true&select=token`,
-  );
+  const [tokens, profiles] = await Promise.all([
+    db<{ token: string }>(
+      env,
+      `device_push_tokens?profile_id=eq.${input.profileId}&active=eq.true&select=token`,
+    ),
+    db<{ language: 'ar' | 'en' }>(
+      env,
+      `profiles?id=eq.${input.profileId}&select=language&limit=1`,
+    ),
+  ]);
+  const language = profiles[0]?.language === 'en' ? 'en' : 'ar';
   await Promise.all(tokens.map(({ token }) =>
-    sendFcm(env, token, input, row.id).catch((error) => console.warn('[fcm] delivery failed', error)),
+    sendFcm(env, token, input, row.id, language)
+      .catch((error) => console.warn('[fcm] delivery failed', error)),
   ));
   return row;
 }

@@ -27,7 +27,9 @@ names. The product name shown to customers, drivers and admins is
   page rendered inside the app with React Native WebView.
 - Basic and Super Wash each offer two or three washes per week. The customer
   chooses two or three distinct days during signup. Those appointments repeat
-  every seven days through the 30-day cycle; a missed wash is not credit.
+  every seven days through the 30-day cycle; a missed wash is marked `missed`
+  and never becomes credit. Cancelling a membership atomically cancels only its
+  future, not-yet-started appointments.
 - Both booking calendars are Gregorian and make Fridays unavailable.
 - Four teams exist, only Team 1 is enabled, and capacity is limited to 40 per
   team. Booking assigns a team automatically by coverage and capacity.
@@ -40,8 +42,10 @@ names. The product name shown to customers, drivers and admins is
   but does not manually assign a booking to an individual driver.
 - Unpaid booking and membership checkout holds expire after 15 minutes. Late
   payments are verified against Moyasar and refunded instead of granting an
-  invalid reservation.
-- API, mobile TypeScript, repository lint and dashboard production build pass.
+  invalid reservation. A Cloudflare cron runs the expiry sweep every five
+  minutes even when no client is making requests.
+- API and mobile TypeScript checks, repository lint, both iOS JavaScript bundle
+  exports and the dashboard production build pass.
 
 ## External configuration still required
 
@@ -49,7 +53,8 @@ Firebase Cloud Messaging code is implemented in both mobile apps and the API,
 but the Firebase iOS/Android app registrations, native config files and Worker
 service-account secrets still need to be created. Until then `/health` reports
 `notifications: "not-configured"` and notification history remains available
-inside the apps.
+inside the apps. Foreground alerts and Arabic/English message selection are
+already wired and activate when those credentials are installed.
 
 ## Deliberate boundaries
 

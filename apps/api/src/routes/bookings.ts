@@ -49,6 +49,7 @@ interface CreateBody {
 }
 
 bookingsRoute.get('/', async (c) => {
+  await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
   const rows = await db(
     c.env,
     `bookings?profile_id=eq.${c.get('caller').id}` +
@@ -261,6 +262,9 @@ bookingsRoute.post('/:id/cancel', async (c) => {
   // rather than confirming it exists.
   if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
   if (booking.status === 'cancelled') return c.json({ booking });
+  if (booking.status === 'missed') {
+    return c.json({ error: { code: 'missed' } }, 409);
+  }
   // Once a technician has arrived the wash is under way; cancelling then is a
   // support conversation, not a button.
   if (booking.stage !== 'booked') {

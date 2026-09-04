@@ -76,6 +76,7 @@ adminRoute.patch('/plans/:id', async (c) => {
 /* ------------------------------------------------------------------ bookings */
 
 adminRoute.get('/bookings', async (c) => {
+  await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
   const rows = await db(
     c.env,
     'bookings?payment_confirmed=eq.true&select=*,teams(id,name_ar),' +
@@ -343,6 +344,7 @@ adminRoute.patch('/incidents/:id/resolve', async (c) => {
 });
 
 adminRoute.get('/operations', async (c) => {
+  await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
   const now = new Date().toISOString();
   const stale = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const [withoutTeam, awaitingDriver, active, incidents, failedPayments, disabledTokens] = await Promise.all([

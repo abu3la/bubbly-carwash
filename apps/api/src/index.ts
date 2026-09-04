@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env } from './env';
+import { db } from './db';
 import { adminRoute } from './routes/admin';
 import { authRoute } from './routes/auth';
 import { bookingsRoute } from './routes/bookings';
@@ -64,4 +65,24 @@ app.route('/payments', paymentsRoute);
 app.route('/places', placesRoute);
 app.route('/webhooks', webhooksRoute);
 
-export default app;
+async function runMaintenance(env: Env) {
+  const [[pendingExpired], [bookingsMissed]] = await Promise.all([
+    db<number>(env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} }),
+    db<number>(env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} }),
+  ]);
+  console.log('[maintenance] expiry sweep completed', {
+    pendingExpired: Number(pendingExpired ?? 0),
+    bookingsMissed: Number(bookingsMissed ?? 0),
+  });
+}
+
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    return app.fetch(request, env, ctx);
+  },
+  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(runMaintenance(env).catch((error) => {
+      console.error('[maintenance] expiry sweep failed', error);
+    }));
+  },
+} satisfies ExportedHandler<Env>;
