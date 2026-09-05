@@ -19,6 +19,7 @@ interface Draft {
   addressLabel: string;
   addressLat: number | null;
   addressLng: number | null;
+  villaNumber: string;
   /** Which balance pays for the wash itself. */
   source: PaySource;
 }
@@ -51,6 +52,7 @@ const INITIAL: Draft = {
   addressLabel: '',
   addressLat: null,
   addressLng: null,
+  villaNumber: '',
   source: 'cash',
 };
 
@@ -115,6 +117,8 @@ export function BookingDraftProvider({
         addressLabel: address.line,
         addressLat: address.lat,
         addressLng: address.lng,
+        villaNumber: address.villa_number ?? '',
+        slot: '', slotStart: '', period: '',
       })),
       setSource: (source) => setDraft((d) => ({ ...d, source })),
       reset: () => setDraft({ ...INITIAL, source: preferred }),

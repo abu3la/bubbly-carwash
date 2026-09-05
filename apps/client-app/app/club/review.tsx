@@ -3,10 +3,12 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ShieldCheck } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Checkbox, Num, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Card, Checkbox, Num, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { LedgerRow } from '../../src/components/Bits';
 import { useClubDraft } from '../../src/clubDraft';
+import { hasVillaAddress } from '../../src/api';
+import { useCustomerData } from '../../src/customerData';
 import { useCatalogue } from '../../src/catalogue';
 
 export default function ClubReview() {
@@ -15,6 +17,9 @@ export default function ClubReview() {
   const { language } = useLocale();
   const draft = useClubDraft();
   const catalogue = useCatalogue();
+  const { vehicles, addresses } = useCustomerData();
+  const address = addresses.find((item) => item.id === draft.addressId);
+  const vehicle = vehicles.find((item) => item.id === draft.vehicleId);
   const [consented, setConsented] = useState(false);
   const ar = language === 'ar';
   const plan = catalogue?.plans.find((item) => item.id === draft.planId);
@@ -28,10 +33,15 @@ export default function ClubReview() {
       <View style={styles.body}>
         <Card variant="booking" style={styles.summary}>
           <Txt variant="heading" weight="bold">{name}</Txt>
-          <Txt variant="small" tone="secondary">{ar ? `${weekly} غسلات أسبوعيًا، بلا رصيد وبلا ترحيل` : `${weekly} weekly washes, no credits and no rollover`}</Txt>
+          <Txt variant="small" tone="secondary">{ar ? `${weekly === 2 ? 'غسلتان' : `${weekly} غسلات`} أسبوعيًا لمدة 30 يومًا` : `${weekly} weekly washes for 30 days`}</Txt>
+        </Card>
+        <Card style={styles.summary}>
+          <Txt variant="body" weight="semibold">{vehicle ? `${vehicle.make} ${vehicle.model} · ${vehicle.plate}` : (ar ? 'اختر السيارة' : 'Choose a vehicle')}</Txt>
+          <Txt variant="small" tone="secondary">{hasVillaAddress(address) ? (ar ? `فيلا ${address!.villa_number}، شربتلي فيلج` : `Villa ${address!.villa_number}, Sharbatly Village`) : (ar ? 'تحقق من موقع الفيلا ورقمها' : 'Verify your villa location and number')}</Txt>
+          <Button label={ar ? 'تعديل الجدول والعنوان' : 'Edit schedule and address'} variant="ghost" size="sm" onPress={() => router.replace('/club/schedule')} />
         </Card>
         <Card style={styles.slots}>
-          <Txt variant="caption" tone="secondary">{ar ? 'الجدول أسبوعي ويتكرر كل 7 أيام حتى نهاية الدورة.' : 'This weekly schedule repeats every 7 days until the cycle ends.'}</Txt>
+          <Txt variant="caption" tone="secondary">{ar ? 'مواعيدك المختارة تتكرر أسبوعيًا طوال الاشتراك.' : 'Your selected appointments repeat weekly throughout your subscription.'}</Txt>
           {draft.slots.map((slot) => (
             <View key={slot.slotStart} style={styles.slotRow}>
               <Txt variant="small" weight="semibold" style={styles.slotLabel}>{slot.label}</Txt>
@@ -50,7 +60,7 @@ export default function ClubReview() {
         <Card style={styles.consent}>
           <Checkbox label={ar ? `أوافق على اشتراك لمدة 30 يومًا بقيمة ${priceMinor / 100} ر.س.` : `I agree to a 30-day subscription of ${priceMinor / 100} SAR.`} checked={consented} onChange={setConsented} />
         </Card>
-        <Button label={ar ? 'الانتقال للدفع' : 'Continue to payment'} size="lg" fullWidth disabled={!plan || !consented || draft.slots.length !== weekly} onPress={() => router.push('/club/processing')} />
+        <Button label={ar ? 'الانتقال للدفع' : 'Continue to payment'} size="lg" fullWidth disabled={!plan || !vehicle || !hasVillaAddress(address) || !consented || draft.slots.length !== weekly} onPress={() => router.push('/club/processing')} />
       </View>
     </Screen>
   );

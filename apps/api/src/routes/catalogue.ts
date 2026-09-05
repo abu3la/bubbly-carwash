@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { distanceKm } from '@sama/utils';
 import type { Env } from '../env';
 import { db } from '../db';
+import { checkCoverage, coverageError, normalizeVilla, validVilla } from '../coverage';
 
 /**
- * What BubblesCarWash sells: services, add-ons, club plans, and the bookable
+ * What BubblesCarWash sells: services, add-ons, monthly plans, and the bookable
  * grid.
  *
  * Public — a price list is not a secret, and requiring a session to see one
@@ -109,6 +109,25 @@ catalogueRoute.get('/', async (c) => {
   return c.json(body);
 });
 
+/** Public discovery carries map geometry, never the private villa registry. */
+catalogueRoute.get('/coverage', async (c) => {
+  c.header('Cache-Control', 'no-store');
+  const latInput = c.req.query('lat');
+  const lngInput = c.req.query('lng');
+  if (latInput === undefined && lngInput === undefined) {
+    const areas = await db(c.env, 'coverage_areas?active=eq.true&select=id,name_ar,name_en,city,center_lat,center_lng,boundary,boundary_verified&order=created_at');
+    return c.json({ areas });
+  }
+  const lat = Number(latInput);
+  const lng = Number(lngInput);
+  if (!latInput?.trim() || !lngInput?.trim() || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+    return c.json({ error: { code: 'badCoordinates' } }, 400);
+  }
+  const villa = normalizeVilla(c.req.query('villaNumber') ?? '');
+  if (villa && !validVilla(villa)) return c.json({ error: { code: 'invalidVillaNumber' } }, 400);
+  return c.json(await checkCoverage(c.env, lat, lng, villa));
+});
+
 /**
  * Live availability for one car location and service day.
  *
@@ -117,40 +136,35 @@ catalogueRoute.get('/', async (c) => {
  * Team coordinates themselves never leave the API.
  */
 catalogueRoute.get('/availability', async (c) => {
-  const lat = Number(c.req.query('lat'));
-  const lng = Number(c.req.query('lng'));
+  const latInput = c.req.query('lat');
+  const lngInput = c.req.query('lng');
+  const lat = Number(latInput);
+  const lng = Number(lngInput);
   const date = c.req.query('date') ?? '';
 
-  if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+  if (!latInput?.trim() || !lngInput?.trim() || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
     return c.json({ error: { code: 'badCoordinates' } }, 400);
   }
   if (!DATE.test(date) || Number.isNaN(Date.parse(`${date}T12:00:00+03:00`))) {
     return c.json({ error: { code: 'badDate' } }, 400);
   }
 
-  // Noon in Riyadh cannot cross a UTC date boundary, which makes getUTCDay a
-  // safe way to recognise Friday without depending on the Worker's locale.
-  if (new Date(`${date}T12:00:00+03:00`).getUTCDay() === 5) {
-    c.header('Cache-Control', 'no-store');
-    return c.json({ date, closed: true, reason: 'friday', covered: false, team: null, slots: [] });
+  const villa = normalizeVilla(c.req.query('villaNumber') ?? '');
+  if (villa && !validVilla(villa)) return c.json({ error: { code: 'invalidVillaNumber' } }, 400);
+  const coverage = await checkCoverage(c.env, lat, lng, villa);
+  c.header('Cache-Control', 'no-store');
+  if (coverage.status !== 'covered') {
+    return c.json({ date, closed: false, reason: coverageError(coverage.status), covered: false, coverage, team: null, slots: [] });
   }
-
-  const [rows, teams] = await Promise.all([
-    db(c.env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} }).then(() =>
-      db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} }))
-      .then(() => db<AvailabilityRow>(c.env, 'rpc/available_slots', {
-          method: 'POST',
-          body: { p_lat: lat, p_lng: lng, p_date: date },
-        })),
-    db<{ id: string; lat: number; lng: number; service_radius_km: number }>(
-      c.env,
-      'teams?active=eq.true&select=id,lat,lng,service_radius_km',
-    ),
-  ]);
-
-  const covered = teams.some(
-    (team) => distanceKm({ lat, lng }, team) <= Number(team.service_radius_km),
-  );
+  if (new Date(`${date}T12:00:00+03:00`).getUTCDay() === 5) {
+    return c.json({ date, closed: true, reason: 'friday', covered: true, coverage, team: null, slots: [] });
+  }
+  await db(c.env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} });
+  await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
+  const rows = await db<AvailabilityRow>(c.env, 'rpc/available_slots', {
+    method: 'POST', body: { p_lat: lat, p_lng: lng, p_date: date, p_villa_number: villa },
+  });
+  const covered = true;
   // `available_slots` protects capacity, while this edge check keeps today's
   // already-started periods out of every client. Booking creation repeats the
   // past-time guard, so this is UX correctness rather than a security boundary.
@@ -167,6 +181,7 @@ catalogueRoute.get('/availability', async (c) => {
     closed: false,
     reason: covered ? (futureRows.length ? null : 'full') : 'outsideServiceArea',
     covered,
+    coverage,
     team: first
       ? {
           id: first.team_id,

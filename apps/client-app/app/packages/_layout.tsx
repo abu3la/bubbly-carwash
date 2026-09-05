@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { theme } from '@sama/ui-native/theme';
+import { theme } from '@bubbles/ui-native/theme';
 
 export default function PackagesLayout() {
   return (

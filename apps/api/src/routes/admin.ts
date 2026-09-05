@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from '../middleware/auth';
 import { db } from '../db';
 import { refundInvoice } from '../moyasar';
 import { notify } from '../notifications';
+import { coverageAdminRoute } from './coverage-admin';
 
 /**
  * The back office.
@@ -15,6 +16,7 @@ import { notify } from '../notifications';
  */
 export const adminRoute = new Hono<{ Bindings: Env }>();
 adminRoute.use('*', requireAuth(), requireRole('admin'));
+adminRoute.route('/coverage', coverageAdminRoute);
 
 /** Money arrives as SAR from a form; the database stores halalas. */
 const toMinor = (sar: unknown) =>
@@ -82,7 +84,7 @@ adminRoute.get('/bookings', async (c) => {
     'bookings?payment_confirmed=eq.true&select=*,teams(id,name_ar),' +
       'profiles!bookings_profile_id_fkey(full_name,phone),' +
       'technician:profiles!bookings_technician_id_fkey(id,full_name,phone),' +
-      'vehicles(make,model,color,plate,size),addresses(label,line,district,city,lat,lng,notes),' +
+      'vehicles(make,model,color,plate,size),addresses(label,line,district,city,lat,lng,notes,villa_number,coverage_area_id,coverage_block_id,coverage_blocks(code,name_ar,name_en),coverage_areas(name_ar,name_en)),' +
       'services(name_ar,name_en),booking_add_ons(add_on_key,price_minor),' +
       'booking_media(id,phase,kind,angle,content_type,byte_size,created_at),' +
       'payments(id,state,provider,provider_ref,amount_minor,created_at)' +
@@ -133,21 +135,13 @@ adminRoute.patch('/teams/:id', async (c) => {
   } else if (b.dailyCapacity !== undefined) {
     return c.json({ error: { code: 'dailyCapacityOutOfRange' } }, 400);
   }
-  if (b.active === false && existing.active) {
-    return c.json({ error: { code: 'activateAnotherTeam' } }, 409);
-  }
-  if (!Object.keys(patch).length && b.active !== true) {
-    return c.json({ error: { code: 'nothingToUpdate' } }, 400);
-  }
-
-  if (Object.keys(patch).length) {
-    await db(c.env, `teams?id=eq.${teamId}`, {
-      method: 'PATCH', prefer: 'return=minimal', body: patch,
-    });
-  }
-  const [row] = b.active === true
-    ? await db(c.env, 'rpc/activate_pilot_team', { method: 'POST', body: { p_team: teamId } })
-    : await db(c.env, `teams?id=eq.${teamId}`);
+  // Teams operate independently as new blocks open. Initially only Team 1
+  // is active, but enabling another team must not disable the existing block.
+  if (typeof b.active === 'boolean') patch.active = b.active;
+  if (!Object.keys(patch).length) return c.json({ error: { code: 'nothingToUpdate' } }, 400);
+  const [row] = await db(c.env, `teams?id=eq.${teamId}`, {
+    method: 'PATCH', prefer: 'return=representation', body: patch,
+  });
   return c.json({ team: row });
 });
 

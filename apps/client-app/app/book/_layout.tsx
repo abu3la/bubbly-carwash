@@ -1,15 +1,11 @@
 import { Stack } from 'expo-router';
-import { theme } from '@sama/ui-native/theme';
-import { BookingDraftProvider } from '../../src/bookingDraft';
-import { useCustomerData } from '../../src/customerData';
+import { theme } from '@bubbles/ui-native/theme';
 
 export default function BookLayout() {
-  const { membership } = useCustomerData();
-  const sources = membership ? (['club', 'cash'] as const) : (['cash'] as const);
 
   return (
     // The draft lives above the steps, so going back never loses a choice.
-    <BookingDraftProvider sources={[...sources]}>
+    <>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -22,6 +18,6 @@ export default function BookLayout() {
         <Stack.Screen name="payment" options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="done" options={{ gestureEnabled: false, animation: 'fade' }} />
       </Stack>
-    </BookingDraftProvider>
+    </>
   );
 }

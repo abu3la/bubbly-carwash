@@ -1,0 +1,16 @@
+{
+  "_note": "PLACEHOLDER villa registry. Replace with the real Sharbatly Village Compound villa list from the API settings before launch. Coverage = villa number exists in the compound registry; coordinates are used by the team for routing.",
+  "zoneId": "sharbatly-village",
+  "villaFormat": "^[0-9]{1,4}[A-Za-z]?$",
+  "villas": [
+    { "no": "112", "street": { "ar": "شارع الياسمين", "en": "Jasmine St." }, "lat": 21.6268, "lng": 39.2225 },
+    { "no": "45", "street": { "ar": "شارع النخيل", "en": "Palm St." }, "lat": 21.6255, "lng": 39.2210 },
+    { "no": "230", "street": { "ar": "شارع الورد", "en": "Rose St." }, "lat": 21.6280, "lng": 39.2245 },
+    { "no": "7", "street": { "ar": "شارع الزيتون", "en": "Olive St." }, "lat": 21.6242, "lng": 39.2198 }
+  ],
+  "demoInputs": [
+    { "id": "inside", "value": "112", "result": "inside" },
+    { "id": "unknown", "value": "999", "result": "unserved" },
+    { "id": "error", "value": "!!", "result": "error" }
+  ]
+}

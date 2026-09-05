@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { API_ORIGIN } from '../api';
 import { FlowHeader } from './FlowHeader';
 

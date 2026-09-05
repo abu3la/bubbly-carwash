@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { StyleSheet } from 'react-native-unistyles';
-import type { BeatKey } from '@sama/design-tokens';
+import type { BeatKey } from '@bubbles/design-tokens';
 
 const BEATS: BeatKey[] = ['arrived', 'washed', 'verified'];
 const CYCLE = 1200;

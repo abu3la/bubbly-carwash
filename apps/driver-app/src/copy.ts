@@ -4,7 +4,7 @@
  */
 export const copy = {
   brand: 'BubblesCarWash',
-  role: 'تطبيق الفنّي',
+  role: 'تطبيق السائق',
 
   signInTitle: 'سجّل دخولك',
   signInSub: 'برقم الجوال المسجّل لدى الإدارة.',
@@ -21,7 +21,7 @@ export const copy = {
   noJobs: 'لا مهام الآن.',
   noJobsSub: 'ستظهر هنا فور إسنادها إليك.',
   history: 'المنجزة',
-  notifications: 'التنبيهات',
+  notifications: 'الإشعارات',
   noTeam: 'غير مرتبط بفريق',
   claimedByYou: 'مستلمة باسمك',
   availableToTeam: 'متاحة لأعضاء الفريق',
@@ -46,7 +46,7 @@ export const copy = {
     booked: 'لم يبدأ',
     arrived: 'وصلت',
     washed: 'اكتمل الغسيل',
-    verified: 'تم التأكد',
+    verified: 'اكتملت مراجعة الجودة',
   } as Record<string, string>,
 
   actions: {
@@ -66,7 +66,7 @@ export const copy = {
   evidenceReady: 'اكتمل توثيق هذه المرحلة',
   evidenceProgress: (count: number) => `الصور المكتملة: ${count} من 4، أو استخدم فيديو 360°`,
   uploadingEvidence: 'جارٍ رفع التوثيق…',
-  evidenceSaved: 'تم حفظ التوثيق بأمان',
+  evidenceSaved: 'حُفظ التوثيق',
   evidenceCount: (before: number, after: number) => `قبل الغسيل: ${before} · بعد الغسيل: ${after}`,
   cameraDenied: 'فعّل إذن الكاميرا لتوثيق السيارة.',
   reportProblem: 'بلاغ تشغيلي',
@@ -87,7 +87,7 @@ export const copy = {
     wrongCode: 'الرمز غير صحيح أو انتهت صلاحيته.',
     tooManyRequests: 'محاولات كثيرة. انتظر دقيقة.',
     invalidPhone: 'رقم الجوال غير صحيح.',
-    notATechnician: 'هذا الحساب ليس حساب فنّي. راجع الإدارة.',
+    notATechnician: 'هذا الحساب ليس حساب سائق. راجع الإدارة.',
     skippedStage: 'أكمل المرحلة السابقة أولًا.',
     alreadyPast: 'سُجّلت هذه المرحلة من قبل.',
     cancelled: 'أُلغي هذا الحجز.',
@@ -98,7 +98,12 @@ export const copy = {
     badMediaType: 'نوع الملف غير مدعوم. استخدم صورة أو فيديو.',
     badMediaSize: 'الملف أكبر من الحد المسموح أو غير مكتمل.',
     storageUnavailable: 'التخزين غير متاح الآن. حاول لاحقًا.',
+    bookingNotFound: 'المهمة غير موجودة.',
+    bookingNotClaimable: 'لم تعد هذه المهمة متاحة للاستلام.',
+    unauthorized: 'انتهت الجلسة. سجّل الدخول مرة أخرى.',
     jobClaimed: 'استلم سائق آخر هذه المهمة.',
+    jobClosed: 'أُغلقت المهمة، ولا يمكن تعديل مراحلها.',
+    jobChanged: 'تغيّرت المهمة. حدّث التفاصيل قبل المتابعة.',
     technicianNotInTeam: 'حسابك غير مرتبط بهذا الفريق.',
     outsideDriverShift: 'موعد المهمة خارج مناوبتك.',
     technicianBusy: 'لديك مهمة أخرى في الوقت نفسه.',

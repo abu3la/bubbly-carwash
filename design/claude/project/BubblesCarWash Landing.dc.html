@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>BubblesCarWash | غسيل سيارات متنقل داخل قرية الشربتلي</title>
+  <meta name="description" content="احجز غسيل سيارتك في موقعها داخل قرية الشربتلي بحي المروة، جدة. اختر السيارة والموعد، وتابع توثيق الغسلة قبلها وبعدها.">
+  <meta name="robots" content="noindex">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BubblesCarWash">
+  <meta property="og:title" content="BubblesCarWash | غسيل سيارات متنقل داخل قرية الشربتلي">
+  <meta property="og:description" content="احجز غسيل سيارتك في موقعها داخل قرية الشربتلي بحي المروة، جدة.">
+  <meta property="og:image" content="https://bubblescarwash.example/og/ar.png">
+  <link rel="canonical" href="https://bubblescarwash.example/ar">
+  <link rel="alternate" hreflang="ar" href="https://bubblescarwash.example/ar">
+  <link rel="alternate" hreflang="en" href="https://bubblescarwash.example/en">
+  <link rel="alternate" hreflang="x-default" href="https://bubblescarwash.example/ar">
+  <link rel="icon" href="assets/bubblescarwash-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/base.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/components/components.css">
+  <link rel="stylesheet" href="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/styles.css">
+  <script src="_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/_ds_bundle.js"></script>
+  <style>
+        html{scroll-behavior:smooth;background:#FAFAF5}
+    body{margin:0;background:#FAFAF5;color:#17162E;font-family:'IBM Plex Sans','IBM Plex Sans Arabic',-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+    [dir="rtl"]{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif}
+    a{color:#5A42FF}a:hover{color:#4534D6}
+    @keyframes bcw-dash{to{stroke-dashoffset:-24}}
+    @keyframes bcw-travel{0%{offset-distance:0%;opacity:0}6%{opacity:1}72%{offset-distance:100%;opacity:1}86%{offset-distance:100%;opacity:0}100%{offset-distance:0%;opacity:0}}
+    @keyframes bcw-shine{0%,60%{transform:translateX(-40px);opacity:0}66%{opacity:.9}84%{transform:translateX(60px);opacity:.9}90%,100%{transform:translateX(60px);opacity:0}}
+    @keyframes bcw-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+    @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important;transition:none !important}html{scroll-behavior:auto}}
+  </style>
+</helmet>
+<div dir="{{ dir }}" lang="{{ lang }}" style="min-height:100vh;background:#FAFAF5;color:#17162E;line-height:1.5">
+
+  <!-- Nav -->
+  <header style="position:sticky;top:0;z-index:20;background:#FAFAF5;border-bottom:1px solid rgba(23,22,46,.12)">
+    <nav aria-label="Main" style="max-width:1320px;margin:0 auto;padding:0 clamp(16px,3vw,40px);height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <a href="#top" onClick="{{ goTop }}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#17162E;flex:none">
+        <img src="assets/bubbles-logo-src.svg" alt="BubblesCarWash" style="height:22px;width:auto;display:block">
+        <span style="font-size:15px;font-weight:600;letter-spacing:-0.01em;margin-top:2px">{{ t.hero.carwash }}</span>
+      </a>
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+        <ul style="display:flex;gap:4px;list-style:none;margin:0;padding:0">
+          <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+            <li><a href="#{{ item.id }}" onClick="{{ item.go }}" aria-current="{{ item.current }}" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border-radius:999px;text-decoration:none;font-size:15px;color: {{ item.color }};font-weight: {{ item.weight }}" style-hover="background:rgba(23,22,46,.06)" style-focus="box-shadow:0 0 0 3px rgba(90,66,255,.35);outline:none">{{ item.label }}</a></li>
+          </sc-for>
+        </ul>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:8px;flex:none">
+        <button type="button" onClick="{{ toggleLang }}" aria-label="{{ t.nav.switchAria }}" lang="{{ otherLang }}" dir="{{ otherDir }}" style="height:40px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(23,22,46,.32);background:transparent;color:#17162E;font:inherit;font-size:15px;font-weight:500;cursor:pointer" style-hover="background:rgba(23,22,46,.06)" style-focus="box-shadow:0 0 0 3px rgba(90,66,255,.35);outline:none">{{ t.nav.switchLabel }}</button>
+        <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+          <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="primary" size="md" on-click="{{ goCoverage }}" hint-size="auto,42px">{{ t.nav.book }}</x-import>
+        </sc-if>
+        <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ toggleMenu }}" aria-expanded="{{ menuOpen }}" aria-controls="bcw-menu" style="height:40px;padding:0 14px;border-radius:999px;border:none;background:transparent;color:#17162E;font:inherit;font-size:15px;font-weight:600;cursor:pointer" style-hover="background:rgba(23,22,46,.06)" style-focus="box-shadow:0 0 0 3px rgba(90,66,255,.35);outline:none">{{ menuLabel }}</button>
+        </sc-if>
+      </div>
+    </nav>
+    <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+      <ul id="bcw-menu" style="list-style:none;margin:0;padding:8px clamp(16px,3vw,40px) 16px;display:flex;flex-direction:column;gap:2px;border-top:1px solid rgba(23,22,46,.12)">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+          <li><a href="#{{ item.id }}" onClick="{{ item.go }}" aria-current="{{ item.current }}" style="display:flex;align-items:center;min-height:48px;padding:0 12px;border-radius:12px;text-decoration:none;font-size:17px;color: {{ item.color }};font-weight: {{ item.weight }}" style-focus="box-shadow:0 0 0 3px rgba(90,66,255,.35);outline:none">{{ item.label }}</a></li>
+        </sc-for>
+        <li style="padding:8px 12px 0"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="primary" size="lg" on-click="{{ goCoverage }}" style="width:100%" hint-size="100%,52px">{{ t.nav.book }}</x-import></li>
+      </ul>
+    </sc-if>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section id="service" data-screen-label="Hero" style="background:#17162E;color:#FFFFFF">
+      <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,5vh,64px) clamp(16px,3vw,40px) clamp(32px,5vh,56px);min-height:calc(100svh - 64px);box-sizing:border-box;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:clamp(28px,4vw,64px);align-items:center">
+        <div style="display:flex;flex-direction:column;gap:clamp(20px,2.5vh,28px);max-width:600px">
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#BDEEFF">{{ t.hero.brand }} · {{ t.hero.tagline }}</p>
+          <h1 style="margin:0;font-size:clamp(38px,5vw,72px);line-height:1.08;letter-spacing:-0.02em;font-weight:700;text-wrap:balance">{{ t.hero.title }}</h1>
+          <p style="margin:0;font-size:clamp(17px,1.4vw,21px);line-height:1.55;color:rgba(255,255,255,.8);max-width:52ch;text-wrap:pretty">{{ t.hero.desc }}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;padding-top:4px">
+            <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="primary" size="lg" on-click="{{ goCoverage }}" hint-size="auto,52px">{{ t.hero.cta }}</x-import>
+            <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="ghost" size="lg" on-click="{{ goCoverage }}" style="box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)" hint-size="auto,52px">{{ t.hero.ctaCoverage }}</x-import>
+          </div>
+          <p style="margin:0;display:flex;align-items:center;gap:10px;font-size:15px;color:rgba(255,255,255,.72)"><span aria-hidden="true" style="width:8px;height:8px;border-radius:50%;background:#FFD84D;flex:none"></span>{{ t.hero.coverage }}</p>
+        </div>
+
+        <!-- Compound plan artwork -->
+        <figure style="margin:0;display:flex;flex-direction:column;gap:14px;min-width:0">
+          <svg viewBox="0 0 640 580" role="img" aria-label="{{ t.hero.artAlt }}" style="width:100%;height:auto;display:block;font-family:inherit">
+            <defs>
+              <pattern id="bcwDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="1.1" fill="rgba(255,255,255,.16)"></circle></pattern>
+              <clipPath id="bcwZone"><path d="M100 50 L540 42 Q600 40 604 100 L596 460 Q592 512 540 516 L120 524 Q66 526 62 470 L58 100 Q56 52 100 50 Z"></path></clipPath>
+              <clipPath id="bcwCar"><rect x="268" y="214" width="44" height="22" rx="7"></rect></clipPath>
+            </defs>
+            <rect x="0" y="0" width="640" height="580" rx="24" fill="#221F45"></rect>
+            <rect x="0" y="0" width="640" height="580" rx="24" fill="url(#bcwDots)"></rect>
+            <g clip-path="url(#bcwZone)">
+              <rect x="0" y="0" width="640" height="580" fill="#17162E"></rect>
+              <g stroke="rgba(255,255,255,.14)" stroke-width="18" fill="none">
+                <line x1="200" y1="40" x2="200" y2="540"></line><line x1="330" y1="40" x2="330" y2="540"></line><line x1="460" y1="40" x2="460" y2="540"></line>
+                <line x1="40" y1="170" x2="620" y2="170"></line><line x1="40" y1="280" x2="620" y2="280"></line><line x1="40" y1="390" x2="620" y2="390"></line>
+              </g>
+              <g fill="#2A2756">
+                <rect x="80" y="70" width="110" height="90" rx="10"></rect><rect x="210" y="70" width="110" height="90" rx="10"></rect><rect x="340" y="70" width="110" height="90" rx="10"></rect><rect x="470" y="70" width="110" height="90" rx="10"></rect>
+                <rect x="80" y="180" width="110" height="90" rx="10"></rect><rect x="210" y="180" width="110" height="90" rx="10"></rect><rect x="340" y="180" width="110" height="90" rx="10"></rect><rect x="470" y="180" width="110" height="90" rx="10"></rect>
+                <rect x="80" y="290" width="110" height="90" rx="10"></rect><rect x="210" y="290" width="110" height="90" rx="10"></rect><rect x="340" y="290" width="110" height="90" rx="10"></rect><rect x="470" y="290" width="110" height="90" rx="10"></rect>
+                <rect x="80" y="400" width="110" height="90" rx="10"></rect><rect x="210" y="400" width="110" height="90" rx="10"></rect><rect x="340" y="400" width="110" height="90" rx="10"></rect><rect x="470" y="400" width="110" height="90" rx="10"></rect>
+              </g>
+              <g fill="#3A3670">
+                <rect x="94" y="84" width="34" height="28" rx="5"></rect><rect x="142" y="118" width="34" height="28" rx="5"></rect><rect x="224" y="118" width="34" height="28" rx="5"></rect><rect x="272" y="84" width="34" height="28" rx="5"></rect>
+                <rect x="354" y="84" width="34" height="28" rx="5"></rect><rect x="402" y="118" width="34" height="28" rx="5"></rect><rect x="484" y="118" width="34" height="28" rx="5"></rect><rect x="532" y="84" width="34" height="28" rx="5"></rect>
+                <rect x="94" y="228" width="34" height="28" rx="5"></rect><rect x="142" y="194" width="34" height="28" rx="5"></rect><rect x="224" y="194" width="34" height="28" rx="5"></rect><rect x="354" y="194" width="34" height="28" rx="5"></rect><rect x="402" y="228" width="34" height="28" rx="5"></rect><rect x="484" y="194" width="34" height="28" rx="5"></rect><rect x="532" y="228" width="34" height="28" rx="5"></rect>
+                <rect x="94" y="304" width="34" height="28" rx="5"></rect><rect x="142" y="338" width="34" height="28" rx="5"></rect><rect x="224" y="338" width="34" height="28" rx="5"></rect><rect x="272" y="304" width="34" height="28" rx="5"></rect><rect x="354" y="304" width="34" height="28" rx="5"></rect><rect x="402" y="338" width="34" height="28" rx="5"></rect><rect x="484" y="338" width="34" height="28" rx="5"></rect><rect x="532" y="304" width="34" height="28" rx="5"></rect>
+                <rect x="94" y="448" width="34" height="28" rx="5"></rect><rect x="142" y="414" width="34" height="28" rx="5"></rect><rect x="224" y="414" width="34" height="28" rx="5"></rect><rect x="272" y="448" width="34" height="28" rx="5"></rect><rect x="354" y="448" width="34" height="28" rx="5"></rect><rect x="402" y="414" width="34" height="28" rx="5"></rect><rect x="484" y="414" width="34" height="28" rx="5"></rect><rect x="532" y="448" width="34" height="28" rx="5"></rect>
+              </g>
+            </g>
+            <path d="M100 50 L540 42 Q600 40 604 100 L596 460 Q592 512 540 516 L120 524 Q66 526 62 470 L58 100 Q56 52 100 50 Z" fill="none" stroke="#BDEEFF" stroke-width="2.5"></path>
+            <rect x="318" y="512" width="24" height="12" fill="#17162E"></rect>
+            <line x1="318" y1="518" x2="342" y2="518" stroke="#5A42FF" stroke-width="3" stroke-linecap="round"></line>
+            <path d="M330 566 L330 335 L200 335 L200 225 L258 225" fill="none" stroke="rgba(90,66,255,.4)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M330 566 L330 335 L200 335 L200 225 L258 225" fill="none" stroke="#5A42FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 16" style="animation:bcw-dash 1.2s linear infinite"></path>
+            <rect x="268" y="214" width="44" height="22" rx="7" fill="#FFD84D"></rect>
+            <rect x="276" y="217" width="12" height="16" rx="3" fill="rgba(23,22,46,.22)"></rect>
+            <rect x="294" y="217" width="12" height="16" rx="3" fill="rgba(23,22,46,.22)"></rect>
+            <g clip-path="url(#bcwCar)"><rect x="262" y="206" width="10" height="40" fill="#FFFFFF" transform="skewX(-20)" style="animation:bcw-shine 6s ease-in-out infinite;transform-origin:290px 225px"></rect></g>
+            <circle r="8" fill="#5A42FF" stroke="#FFFFFF" stroke-width="3" style="offset-path:path('M330 566 L330 335 L200 335 L200 225 L258 225');offset-rotate:0deg;animation:bcw-travel 6s ease-in-out infinite"></circle>
+            <text x="86" y="547" fill="rgba(255,255,255,.6)" font-size="13" font-weight="600" letter-spacing="1" style="direction:ltr;text-anchor:start">{{ t.hero.artOutside }}</text>
+            <text x="560" y="33" fill="#BDEEFF" font-size="14" font-weight="700" letter-spacing="1" style="direction:ltr;text-anchor:end">{{ t.hero.artZone }}</text>
+            <text x="352" y="560" fill="#FFFFFF" font-size="13" font-weight="600" style="direction:ltr;text-anchor:start">{{ t.hero.artGate }}</text>
+            <text x="318" y="204" fill="#FFFFFF" font-size="13" font-weight="600" style="direction:ltr;text-anchor:start">{{ t.hero.artCar }}</text>
+          </svg>
+          <figcaption style="display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;color:rgba(255,255,255,.7)">
+            <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:22px;height:0;border-top:3px dashed #5A42FF"></span>{{ t.hero.artRoute }}</span>
+            <span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:22px;height:0;border-top:2.5px solid #BDEEFF"></span>{{ t.hero.artZoneNote }}</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Journey -->
+    <section id="how" data-screen-label="Journey" style="max-width:1320px;margin:0 auto;padding:clamp(56px,8vw,112px) clamp(16px,3vw,40px)">
+      <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5A42FF">{{ t.journey.label }}</p>
+      <h2 style="margin:0 0 clamp(32px,4vw,56px);font-size:clamp(30px,3.4vw,48px);line-height:1.12;letter-spacing:-0.02em;font-weight:700;max-width:22ch;text-wrap:balance">{{ t.journey.title }}</h2>
+      <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:0 24px;row-gap:32px">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+          <li style="display:flex;flex-direction:column;gap:16px;min-width:0">
+            <div aria-hidden="true" style="position:relative;height:16px;display:flex;align-items:center">
+              <span style="position:absolute;inset-inline:0;top:7px;height:2px;background:rgba(23,22,46,.16)"></span>
+              <span style="position:absolute;inset-inline-start:0;top:7px;height:2px;width: {{ s.fill }};background:#5A42FF;transition:width 600ms cubic-bezier(.2,.8,.2,1)"></span>
+              <span style="position:relative;width:16px;height:16px;border-radius:50%;border:3px solid #FAFAF5;box-sizing:border-box;background: {{ s.dot }};transition:background 300ms"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:13px;font-weight:600;color:rgba(23,22,46,.56);font-variant-numeric:tabular-nums">{{ s.n }}</span>
+              <h3 style="margin:0;font-size:clamp(20px,1.6vw,24px);line-height:1.25;letter-spacing:-0.01em;font-weight:600">{{ s.title }}</h3>
+              <p style="margin:0;font-size:16px;color:rgba(23,22,46,.72);text-wrap:pretty">{{ s.text }}</p>
+            </div>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+
+    <!-- Trust -->
+    <section id="trust" data-screen-label="Trust" style="max-width:1320px;margin:0 auto;padding:0 clamp(16px,3vw,40px) clamp(56px,8vw,112px)">
+      <div style="border-top:1.5px solid rgba(23,22,46,.16);padding-top:clamp(40px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:clamp(32px,4vw,72px);align-items:start">
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5A42FF">{{ t.trust.label }}</p>
+          <h2 style="margin:0;font-size:clamp(30px,3.4vw,48px);line-height:1.12;letter-spacing:-0.02em;font-weight:700;max-width:20ch;text-wrap:balance">{{ t.trust.title }}</h2>
+          <p style="margin:0;font-size:clamp(17px,1.3vw,20px);color:rgba(23,22,46,.72);max-width:48ch;text-wrap:pretty">{{ t.trust.copy }}</p>
+          <dl style="margin:12px 0 0;display:grid;grid-template-columns:minmax(96px,auto) 1fr;gap:0 20px">
+            <sc-for list="{{ facts }}" as="f" hint-placeholder-count="4">
+              <dt style="padding:14px 0;border-top:1px solid rgba(23,22,46,.14);font-size:15px;font-weight:600">{{ f.k }}</dt>
+              <dd style="margin:0;padding:14px 0;border-top:1px solid rgba(23,22,46,.14);font-size:15px;color:rgba(23,22,46,.72);text-wrap:pretty">{{ f.v }}</dd>
+            </sc-for>
+          </dl>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+          <div style="display:flex;flex-wrap:wrap;gap:24px clamp(12px,3vw,28px);align-items:flex-start;justify-content:center">
+            <div style="flex:0 1 360px;max-width:100%;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+              <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#17162E"><span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background: {{ beforeView.dot }}"></span>{{ beforeView.label }}</span>
+              <div style="width:360px;max-width:100%">
+                <div style="width:360px;max-width:100%">
+                  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ phoneW }}" height="{{ phoneH }}" hint-size="360px,800px">
+                    <div dir="{{ dir }}" style="display:flex;flex-direction:column;gap:14px;padding:58px 14px 24px;background:#FAFAF5;min-height:100%;box-sizing:border-box;font-family:inherit">
+                      <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#17162E">{{ t.trust.appTitle }}</div>
+                      <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BookingTicket" time="{{ t.trust.appSlot }}" meta="{{ t.trust.appMeta }}" hint-size="100%,96px"></x-import>
+                      <div style="background:#FFFFFF;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-card)">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(23,22,46,.6)">{{ t.trust.appStatus }}</span>
+                          <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BeatIcon" size="md" active="{{ beforeView.stage }}" hint-size="56px,14px"></x-import>
+                        </div>
+                        <sc-for list="{{ beforeView.steps }}" as="st" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:12px;opacity: {{ st.opacity }}">
+                            <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.StatusBadge" status="{{ st.key }}" size="sm" hint-size="44px,44px"></x-import>
+                            <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#17162E">{{ st.title }}</div><div style="font-size:12px;color:rgba(23,22,46,.72)">{{ st.copy }}</div></div>
+                            <span style="flex:none;font-size:12.5px;color:rgba(23,22,46,.6);font-variant-numeric:tabular-nums;direction:ltr">{{ st.time }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div style="background:#FFFFFF;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-card)">
+                        <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(23,22,46,.6)">{{ beforeView.photoLabel }}</span>
+                        <div role="img" aria-label="{{ beforeView.slot }}" style="aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:#BDEEFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;box-sizing:border-box;text-align:center">
+                          <svg viewBox="0 0 96 40" width="96" height="40" aria-hidden="true" fill="none" stroke="#17162E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 27h80v-6l-10-3-12-10H34L20 18l-10 3z"></path><path d="M34 8l-4 10h36l-8-10"></path><circle cx="24" cy="30" r="6" fill="#BDEEFF"></circle><circle cx="72" cy="30" r="6" fill="#BDEEFF"></circle></svg>
+                          <span style="font-size:12px;font-weight:600;color:#17162E">{{ beforeView.slot }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </x-import>
+                </div>
+              </div>
+            </div>
+            <div style="flex:0 1 360px;max-width:100%;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+              <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#17162E"><span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background: {{ afterView.dot }}"></span>{{ afterView.label }}</span>
+              <div style="width:360px;max-width:100%">
+                <div style="width:360px;max-width:100%">
+                  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ phoneW }}" height="{{ phoneH }}" hint-size="360px,800px">
+                    <div dir="{{ dir }}" style="display:flex;flex-direction:column;gap:14px;padding:58px 14px 24px;background:#FAFAF5;min-height:100%;box-sizing:border-box;font-family:inherit">
+                      <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#17162E">{{ t.trust.appTitle }}</div>
+                      <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BookingTicket" time="{{ t.trust.appSlot }}" meta="{{ t.trust.appMeta }}" hint-size="100%,96px"></x-import>
+                      <div style="background:#FFFFFF;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-card)">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(23,22,46,.6)">{{ t.trust.appStatus }}</span>
+                          <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BeatIcon" size="md" active="{{ afterView.stage }}" hint-size="56px,14px"></x-import>
+                        </div>
+                        <sc-for list="{{ afterView.steps }}" as="st" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:12px;opacity: {{ st.opacity }}">
+                            <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.StatusBadge" status="{{ st.key }}" size="sm" hint-size="44px,44px"></x-import>
+                            <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#17162E">{{ st.title }}</div><div style="font-size:12px;color:rgba(23,22,46,.72)">{{ st.copy }}</div></div>
+                            <span style="flex:none;font-size:12.5px;color:rgba(23,22,46,.6);font-variant-numeric:tabular-nums;direction:ltr">{{ st.time }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div style="background:#FFFFFF;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-card)">
+                        <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(23,22,46,.6)">{{ afterView.photoLabel }}</span>
+                        <div role="img" aria-label="{{ afterView.slot }}" style="aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:#BDEEFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;box-sizing:border-box;text-align:center">
+                          <svg viewBox="0 0 96 40" width="96" height="40" aria-hidden="true" fill="none" stroke="#17162E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 27h80v-6l-10-3-12-10H34L20 18l-10 3z"></path><path d="M34 8l-4 10h36l-8-10"></path><circle cx="24" cy="30" r="6" fill="#BDEEFF"></circle><circle cx="72" cy="30" r="6" fill="#BDEEFF"></circle></svg>
+                          <span style="font-size:12px;font-weight:600;color:#17162E">{{ afterView.slot }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </x-import>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p style="margin:0;font-size:13px;color:rgba(23,22,46,.6)">{{ t.trust.framesNote }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Packages -->
+    <section id="packages" data-screen-label="Packages" style="max-width:1320px;margin:0 auto;padding:0 clamp(16px,3vw,40px) clamp(56px,8vw,112px)">
+      <div style="border-top:1.5px solid rgba(23,22,46,.16);padding-top:clamp(40px,5vw,64px)">
+        <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5A42FF">{{ t.packages.label }}</p>
+        <h2 style="margin:0 0 clamp(28px,3vw,44px);font-size:clamp(30px,3.4vw,48px);line-height:1.12;letter-spacing:-0.02em;font-weight:700;max-width:22ch;text-wrap:balance">{{ t.packages.title }}</h2>
+
+        <sc-if value="{{ pricingLoading }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display:flex;align-items:center;gap:14px;padding:28px 0;border-top:1px solid rgba(23,22,46,.14);border-bottom:1px solid rgba(23,22,46,.14);font-size:16px;color:rgba(23,22,46,.72)">
+            <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BeatIcon" size="sm" animate="{{ true }}" hint-size="40px,10px"></x-import>{{ t.packages.loading }}
+          </div>
+        </sc-if>
+        <sc-if value="{{ pricingError }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:28px 0;border-top:1px solid rgba(23,22,46,.14);border-bottom:1px solid rgba(23,22,46,.14);font-size:16px">
+            <span>{{ t.packages.error }}</span>
+            <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="secondary" size="md" on-click="{{ retryPricing }}" hint-size="auto,42px">{{ t.packages.retry }}</x-import>
+          </div>
+        </sc-if>
+        <sc-if value="{{ pricingReady }}" hint-placeholder-val="{{ true }}">
+          <div role="table" style="display:flex;flex-direction:column">
+            <div role="row" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,auto);gap:16px;padding:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(23,22,46,.56)">
+              <span role="columnheader">{{ t.packages.colPlan }}</span><span role="columnheader">{{ t.packages.colFreq }}</span><span role="columnheader" style="text-align:end">{{ t.packages.colPrice }}</span>
+            </div>
+            <sc-for list="{{ plans }}" as="p" hint-placeholder-count="5">
+              <div role="row" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,auto);gap:16px;align-items:baseline;padding:20px 0;border-top:1px solid rgba(23,22,46,.14)">
+                <span role="cell" style="font-size:clamp(18px,1.5vw,22px);font-weight:600;letter-spacing:-0.01em">{{ p.name }}</span>
+                <span role="cell" style="font-size:16px;color:rgba(23,22,46,.72)">{{ p.freq }}</span>
+                <span role="cell" style="display:flex;flex-direction:column;align-items:flex-end;text-align:end"><span style="font-size:clamp(18px,1.5vw,22px);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">{{ p.price }}</span><span style="font-size:13px;color:rgba(23,22,46,.6)">{{ p.period }}</span></span>
+              </div>
+            </sc-for>
+            <div style="border-top:1.5px solid #17162E;padding:20px 0 0;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px 32px">
+              <p style="margin:0;font-size:17px;font-weight:600;max-width:40ch;text-wrap:pretty">{{ t.packages.noRollover }}</p>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <span style="font-size:14px;color:rgba(23,22,46,.6)">{{ t.packages.ctaHint }}</span>
+                <x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="primary" size="lg" on-click="{{ goCoverage }}" hint-size="auto,52px">{{ t.packages.cta }}</x-import>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </section>
+
+    <!-- Coverage -->
+    <section id="coverage" data-screen-label="Coverage" style="background:#17162E;color:#FFFFFF">
+      <div style="max-width:1320px;margin:0 auto;padding:clamp(56px,8vw,112px) clamp(16px,3vw,40px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:clamp(32px,4vw,72px);align-items:start">
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5A42FF">{{ t.coverage.label }}</p>
+          <h2 style="margin:0;font-size:clamp(30px,3.4vw,48px);line-height:1.12;letter-spacing:-0.02em;font-weight:700;max-width:20ch;text-wrap:balance">{{ t.coverage.title }}</h2>
+          <p style="margin:0;font-size:clamp(17px,1.3vw,20px);color:rgba(255,255,255,.78);max-width:48ch;text-wrap:pretty">{{ t.coverage.copy }}</p>
+          <p style="margin:8px 0 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.18);font-size:15px;color:rgba(255,255,255,.7);max-width:48ch;text-wrap:pretty">{{ t.coverage.outsideNote }}</p>
+        </div>
+        <form onSubmit="{{ checkCoverage }}" style="display:flex;flex-direction:column;gap:18px;min-width:0">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div style="flex:1 1 240px;min-width:0"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Input" label="{{ t.coverage.inputLabel }}" hint="{{ t.coverage.inputHint }}" value="{{ query }}" on-change="{{ setQuery }}" name="villa" inputMode="numeric" autoComplete="off" dir="ltr" hint-size="100%,88px"></x-import></div>
+            <div style="padding-bottom:24px"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="primary" size="md" type="submit" style="height:44px" hint-size="auto,44px">{{ t.coverage.check }}</x-import></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+            <span style="font-size:13px;color:rgba(255,255,255,.6);margin-inline-end:4px">{{ t.coverage.demoNote }}</span>
+            <sc-for list="{{ demoChips }}" as="c" hint-placeholder-count="4">
+              <button type="button" onClick="{{ c.pick }}" style="height:34px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,.28);background:transparent;color:#FFFFFF;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="border-color:#FFFFFF" style-focus="box-shadow:0 0 0 3px rgba(90,66,255,.35);outline:none">{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <div role="status" aria-live="polite" style="min-height:24px">
+            <sc-if value="{{ covChecking }}" hint-placeholder-val="{{ false }}">
+              <p style="margin:0;display:flex;align-items:center;gap:12px;font-size:16px;color:rgba(255,255,255,.78)"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BeatIcon" size="sm" animate="{{ true }}" hint-size="40px,10px"></x-import>{{ t.coverage.checking }}</p>
+            </sc-if>
+            <sc-if value="{{ covResult }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:18px;padding:20px;border-radius:16px;background:#221F45;border:1px solid rgba(255,255,255,.12)">
+                <p style="margin:0;display:flex;align-items:flex-start;gap:12px;font-size:clamp(17px,1.3vw,20px);font-weight:600;line-height:1.4"><span aria-hidden="true" style="flex:none;margin-top:8px;width:10px;height:10px;border-radius:50%;background: {{ covDot }}"></span><span>{{ covMessage }}<sc-if value="{{ covInside }}" hint-placeholder-val="{{ false }}"><span style="display:block;font-size:15px;font-weight:400;color:rgba(255,255,255,.72);margin-top:4px">{{ villaLine }}</span></sc-if></span></p>
+                <sc-if value="{{ covInside }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(255,255,255,.14);padding-top:16px">
+                    <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)"><span>{{ t.coverage.slotsTitle }}</span><span style="text-transform:none;letter-spacing:0;font-weight:500">{{ t.coverage.slotsDate }}</span></div>
+                    <sc-if value="{{ slotsAvailable }}" hint-placeholder-val="{{ true }}">
+                      <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                        <sc-for list="{{ periods }}" as="pr" hint-placeholder-count="3">
+                          <li style="padding:12px;border-radius:12px;background: {{ pr.bg }};color: {{ pr.fg }};display:flex;flex-direction:column;gap:2px;min-width:0">
+                            <span style="font-size:14px;font-weight:600">{{ pr.name }}</span>
+                            <span style="font-size:13px;font-variant-numeric:tabular-nums;direction:ltr;text-align:start;opacity:.85">{{ pr.range }}</span>
+                            <span style="font-size:12px;font-weight:600;margin-top:4px">{{ pr.status }}</span>
+                          </li>
+                        </sc-for>
+                      </ul>
+                    </sc-if>
+                    <sc-if value="{{ slotsNone }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin:0;font-size:16px;color:rgba(255,255,255,.78)">{{ t.coverage.slotsNone }}</p>
+                    </sc-if>
+                    <div style="padding-top:6px"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="primary" size="lg" on-click="{{ noopBook }}" disabled="{{ true }}" aria-disabled="true" hint-size="auto,52px">{{ t.coverage.subscribe }}</x-import><span style="display:block;margin-top:8px;font-size:13px;color:rgba(255,255,255,.55)">{{ t.coverage.subscribeNote }}</span></div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Coming -->
+    <section id="coming" data-screen-label="Coming" style="max-width:1320px;margin:0 auto;padding:clamp(56px,8vw,112px) clamp(16px,3vw,40px)">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:clamp(28px,4vw,72px);align-items:start">
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5A42FF">{{ t.coming.label }}</p>
+          <h2 style="margin:0;font-size:clamp(30px,3.4vw,48px);line-height:1.12;letter-spacing:-0.02em;font-weight:700;max-width:16ch;text-wrap:balance">{{ t.coming.title }}</h2>
+          <p style="margin:0;font-size:17px;color:rgba(23,22,46,.72);max-width:40ch;text-wrap:pretty">{{ t.coming.intro }}</p>
+          <div style="margin-top:8px;padding-top:20px;border-top:1px solid rgba(23,22,46,.14);display:flex;flex-direction:column;gap:10px">
+            <p style="margin:0;font-size:16px;color:rgba(23,22,46,.72)">{{ t.coming.expand }}</p>
+            <p style="margin:0;font-size:16px;font-weight:600">{{ t.coming.appSoon }}</p>
+          </div>
+        </div>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+          <sc-for list="{{ comingItems }}" as="ci" hint-placeholder-count="8">
+            <li style="padding:16px 0;border-top:1px solid rgba(23,22,46,.14);font-size:16px;color:rgba(23,22,46,.86);text-wrap:pretty;display:flex;gap:14px;align-items:baseline"><span aria-hidden="true" style="flex:none;width:6px;height:6px;border-radius:50%;background:#FF5E7E;transform:translateY(-3px)"></span><span>{{ ci }}</span></li>
+          </sc-for>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer id="support" style="background:#17162E;color:#FFFFFF">
+    <div style="max-width:1320px;margin:0 auto;padding:clamp(40px,5vw,64px) clamp(16px,3vw,40px);display:flex;flex-wrap:wrap;justify-content:space-between;gap:32px 48px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:420px">
+        <div style="display:flex;align-items:center;gap:8px"><img src="assets/bubblescarwash-logo-white.svg" alt="BubblesCarWash" style="height:22px;width:auto;display:block"><span style="font-size:15px;font-weight:600;margin-top:2px">{{ t.hero.carwash }}</span></div>
+        <p style="margin:0;font-size:15px;color:rgba(255,255,255,.72)">{{ t.hero.tagline }}</p>
+        <p style="margin:0;font-size:15px;color:rgba(255,255,255,.72);text-wrap:pretty">{{ t.footer.coverage }}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+        <sc-if value="{{ legalLinksReady }}" hint-placeholder-val="{{ false }}">
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:15px">
+            <li><a href="{{ links.support }}" style="color:#FFFFFF;text-decoration:none;display:inline-flex;min-height:40px;align-items:center" style-hover="text-decoration:underline">{{ t.footer.support }}</a></li>
+            <li><a href="{{ links.privacy }}" style="color:#FFFFFF;text-decoration:none;display:inline-flex;min-height:40px;align-items:center" style-hover="text-decoration:underline">{{ t.footer.privacy }}</a></li>
+            <li><a href="{{ links.terms }}" style="color:#FFFFFF;text-decoration:none;display:inline-flex;min-height:40px;align-items:center" style-hover="text-decoration:underline">{{ t.footer.terms }}</a></li>
+            <li><a href="{{ links.deleteAccount }}" style="color:#FFFFFF;text-decoration:none;display:inline-flex;min-height:40px;align-items:center" style-hover="text-decoration:underline">{{ t.footer.deleteAccount }}</a></li>
+          </ul>
+        </sc-if>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,.6)">
+          <span>{{ t.footer.lang }}</span>
+          <button type="button" onClick="{{ toggleLang }}" aria-label="{{ t.nav.switchAria }}" lang="{{ otherLang }}" dir="{{ otherDir }}" style="height:40px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,.32);background:transparent;color:#FFFFFF;font:inherit;font-size:15px;font-weight:500;cursor:pointer" style-hover="background:rgba(255,255,255,.1)" style-focus="box-shadow:0 0 0 3px rgba(90,66,255,.35);outline:none">{{ t.nav.switchLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ar&quot;,&quot;en&quot;],&quot;default&quot;:&quot;ar&quot;,&quot;tsType&quot;:&quot;'ar'|'en'&quot;,&quot;section&quot;:&quot;Language&quot;},&quot;pricingState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;loading&quot;,&quot;error&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;'live'|'loading'|'error'&quot;,&quot;section&quot;:&quot;States&quot;},&quot;slotsDemo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;available&quot;,&quot;none&quot;],&quot;default&quot;:&quot;available&quot;,&quot;tsType&quot;:&quot;'available'|'none'&quot;,&quot;section&quot;:&quot;States&quot;},&quot;legalLinksReady&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Launch&quot;}}">
+class Component extends DCLogic {
+  state = { lang: null, strings: null, wide: true, menuOpen: false, current: 'service', stage: 0,
+    pricing: null, pricingStatus: 'loading', cov: null, covStatus: 'idle', query: '', covResult: null, covVilla: null };
+  componentDidMount() {
+    const saved = localStorage.getItem('bcw-lang');
+    const fromPath = /\/en(\/|$)/.test(location.pathname) ? 'en' : /\/ar(\/|$)/.test(location.pathname) ? 'ar' : null;
+    const lang = fromPath || saved || (this.props.defaultLang ?? 'ar');
+    import('./landing-i18n.js').then(m => this.setState({ strings: m.strings, lang }, () => this.applyDoc()));
+    this.onResize = () => this.setState({ wide: window.innerWidth >= 960, menuOpen: window.innerWidth >= 960 ? false : this.state.menuOpen });
+    this.onResize(); window.addEventListener('resize', this.onResize);
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!this.reduced) this.timer = setInterval(() => this.setState(s => ({ stage: (s.stage + 1) % 4 })), 2400);
+    this.io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) this.setState({ current: e.target.id }); }); }, { rootMargin: '-40% 0px -55% 0px' });
+    ['service', 'how', 'trust', 'packages', 'coverage', 'coming', 'support'].forEach(id => { const el = document.getElementById(id); if (el) this.io.observe(el); });
+    this.loadPricing();
+    fetch('./coverage-config.json').then(r => r.json()).then(cov => this.setState({ cov })).catch(() => {});
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this.onResize); clearInterval(this.timer); this.io && this.io.disconnect(); }
+  applyDoc() {
+    const { lang, strings } = this.state; if (!lang || !strings) return;
+    const t = strings[lang];
+    document.documentElement.lang = lang; document.documentElement.dir = t.dir; document.title = t.seo.title;
+    const md = document.querySelector('meta[name="description"]'); if (md) md.content = t.seo.description;
+    const ogt = document.querySelector('meta[property="og:title"]'); if (ogt) ogt.content = t.seo.title;
+    const ogd = document.querySelector('meta[property="og:description"]'); if (ogd) ogd.content = t.seo.description;
+    const can = document.querySelector('link[rel="canonical"]'); if (can) can.href = 'https://bubblescarwash.example/' + lang;
+  }
+  loadPricing() {
+    const mode = this.props.pricingState ?? 'live';
+    this.setState({ pricingStatus: 'loading' });
+    if (mode === 'loading') return;
+    if (mode === 'error') { setTimeout(() => this.setState({ pricingStatus: 'error' }), 500); return; }
+    setTimeout(() => fetch('./pricing.json').then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(p => this.setState({ pricing: p, pricingStatus: 'ready' }))
+      .catch(() => this.setState({ pricingStatus: 'error' })), 500);
+  }
+  scrollTo(id) { return (e) => { if (e && e.preventDefault) e.preventDefault(); const el = document.getElementById(id); if (!el) return; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 64, behavior: this.reduced ? 'auto' : 'smooth' }); this.setState({ menuOpen: false }); }; }
+  lookupVilla(raw) {
+    const cov = this.state.cov; if (!cov) return { r: 'error' };
+    const v = String(raw || '').trim().toUpperCase();
+    if (!v || !new RegExp(cov.villaFormat).test(v)) return { r: 'error' };
+    const villa = cov.villas.find(x => x.no.toUpperCase() === v);
+    return villa ? { r: 'inside', villa } : { r: 'unserved' };
+  }
+  inPoly(lat, lng, poly) { let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [yi, xi] = poly[i], [yj, xj] = poly[j]; if (((xi > lng) !== (xj > lng)) && (lat < (yj - yi) * (lng - xi) / (xj - xi) + yi)) ins = !ins; } return ins; }
+  runCheck(raw) {
+    this.setState({ covStatus: 'checking', covResult: null, covVilla: null });
+    setTimeout(() => { const { r, villa } = this.lookupVilla(raw); this.setState({ covStatus: 'done', covResult: r, covVilla: villa || null }); }, 700);
+  }
+  renderVals() {
+    const { lang, strings, wide, menuOpen, current, stage, reveal, pricing, pricingStatus, cov, query, covStatus, covResult, covVilla } = this.state;
+    const t = strings && lang ? strings[lang] : null;
+    if (!t) return { lang: lang || 'ar', dir: 'rtl', wide, narrow: !wide, menuOpen: false, legalLinksReady: false };
+    const rtl = t.dir === 'rtl';
+    const otherLang = lang === 'ar' ? 'en' : 'ar';
+    const navIds = [['service', t.nav.service], ['how', t.nav.how], ['packages', t.nav.packages], ['coverage', t.nav.coverage]];
+    const legalLinksReady = !!(this.props.legalLinksReady ?? false);
+    if (legalLinksReady) navIds.push(['support', t.nav.support]);
+    const navItems = navIds.map(([id, label]) => ({ id, label, go: this.scrollTo(id), current: current === id ? 'true' : undefined, color: current === id ? '#5A42FF' : 'rgba(23,22,46,.7)', weight: current === id ? 600 : 400 }));
+    const steps = t.journey.steps.map((s, i) => ({ n: String(i + 1).padStart(2, '0'), title: s.title, text: s.text, dot: i <= stage ? '#5A42FF' : 'rgba(23,22,46,.2)', fill: i < stage ? '100%' : i === stage ? '50%' : '0%' }));
+    const money = n => lang === 'ar' ? `${n} ر.س.` : `SAR ${n}`;
+    const freq = n => lang === 'ar' ? (n === 2 ? 'غسلتان أسبوعيًا' : `${n} غسلات أسبوعيًا`) : `${n} washes per week`;
+    const plans = pricing ? [{ name: t.packages.single, freq: '—', price: money(pricing.single.price), period: t.packages.once }]
+      .concat(pricing.packages.map(p => ({ name: p.name, freq: freq(p.washesPerWeek), price: money(p.pricePerMonth), period: t.packages.perMonth }))) : [];
+    const demoChips = (cov ? cov.demoInputs : []).map(d => ({ label: (lang === 'ar' ? 'فيلا ' : 'Villa ') + d.value, pick: () => { this.setState({ query: d.value }); this.runCheck(d.value); } }));
+    const villaLine = covVilla ? `${t.coverage.villaPrefix} ${covVilla.no} · ${covVilla.street[lang]}` : '';
+    const slotsMode = this.props.slotsDemo ?? 'available';
+    const periods = t.coverage.periods.map((p, i) => { const full = i === 0; return { ...p, status: full ? t.coverage.slotsFull : t.coverage.slotsAvail, bg: full ? 'rgba(255,255,255,.08)' : '#BDEEFF', fg: full ? 'rgba(255,255,255,.6)' : '#17162E' }; });
+    const mkView = (stage, label, dot, photoLabel, slot) => ({ stage, label, dot, photoLabel, slot, steps: t.trust.appSteps.map((s, i) => ({ ...s, copy: i < stage ? s.copy : t.trust.appWaiting, time: i < stage ? s.time : '—', opacity: i < stage ? 1 : 0.38 })) });
+    const beforeView = mkView(1, t.trust.before, '#5A42FF', t.trust.photoBefore, t.trust.beforeSlot);
+    const afterView = mkView(3, t.trust.after, '#FFD84D', t.trust.photoAfter, t.trust.afterSlot);
+    const dotFor = { inside: '#FFD84D', outside: '#FF5E7E', unserved: 'rgba(255,255,255,.45)', error: '#FF5E7E' };
+    return {
+      t, lang, dir: t.dir, otherLang, otherDir: otherLang === 'ar' ? 'rtl' : 'ltr', wide, narrow: !wide, menuOpen, menuLabel: menuOpen ? t.nav.close : t.nav.menu,
+      navItems, steps, facts: t.trust.facts, comingItems: t.coming.items, legalLinksReady,
+      links: { support: '/' + lang + '/support', privacy: '/' + lang + '/privacy', terms: '/' + lang + '/terms', deleteAccount: '/' + lang + '/delete-account' },
+      toggleLang: () => { localStorage.setItem('bcw-lang', otherLang); this.setState({ lang: otherLang, menuOpen: false }, () => this.applyDoc()); },
+      toggleMenu: () => this.setState(s => ({ menuOpen: !s.menuOpen })),
+      goTop: e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: this.reduced ? 'auto' : 'smooth' }); },
+      goCoverage: this.scrollTo('coverage'),
+      beforeView, afterView, phoneW: 360, phoneH: 800,
+      pricingLoading: pricingStatus === 'loading', pricingError: pricingStatus === 'error', pricingReady: pricingStatus === 'ready', plans,
+      retryPricing: () => { this.loadPricing(); },
+      query, setQuery: e => this.setState({ query: e.target.value, covStatus: 'idle', covResult: null }),
+      demoChips, villaLine,
+      checkCoverage: e => { e.preventDefault(); this.runCheck(query); },
+      covChecking: covStatus === 'checking', covResult: covStatus === 'done' && !!covResult, covInside: covResult === 'inside',
+      covMessage: covResult ? t.coverage.states[covResult] : '', covDot: covResult ? dotFor[covResult] : '',
+      slotsAvailable: slotsMode === 'available', slotsNone: slotsMode === 'none', periods,
+      noopBook: () => {}
+    };
+  }
+}
+</script>
+</body>
+</html>

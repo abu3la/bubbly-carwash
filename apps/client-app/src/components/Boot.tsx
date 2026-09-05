@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import { BeatIcon, DirectionRoot, Txt, useLocale } from '@sama/ui-native';
+import { BeatIcon, DirectionRoot, Txt, useLocale } from '@bubbles/ui-native';
 import { useCopy } from '../i18n';
 
 /** How long the splash holds while the tree is rebuilt. */

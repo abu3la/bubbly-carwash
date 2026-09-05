@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { BeatIcon, Button, Input, Num, Screen, Txt } from '@sama/ui-native';
-import { ApiError, requestOtp, toE164, verifyOtp } from '../src/api';
+import { BeatIcon, Button, Input, Num, Screen, Txt } from '@bubbles/ui-native';
+import { ApiError, normalizePhoneDigits, requestOtp, toE164, verifyOtp } from '../src/api';
 import { useSession } from '../src/session';
 import { copy } from '../src/copy';
 
-const NATIONAL_DIGITS = 9;
 const LIVE_CODE_DIGITS = 6;
 
 export default function SignIn() {
@@ -38,7 +37,7 @@ export default function SignIn() {
   };
 
   return (
-    <Screen contentStyle={styles.screen}>
+    <Screen scroll contentStyle={styles.screen}>
       <View style={styles.head}>
         <BeatIcon size="lg" active={3} />
         <Txt variant="display" weight="bold" tone="action">
@@ -59,6 +58,7 @@ export default function SignIn() {
 
         {!sent ? (
           <>
+            <Txt variant="small" weight="semibold">رقم الجوال</Txt>
             {/* The dial code leads in both directions — it is part of the
                 number sent to the API, not decoration. */}
             <View style={styles.phoneRow}>
@@ -68,11 +68,12 @@ export default function SignIn() {
                 </Num>
               </View>
               <Input
+                accessibilityLabel="رقم الجوال"
                 value={phone}
                 onChangeText={setPhone}
                 placeholder={copy.phonePlaceholder}
                 keyboardType="phone-pad"
-                maxLength={12}
+                maxLength={16}
                 ltr
                 containerStyle={styles.field}
               />
@@ -81,7 +82,7 @@ export default function SignIn() {
               label={busy ? copy.sending : copy.sendCode}
               size="lg"
               fullWidth
-              disabled={busy || phone.replace(/\D/g, '').length !== NATIONAL_DIGITS}
+              disabled={busy || !/^\+9665\d{8}$/.test(toE164(phone))}
               onPress={() => run(async () => {
                 const result = await requestOtp(toE164(phone));
                 setDevelopmentCode(result.developmentCode);
@@ -92,10 +93,12 @@ export default function SignIn() {
         ) : (
           <>
             <Input
+              label="رمز التحقق"
               value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, requiredDigits))}
+              onChangeText={(v) => setCode(normalizePhoneDigits(v).slice(0, requiredDigits))}
               placeholder={developmentCode ?? '000000'}
               keyboardType="number-pad"
+              textContentType="oneTimeCode"
               maxLength={requiredDigits}
               ltr
             />
@@ -117,6 +120,7 @@ export default function SignIn() {
               label={copy.changeNumber}
               variant="ghost"
               fullWidth
+              disabled={busy}
               onPress={() => { setSent(false); setCode(''); setDevelopmentCode(undefined); setError(null); }}
             />
           </>

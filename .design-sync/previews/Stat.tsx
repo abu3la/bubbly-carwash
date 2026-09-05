@@ -1,4 +1,4 @@
-import { Stat } from '@sama/ui-web';
+import { Stat } from '@bubbles/ui-web';
 
 export const StatRow = () => (
   <div style={{ display: 'flex', gap: 40 }}>

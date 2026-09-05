@@ -3,24 +3,28 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Car, MapPin } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Num, Screen, Txt } from '@sama/ui-native';
+import { Button, Card, Num, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
+import { hasVillaAddress } from '../../src/api';
 import { useCustomerData } from '../../src/customerData';
 
 export default function VehicleAndPlace() {
   const { theme } = useUnistyles();
   const router = useRouter();
   const copy = useCopy();
+  const { language } = useLocale();
+  const ar = language === 'ar';
   const draft = useBookingDraft();
   const { vehicles, addresses, loading, refresh } = useCustomerData();
 
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
     if (!draft.vehicleId && vehicles.length) draft.setVehicle(vehicles.find((v) => v.is_default) ?? vehicles[0]);
-    if (!draft.addressId && addresses.length) draft.setAddress(addresses.find((a) => a.is_default) ?? addresses[0]);
+    const available = addresses.filter(hasVillaAddress);
+    if (!draft.addressId && available.length) draft.setAddress(available.find((a) => a.is_default) ?? available[0]);
   }, [vehicles, addresses, draft.vehicleId, draft.addressId]);
 
   return (
@@ -55,11 +59,11 @@ export default function VehicleAndPlace() {
           {addresses.map((address) => {
             const selected = draft.addressId === address.id;
             return (
-              <Card key={address.id} selected={selected} onPress={() => draft.setAddress(address)} style={styles.row}>
+              <Card key={address.id} selected={selected} onPress={() => hasVillaAddress(address) ? draft.setAddress(address) : router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })} style={styles.row}>
                 <MapPin size={theme.scale(19)} color={selected ? theme.action.primary : theme.text.secondary} strokeWidth={2} />
                 <View style={styles.text}>
                   <Txt variant="body" weight="bold">{address.line}</Txt>
-                  <Txt variant="caption" tone="secondary">{[address.district, address.city].filter(Boolean).join(' · ')}</Txt>
+                  <Txt variant="caption" tone="secondary">{hasVillaAddress(address) ? (ar ? `فيلا ${address.villa_number} · شربتلي فيلج` : `Villa ${address.villa_number} · Sharbatly Village`) : (ar ? 'يلزم التحقق من الموقع ورقم الفيلا' : 'Verify the location and villa number')}</Txt>
                 </View>
                 <Txt variant="caption" weight="semibold" tone={selected ? 'action' : 'muted'}>
                   {selected ? copy.booking.selected : copy.common.change}
@@ -71,7 +75,7 @@ export default function VehicleAndPlace() {
         </View>
 
         {loading ? <Txt variant="small" tone="secondary" center>{copy.common.sending}</Txt> : null}
-        <Button label={copy.common.continue} size="lg" fullWidth disabled={loading || !draft.vehicleId || !draft.addressId || draft.addressLat == null || draft.addressLng == null} onPress={() => router.push('/book/slot')} />
+        <Button label={copy.common.continue} size="lg" fullWidth disabled={loading || !draft.vehicleId || !draft.addressId || draft.addressLat == null || draft.addressLng == null || !draft.villaNumber} onPress={() => router.push('/book/slot')} />
       </View>
     </Screen>
   );

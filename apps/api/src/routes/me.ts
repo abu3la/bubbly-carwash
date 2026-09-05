@@ -2,9 +2,16 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../db';
+import { checkCoverage, coverageError, normalizeVilla, validVilla } from '../coverage';
 
 export const meRoute = new Hono<{ Bindings: Env }>();
 meRoute.use('*', requireAuth());
+meRoute.onError((error, c) => {
+  const code = ['outsideServiceArea', 'villaRequired', 'villaUnavailable', 'coverageUnavailable'].find((candidate) => error.message.includes(candidate));
+  if (code) return c.json({ error: { code } }, 409);
+  console.error('[me]', error);
+  return c.json({ error: { code: 'unknown' } }, 500);
+});
 
 meRoute.get('/', async (c) => {
   const caller = c.get('caller');
@@ -106,6 +113,7 @@ interface AddressInput {
   lng?: number;
   notes?: string;
   isDefault?: boolean;
+  villaNumber?: string;
 }
 
 meRoute.get('/addresses', async (c) => {
@@ -136,6 +144,11 @@ meRoute.post('/addresses', async (c) => {
     }
   }
 
+  const villaNumber = typeof body.villaNumber === 'string' ? normalizeVilla(body.villaNumber) : '';
+  if (villaNumber && !validVilla(villaNumber)) return c.json({ error: { code: 'invalidVillaNumber' } }, 400);
+  const coverage = await checkCoverage(c.env, body.lat!, body.lng!, villaNumber);
+  if (coverage.status !== 'covered') return c.json({ error: { code: coverageError(coverage.status) }, coverage }, 409);
+
   // A customer keeps several addresses — home, work, a relative's place. The
   // first one saved becomes the default because there is nothing to compare it
   // to; later ones only take over if asked. Anything else surprises someone who
@@ -160,7 +173,10 @@ meRoute.post('/addresses', async (c) => {
       label: body.label ?? 'home',
       line: body.line.trim(),
       district: body.district?.trim() ?? '',
-      city: body.city?.trim() ?? '',
+      city: coverage.area!.city,
+      villa_number: villaNumber,
+      coverage_area_id: coverage.area!.id,
+      coverage_block_id: coverage.block!.id,
       lat: body.lat,
       lng: body.lng,
       notes: body.notes?.trim() ?? '',

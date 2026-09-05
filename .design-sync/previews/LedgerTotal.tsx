@@ -1,4 +1,4 @@
-import { LedgerRow, LedgerTotal } from '@sama/ui-web';
+import { LedgerRow, LedgerTotal } from '@bubbles/ui-web';
 
 /** LedgerTotal closes a ledger — always shown after its rows. */
 export const ClosingALedger = () => (

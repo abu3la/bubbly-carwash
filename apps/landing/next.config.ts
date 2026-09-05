@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@sama/design-tokens'],
+  transpilePackages: ['@bubbles/design-tokens'],
 };
 
 export default nextConfig;

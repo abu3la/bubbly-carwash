@@ -1,0 +1,4 @@
+body{font-family:var(--font-sans);color:var(--text-primary);background:var(--surface-page);-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}a:hover{color:var(--link-hover);text-decoration:underline}
+::selection{background:var(--ice)}
+[lang="ar"],.ar{font-family:var(--font-arabic);direction:rtl}

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../db';
-import { createInvoice, getInvoice, invoiceMatches } from '../moyasar';
+import { createInvoice, getInvoice, invoiceMatches, refundInvoice } from '../moyasar';
 import { notifyTeamOfBooking } from '../dispatch';
 import { notify } from '../notifications';
 
@@ -27,6 +27,10 @@ const KNOWN_FAILURES = new Set([
   'addressUnavailable',
   'locationRequired',
   'outsideServiceArea',
+  'villaRequired',
+  'villaUnavailable',
+  'coverageUnavailable',
+  'coverageTeamMismatch',
   'fridayClosed',
   'unknownService',
   'unknownSlot',
@@ -53,7 +57,7 @@ bookingsRoute.get('/', async (c) => {
   const rows = await db(
     c.env,
     `bookings?profile_id=eq.${c.get('caller').id}` +
-      '&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes),' +
+      '&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes,villa_number,coverage_area_id,coverage_block_id),' +
       'services(key,name_ar,name_en),teams(id,name_ar,name_en),booking_add_ons(add_on_key,price_minor),' +
       'booking_media(id,phase,kind,angle,content_type,byte_size,created_at)' +
       '&order=scheduled_at.desc',
@@ -231,18 +235,37 @@ bookingsRoute.post('/:id/confirm', async (c) => {
     if (!invoiceMatches(invoice, { amount: payment.amount_minor, profileId: caller.id, bookingId: id })) {
       return c.json({ error: { code: 'paymentMismatch' } }, 409);
     }
-    await Promise.all([
-      db(c.env, `bookings?id=eq.${id}`, {
+    try {
+      await db(c.env, `bookings?id=eq.${id}`, {
         method: 'PATCH', prefer: 'return=minimal', body: { payment_confirmed: true },
-      }),
-      db(c.env, `payments?id=eq.${payment.id}`, {
+      });
+      await db(c.env, `payments?id=eq.${payment.id}`, {
         method: 'PATCH', prefer: 'return=minimal', body: { state: 'paid', updated_at: new Date().toISOString() },
-      }),
-    ]);
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const coverageChanged = ['outsideServiceArea', 'villaRequired', 'villaUnavailable', 'coverageUnavailable', 'coverageTeamMismatch']
+        .some((code) => message.includes(code));
+      if (!coverageChanged) throw error;
+      try {
+        await refundInvoice(c.env, payment.provider_ref);
+        const now = new Date().toISOString();
+        await db(c.env, `payments?id=eq.${payment.id}`, {
+          method: 'PATCH', prefer: 'return=minimal', body: { state: 'refunded', failure: 'coverageUnavailable', updated_at: now },
+        });
+        await db(c.env, `bookings?id=eq.${id}`, {
+          method: 'PATCH', prefer: 'return=minimal', body: { status: 'cancelled', cancelled_at: now },
+        });
+        return c.json({ error: { code: 'scheduleUnavailableRefunded' } }, 409);
+      } catch (refundError) {
+        console.error('[bookings] coverage change refund failed', refundError);
+        return c.json({ error: { code: 'scheduleUnavailableRefundPending' } }, 503);
+      }
+    }
   }
   const [confirmed] = await db(
     c.env,
-    `bookings?id=eq.${id}&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes),services(key,name_ar,name_en),teams(id,name_ar,name_en)`,
+    `bookings?id=eq.${id}&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes,villa_number,coverage_area_id,coverage_block_id),services(key,name_ar,name_en),teams(id,name_ar,name_en)`,
   );
   await notifyTeamOfBooking(c.env, id).catch((error) => {
     console.warn('[dispatch] team notification failed after payment', error);

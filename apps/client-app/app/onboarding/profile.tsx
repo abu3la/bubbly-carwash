@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Input, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Input, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { updateProfile } from '../../src/api';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { useCopy } from '../../src/i18n';
@@ -12,7 +12,7 @@ export default function CustomerProfile() {
   const router = useRouter();
   const { language } = useLocale();
   const copy = useCopy();
-  const { refresh } = useCustomerData();
+  const { refresh, applyProfile } = useCustomerData();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
@@ -21,7 +21,8 @@ export default function CustomerProfile() {
     setSaving(true);
     setError(false);
     try {
-      await updateProfile(name, language);
+      const result = await updateProfile(name, language);
+      applyProfile(result.profile);
       await refresh();
       router.replace('/onboarding/permission');
     } catch {
@@ -32,7 +33,7 @@ export default function CustomerProfile() {
   };
 
   return (
-    <Screen contentStyle={styles.screen}>
+    <Screen scroll contentStyle={styles.screen}>
       <FlowHeader title={copy.onboarding.profileTitle} step={3} steps={5} onBack={() => router.back()} />
       <View style={styles.body}>
         <View style={styles.head}>
@@ -40,6 +41,7 @@ export default function CustomerProfile() {
           <Txt variant="small" tone="secondary">{copy.onboarding.profileSub}</Txt>
         </View>
         <Input
+          label={copy.onboarding.fullNamePlaceholder}
           value={name}
           onChangeText={setName}
           placeholder={copy.onboarding.fullNamePlaceholder}

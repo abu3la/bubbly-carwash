@@ -1,4 +1,4 @@
-import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -11,8 +11,8 @@ import {
   IBMPlexSansArabic_600SemiBold,
   IBMPlexSansArabic_700Bold,
 } from '@expo-google-fonts/ibm-plex-sans-arabic';
-import { DirectionRoot, LocaleProvider, ToastProvider } from '@sama/ui-native';
-import { theme } from '@sama/ui-native/theme';
+import { DirectionRoot, LocaleProvider, ToastProvider } from '@bubbles/ui-native';
+import { theme } from '@bubbles/ui-native/theme';
 import { SessionProvider, useSession } from '../src/session';
 import { registerFirebaseMessaging } from '../src/firebase';
 
@@ -58,12 +58,17 @@ export default function RootLayout() {
 function DriverAuthGate({ children }: { children: ReactNode }) {
   const { ready, session } = useSession();
   const segments = useSegments() as string[];
-  if (!ready) {
-    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page }}><ActivityIndicator /></View>;
-  }
+  const router = useRouter();
+  const navigation = useRootNavigationState();
   const signInScreen = segments.length === 0 || segments[0] === 'index';
-  if (!session && !signInScreen) return <Redirect href="/" />;
-  return children;
+  useEffect(() => {
+    if (ready && navigation?.key && !session && !signInScreen) router.replace('/');
+  }, [navigation?.key, ready, router, session, signInScreen]);
+  const blocked = !ready || (!session && !signInScreen);
+  return <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} accessibilityElementsHidden={blocked} importantForAccessibility={blocked ? 'no-hide-descendants' : 'auto'}>{children}</View>
+    {blocked ? <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page }}><ActivityIndicator /></View> : null}
+  </View>;
 }
 
 function FirebaseRegistration() {

@@ -58,7 +58,7 @@ export function IconButton({
 
 const styles = StyleSheet.create((theme) => ({
   button: (variant: ButtonVariant, size: ButtonSize, disabled: boolean) => {
-    const side = { sm: theme.scale(32), md: theme.scale(42), lg: theme.scale(52) }[size];
+    const side = { sm: theme.scale(44), md: theme.scale(44), lg: theme.scale(52) }[size];
     return {
       width: side,
       height: side,

@@ -2,16 +2,6 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { admin, auth, token } from './api';
 
-function Beats() {
-  return (
-    <span className="beats" aria-hidden>
-      <span className="beat y" />
-      <span className="beat g" />
-      <span className="beat v" />
-    </span>
-  );
-}
-
 /**
  * Sign-in, using the same phone-and-code flow as the app.
  *
@@ -49,7 +39,7 @@ function Gate({ onIn }: { onIn: () => void }) {
   return (
     <div className="gate">
       <div className="gate-card">
-        <Beats />
+        <img src="/brand/bubblescarwash-logo-white.svg" alt="BubblesCarWash" className="dashboard-logo" />
         <h1>لوحة BubblesCarWash</h1>
         <p>{sent ? 'أدخل الرمز المرسل إلى جوالك.' : 'سجّل دخولك برقم جوالك.'}</p>
 
@@ -107,14 +97,14 @@ export function App() {
     <div className="shell">
       <aside className="rail">
         <div className="brand">
-          <Beats />
-          BubblesCarWash
+          <img src="/brand/bubblescarwash-logo-white.svg" alt="BubblesCarWash" className="dashboard-logo" />
         </div>
         <nav>
           <NavLink to="/" end>الحجوزات</NavLink>
-          <NavLink to="/plans">اشتراكات النادي</NavLink>
+          <NavLink to="/plans">الباقات الشهرية</NavLink>
           <NavLink to="/services">الخدمات</NavLink>
           <NavLink to="/dispatch">توزيع الحجوزات</NavLink>
+          <NavLink to="/coverage">نطاق التغطية</NavLink>
           <NavLink to="/teams">فرق التشغيل</NavLink>
           <NavLink to="/drivers">السائقون</NavLink>
           <NavLink to="/operations">مركز التشغيل</NavLink>

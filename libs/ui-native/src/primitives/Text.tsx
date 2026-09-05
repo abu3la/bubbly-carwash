@@ -98,7 +98,7 @@ const styles = StyleSheet.create((theme) => ({
     // Positive tracking forces gaps between letters that are required to join,
     // and Arabic words visibly fall apart. Negative tracking fails the same way
     // from the other side: it pulls the joined forms into each other until the
-    // connections collide, and سما reads as a single mangled shape rather than
+    // connections collide, and ببلز reads as a single mangled shape rather than
     // three letters. Neither is a tightening Arabic "tolerates" — a cursive
     // script sets at its designed fit or not at all.
     letterSpacing: arabic

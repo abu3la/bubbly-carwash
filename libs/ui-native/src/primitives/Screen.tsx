@@ -11,6 +11,8 @@ interface ScreenProps {
   ground?: 'page' | 'card' | 'dark';
   /** Clears the status bar. Off for screens that bleed under it (the map). */
   safeTop?: boolean;
+  /** Turn off when a sibling navigation bar already owns the bottom safe area. */
+  safeBottom?: boolean;
   /** Extra bottom room so a fixed bar or tab bar never covers the last row. */
   bottomInset?: number;
   contentStyle?: StyleProp<ViewStyle>;
@@ -21,6 +23,7 @@ export function Screen({
   scroll = false,
   ground = 'page',
   safeTop = true,
+  safeBottom = true,
   bottomInset = 0,
   contentStyle,
 }: ScreenProps) {
@@ -30,8 +33,8 @@ export function Screen({
   // silently swallow the status bar.
   const flat = StyleSheet.flatten(contentStyle) ?? {};
   const pad = {
-    paddingTop: (safeTop ? insets.top : 0) + Number(flat.paddingTop ?? 0),
-    paddingBottom: bottomInset + insets.bottom + Number(flat.paddingBottom ?? 0),
+    paddingTop: (safeTop ? insets.top : 0) + Number(flat.paddingTop ?? flat.paddingVertical ?? flat.padding ?? 0),
+    paddingBottom: bottomInset + (safeBottom ? insets.bottom : 0) + Number(flat.paddingBottom ?? flat.paddingVertical ?? flat.padding ?? 0),
   };
 
   if (!scroll) return <View style={[styles.root(ground), contentStyle, pad]}>{children}</View>;
@@ -41,6 +44,7 @@ export function Screen({
       style={styles.root(ground)}
       contentContainerStyle={[styles.content, contentStyle, pad]}
       keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={false}
     >
       {children}

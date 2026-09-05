@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { BookingTicket, Button, Card, Checkbox, Radio, Screen, Tooltip, Txt } from '@sama/ui-native';
+import { BookingTicket, Button, Card, Checkbox, Radio, Screen, Tooltip, Txt } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { LedgerRow, SectionLabel } from '../../src/components/Bits';
 import { type AddOn } from '../../src/content';
@@ -10,7 +10,7 @@ import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';
 import { useCustomerData } from '../../src/customerData';
 import { useCatalogue } from '../../src/catalogue';
-import { useLocale } from '@sama/ui-native';
+import { useLocale } from '@bubbles/ui-native';
 
 export default function Review() {
   const router = useRouter();
@@ -110,7 +110,7 @@ export default function Review() {
               ? (language === 'ar' ? 'الغسلة الكاملة ضمن جدول سوبر ووش فقط، وقد اكتمل جدول هذا الأسبوع.' : 'The full wash is only included in the Super Wash schedule, which is full this week.')
               : sameService
               ? (language === 'ar' ? 'اكتمل جدول اشتراكك لهذا الأسبوع. يمكنك الحجز بالدفع المباشر.' : 'Your subscription schedule is full for this week. You can still book with direct payment.')
-              : (language === 'ar' ? 'هذه الخدمة ليست ضمن خطتك الحالية، وستكون بالدفع المباشر.' : 'This service is not included in your current plan and will use direct payment.')}
+              : (language === 'ar' ? 'هذه الخدمة ليست ضمن باقتك الحالية، وستكون بالدفع المباشر.' : 'This service is not included in your current plan and will use direct payment.')}
           </Txt>
         ) : null}
 
@@ -137,7 +137,7 @@ export default function Review() {
           label={draft.total === 0 ? copy.booking.confirmBooking : copy.booking.continueToPayment}
           size="lg"
           fullWidth
-          disabled={sources.length === 0}
+          disabled={!liveService || sources.length === 0 || !draft.villaNumber || !draft.addressId || !draft.vehicleId || !draft.slotStart}
           onPress={() => router.push(draft.total === 0 ? '/book/processing' : '/book/pay')}
         />
       </View>

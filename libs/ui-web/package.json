@@ -1,5 +1,5 @@
 {
-  "name": "@sama/ui-web",
+  "name": "@bubbles/ui-web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@sama/design-tokens": "workspace:*",
-    "@sama/types": "workspace:*"
+    "@bubbles/design-tokens": "workspace:*",
+    "@bubbles/types": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=19"

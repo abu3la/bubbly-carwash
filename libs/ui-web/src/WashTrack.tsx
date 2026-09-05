@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@sama/types';
+import type { BookingStatus } from '@bubbles/types';
 
 const STATIONS = [
   { key: 'pending', label: 'Pending' },

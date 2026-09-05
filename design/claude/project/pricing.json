@@ -1,0 +1,12 @@
+{
+  "currency": "SAR",
+  "taxIncluded": null,
+  "rollover": false,
+  "single": { "id": "single", "price": 40 },
+  "packages": [
+    { "id": "basic-2", "name": "Basic", "washesPerWeek": 2, "pricePerMonth": 199 },
+    { "id": "basic-3", "name": "Basic", "washesPerWeek": 3, "pricePerMonth": 269 },
+    { "id": "super-2", "name": "Super Wash", "washesPerWeek": 2, "pricePerMonth": 299 },
+    { "id": "super-3", "name": "Super Wash", "washesPerWeek": 3, "pricePerMonth": 399 }
+  ]
+}

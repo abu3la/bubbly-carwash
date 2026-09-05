@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import { BeatIcon, Reveal, Screen, Txt } from '@sama/ui-native';
+import { BeatIcon, Reveal, Screen, Txt } from '@bubbles/ui-native';
 
 interface SuccessScreenProps {
   title: string;

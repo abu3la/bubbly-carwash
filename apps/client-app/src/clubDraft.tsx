@@ -32,7 +32,7 @@ export function ClubDraftProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     planId, vehicleId, addressId, slots, setPlanId,
     setVehicleId: (id: string) => setVehicleId(id),
-    setAddressId: (id: string) => setAddressId(id),
+    setAddressId: (id: string) => { setAddressId(id); setSlots([]); },
     addSlot: (slot: ClubSlot) => setSlots((current) => current.some((item) => item.slotStart === slot.slotStart) ? current : [...current, slot].sort((a, b) => a.slotStart.localeCompare(b.slotStart))),
     removeSlot: (slotStart: string) => setSlots((current) => current.filter((item) => item.slotStart !== slotStart)),
     reset: () => { setPlanId('basic'); setVehicleId(''); setAddressId(''); setSlots([]); },

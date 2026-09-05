@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Input, Num, Screen, Txt } from '@sama/ui-native';
+import { Button, Input, Num, Screen, Txt } from '@bubbles/ui-native';
 import { useCopy } from '../../src/i18n';
 import { AuthError, requestOtp, toE164 } from '../../src/auth';
 import { FlowHeader } from '../../src/components/FlowHeader';
@@ -11,6 +11,7 @@ const NATIONAL_DIGITS = 9;
 
 export default function Phone() {
   const router = useRouter();
+  const { intent } = useLocalSearchParams<{ intent?: string }>();
   const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export default function Phone() {
               const result = await requestOtp(toE164(phone));
               router.push({
                 pathname: '/onboarding/otp',
-                params: { phone: digits, developmentCode: result.developmentCode },
+                params: { phone: digits, developmentCode: result.developmentCode, intent: intent === 'subscription' ? 'subscription' : undefined },
               });
             } catch (e) {
               setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);

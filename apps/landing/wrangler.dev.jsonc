@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sama-site-dev",
+  "name": "bubbles-site-dev",
   "account_id": "57118b773c4166fafe8b041d792cb2ef",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-01",

@@ -1,6 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import type { BeatKey } from '@sama/design-tokens';
+import type { BeatKey } from '@bubbles/design-tokens';
 import { Txt } from '../primitives/Text';
 
 /**

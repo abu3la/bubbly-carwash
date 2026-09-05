@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Screen, Txt } from '@sama/ui-native';
+import { Button, Screen, Txt } from '@bubbles/ui-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { Processing } from '../../src/components/Processing';
 import { useBookingDraft } from '../../src/bookingDraft';
@@ -24,7 +24,7 @@ export default function ProcessingPayment() {
       try {
         let bookingId = id;
         if (!bookingId) {
-          if (!draft.vehicleId || !draft.addressId || !draft.slotStart) throw new Error('incomplete');
+          if (!draft.vehicleId || !draft.addressId || !draft.slotStart || !draft.villaNumber) throw new Error('incomplete');
           const result = await createBooking({
             vehicleId: draft.vehicleId,
             addressId: draft.addressId,

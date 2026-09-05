@@ -65,7 +65,7 @@ export const lineHeight = {
 
 /**
  * Arabic needs more room. Its letters carry marks and tall finals above the
- * nominal cap height, so a 1.1 display leading crops the tops of سما and
+ * nominal cap height, so a 1.1 display leading crops the tops of ببلز and
  * لمعة — React Native clips to the line box rather than overflowing it. These
  * are the same steps, opened up enough for the script to fit.
  */

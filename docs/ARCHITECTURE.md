@@ -1,4 +1,4 @@
-# Sama Car Wash — client app architecture
+# Bubbles Car Wash — client app architecture
 
 Four layers, each depending only on the one below it. Nothing skips a layer:
 a screen never reads a raw hex value, and the design system never knows what a
@@ -15,7 +15,7 @@ booking is.
    palette · scale · effects · motion   (platform-neutral: also feeds web)
 ```
 
-## Layer 1 — tokens (`@sama/design-tokens`)
+## Layer 1 — tokens (`@bubbles/design-tokens`)
 
 Pure values, no React. Ported verbatim from the handoff's `tokens/*.css`.
 
@@ -29,7 +29,7 @@ Pure values, no React. Ported verbatim from the handoff's `tokens/*.css`.
 
 `beat` is the whole status model: **exactly three** — arrived, washed, verified.
 
-## Layer 2 — design system (`@sama/ui-native`)
+## Layer 2 — design system (`@bubbles/ui-native`)
 
 ```
 theme/theme.ts        builds the Unistyles theme from tokens; owns the module
@@ -44,8 +44,8 @@ navigation/  Tabs
 
 Two exports paths, and the split is load-bearing:
 
-- `@sama/ui-native` — the barrel, for components.
-- `@sama/ui-native/theme` — the theme alone. The app entry imports
+- `@bubbles/ui-native` — the barrel, for components.
+- `@bubbles/ui-native/theme` — the theme alone. The app entry imports
   `configureDesignSystem()` from **here**, because importing it from the barrel
   would evaluate every component (and every `StyleSheet.create`) before a theme
   exists.

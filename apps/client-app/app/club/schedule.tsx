@@ -4,12 +4,12 @@ import { useRouter } from 'expo-router';
 import { Calendar, LocaleConfig, type DateData } from 'react-native-calendars';
 import { Car, MapPin, X } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Num, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Card, Num, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { useClubDraft } from '../../src/clubDraft';
 import { useCustomerData } from '../../src/customerData';
-import { fetchAvailability, type Availability } from '../../src/api';
+import { fetchAvailability, hasVillaAddress, type Availability } from '../../src/api';
 import { useCatalogue } from '../../src/catalogue';
 import { addCalendarDays, isFriday, nextBookableDateKey } from '../../src/dates';
 
@@ -37,25 +37,28 @@ export default function ClubSchedule() {
   const [date, setDate] = useState(bookingWindow.minDate);
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
   const address = addresses.find((item) => item.id === draft.addressId);
   const ar = language === 'ar';
   LocaleConfig.defaultLocale = ar ? 'ar' : '';
 
   useEffect(() => {
     if (!draft.vehicleId && vehicles.length) draft.setVehicleId((vehicles.find((v) => v.is_default) ?? vehicles[0]).id);
-    if (!draft.addressId && addresses.length) draft.setAddressId((addresses.find((a) => a.is_default) ?? addresses[0]).id);
+    const available = addresses.filter(hasVillaAddress);
+    if (!draft.addressId && available.length) draft.setAddressId((available.find((a) => a.is_default) ?? available[0]).id);
   }, [vehicles, addresses, draft.vehicleId, draft.addressId]);
 
   useEffect(() => {
-    if (address?.lat == null || address.lng == null) { setAvailability(null); return; }
+    if (address?.lat == null || address.lng == null || !address.villa_number) { setAvailability(null); setLoading(false); return; }
     let live = true;
-    setLoading(true);
-    fetchAvailability(address.lat, address.lng, date)
+    setLoading(true); setFailed(false); setAvailability(null);
+    fetchAvailability(address.lat, address.lng, date, address.villa_number)
       .then((value) => { if (live) setAvailability(value); })
-      .catch(() => { if (live) setAvailability(null); })
+      .catch(() => { if (live) { setAvailability(null); setFailed(true); } })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [address?.id, address?.lat, address?.lng, date]);
+  }, [address?.id, address?.lat, address?.lng, address?.villa_number, date, retry]);
 
   const label = useMemo(() => new Intl.DateTimeFormat(ar ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC',
@@ -109,15 +112,17 @@ export default function ClubSchedule() {
               key={item.id}
               accessibilityRole="radio"
               accessibilityState={{ selected: draft.addressId === item.id }}
-              onPress={() => draft.setAddressId(item.id)}
+              onPress={() => hasVillaAddress(item) ? draft.setAddressId(item.id) : router.push({ pathname: '/onboarding/map', params: { returnTo: 'subscription' } })}
               style={styles.choice(draft.addressId === item.id)}
             >
               <MapPin size={theme.scale(18)} color={theme.text.secondary} strokeWidth={2} />
-              <Txt variant="small" weight="semibold" style={styles.choiceText}>{item.line}</Txt>
+              <Txt variant="small" weight="semibold" style={styles.choiceText}>{item.line}{!hasVillaAddress(item) ? (ar ? ' · تحقق من الفيلا' : ' · Verify villa') : ''}</Txt>
             </Pressable>
           ))}
         </View>
 
+        {!vehicles.length ? <Button label={ar ? 'أضف سيارتك' : 'Add your car'} fullWidth onPress={() => router.push({ pathname: '/onboarding/vehicle', params: { returnTo: 'subscription' } })} /> : null}
+        <Button label={ar ? 'تحقق من فيلا أخرى' : 'Check another villa'} variant="secondary" fullWidth onPress={() => router.push({ pathname: '/onboarding/map', params: { returnTo: 'subscription' } })} />
         <Calendar
           key={language}
           current={date}
@@ -144,11 +149,11 @@ export default function ClubSchedule() {
         <View style={styles.section}>
           <SectionLabel>{ar ? 'الفترة' : 'Period'}</SectionLabel>
           {loading ? <Txt variant="small" tone="secondary">{ar ? 'نتحقق من السعة…' : 'Checking capacity…'}</Txt> : null}
-          {!loading && availability?.slots.map((slot) => {
+          {!loading && !failed && availability?.covered && availability.slots.map((slot) => {
             const slotStart = `${date}T${slot.startsAt}:00+03:00`;
             const chosen = draft.slots.some((item) => item.slotStart === slotStart);
             const sameDay = draft.slots.find((item) => item.date === date && item.slotStart !== slotStart);
-            const full = draft.slots.length >= quota && !chosen && !sameDay;
+            const full = slot.remaining < 1 || (draft.slots.length >= quota && !chosen && !sameDay);
             return (
               <Pressable
                 key={slot.period}
@@ -172,12 +177,17 @@ export default function ClubSchedule() {
               </Pressable>
             );
           })}
-          {!loading && availability?.reason ? <Txt variant="small" tone="danger">{ar ? 'لا توجد سعة لهذا اليوم أو العنوان خارج النطاق.' : 'No capacity for this day, or the address is outside coverage.'}</Txt> : null}
+          {!loading && availability?.reason ? <Txt variant="small" tone="danger">{availability.reason === 'full' ? (ar ? 'المواعيد مكتملة. اختر يومًا آخر.' : 'This day is full. Choose another day.') : (ar ? 'الفيلا غير متاحة للخدمة. تحقق من عنوانك.' : 'This villa is not available. Verify your address.')}</Txt> : null}
         </View>
 
+        {failed ? <View style={styles.section}>
+          <Txt variant="small" tone="danger">{ar ? 'تعذّر تحميل المواعيد. تحقق من اتصالك وحاول مرة أخرى.' : 'Could not load appointments. Check your connection and try again.'}</Txt>
+          <Button label={ar ? 'إعادة المحاولة' : 'Try again'} variant="secondary" fullWidth onPress={() => setRetry((value) => value + 1)} />
+        </View> : null}
+        {!hasVillaAddress(address) ? <Txt variant="small" tone="secondary">{ar ? 'تحقق من موقع الفيلا ورقمها أولًا لعرض المواعيد.' : 'Verify your villa location and number first to see appointments.'}</Txt> : null}
         {draft.slots.length ? (
           <Card style={styles.selected}>
-            <Txt variant="body" weight="bold">{ar ? `تم اختيار ${draft.slots.length} من ${quota}` : `${draft.slots.length} of ${quota} selected`}</Txt>
+            <Txt variant="body" weight="bold">{ar ? `اخترت ${draft.slots.length} من ${quota}` : `${draft.slots.length} of ${quota} selected`}</Txt>
             <Txt variant="caption" tone="secondary">{ar ? 'يتكرر كل موعد أسبوعيًا حتى نهاية الدورة.' : 'Each appointment repeats weekly until the cycle ends.'}</Txt>
             {draft.slots.map((slot) => (
               <View key={slot.slotStart} style={styles.selectedRow}>
@@ -193,7 +203,7 @@ export default function ClubSchedule() {
           </Card>
         ) : null}
 
-        <Button label={ar ? 'مراجعة الاشتراك' : 'Review subscription'} size="lg" fullWidth disabled={!draft.vehicleId || !draft.addressId || draft.slots.length !== quota} onPress={() => router.push('/club/review')} />
+        <Button label={ar ? 'مراجعة الاشتراك' : 'Review subscription'} size="lg" fullWidth disabled={!plan || !draft.vehicleId || !hasVillaAddress(address) || loading || failed || !availability?.covered || draft.slots.length !== quota} onPress={() => router.push('/club/review')} />
       </View>
     </Screen>
   );

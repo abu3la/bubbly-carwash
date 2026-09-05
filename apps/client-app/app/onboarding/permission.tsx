@@ -2,18 +2,19 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Reveal, Screen, Txt } from '@sama/ui-native';
+import { Button, Reveal, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { useCopy } from '../../src/i18n';
 
 export default function Permission() {
   const { theme } = useUnistyles();
   const router = useRouter();
   const copy = useCopy();
+  const { language } = useLocale();
   const openMap = () => router.push('/onboarding/map');
   const chooseOnMap = () => router.push({ pathname: '/onboarding/map', params: { skipCurrent: '1' } });
 
   return (
-    <Screen contentStyle={styles.screen}>
+    <Screen scroll contentStyle={styles.screen}>
       <View style={styles.stage}>
         {/* The mark stands bare. A glyph parked on a tinted disc is the
             component-kit default, and the container adds nothing the icon's own
@@ -39,6 +40,7 @@ export default function Permission() {
           fullWidth
           onPress={chooseOnMap}
         />
+        <Button label={language === 'ar' ? 'استعرض الباقات' : 'Browse packages'} variant="ghost" fullWidth onPress={() => router.replace('/club')} />
       </View>
     </Screen>
   );

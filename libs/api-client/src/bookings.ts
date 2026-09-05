@@ -1,5 +1,5 @@
-import type { Booking, BookingStatus } from '@sama/types';
-import type { CreateBookingInput, UpdateBookingStatusInput } from '@sama/validation';
+import type { Booking, BookingStatus } from '@bubbles/types';
+import type { CreateBookingInput, UpdateBookingStatusInput } from '@bubbles/validation';
 import { request } from './client';
 
 export interface BookingFilter {

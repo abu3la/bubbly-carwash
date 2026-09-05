@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ShieldCheck } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Card, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { LedgerRow } from '../../src/components/Bits';
 import { useCopy } from '../../src/i18n';

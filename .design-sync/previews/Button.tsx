@@ -1,4 +1,4 @@
-import { Button } from '@sama/ui-web';
+import { Button } from '@bubbles/ui-web';
 
 export const Primary = () => <Button>Confirm & pay</Button>;
 

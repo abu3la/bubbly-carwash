@@ -27,11 +27,14 @@ type Stage = (typeof ORDER)[number];
 driverRoute.get('/jobs', async (c) => {
   const caller = c.get('caller');
   await db(c.env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} });
-  const [membership] = await db<{ team_id: string; shift_start: string; shift_end: string; teams: { id: string; name_ar: string } }>(
+  const [membership] = await db<{ team_id: string; shift_start: string; shift_end: string; teams: { id: string; name_ar: string; name_en: string; coverage_blocks: unknown[] } }>(
     c.env,
-    `team_members?profile_id=eq.${caller.id}&active=eq.true&available=eq.true&select=team_id,shift_start,shift_end,teams(id,name_ar)&limit=1`,
+    `team_members?profile_id=eq.${caller.id}&active=eq.true&available=eq.true&select=team_id,shift_start,shift_end,teams(id,name_ar,name_en)&limit=1`,
   );
   if (!membership) return c.json({ team: null, jobs: [] });
+  const blocks = await db(c.env, `coverage_blocks?team_id=eq.${encodeURIComponent(membership.team_id)}&active=eq.true&coverage_areas.active=eq.true&select=id,code,name_ar,name_en,coverage_areas!inner(id,name_ar,name_en)&order=code`);
+  const team = { ...membership.teams, coverage_blocks: blocks };
+
   const rows = await db(
     c.env,
     `bookings?team_id=eq.${encodeURIComponent(membership.team_id)}` +
@@ -41,7 +44,7 @@ driverRoute.get('/jobs', async (c) => {
       '&select=id,ref,scheduled_at,ends_at,status,stage,service_key,total_minor,source,technician_id,team_id,' +
       'customers:profiles!bookings_profile_id_fkey(full_name,phone),' +
       'vehicles(make,model,color,plate,size),' +
-      'addresses(label,line,district,city,lat,lng,notes),' +
+      'addresses(label,line,district,city,lat,lng,notes,villa_number,coverage_area_id,coverage_block_id,coverage_blocks(code,name_ar,name_en),coverage_areas(name_ar,name_en)),' +
       'booking_add_ons(add_on_key),' +
       'booking_media(id,phase,kind,angle,content_type,byte_size,created_at)' +
       '&order=scheduled_at',
@@ -66,17 +69,22 @@ driverRoute.get('/jobs', async (c) => {
       vehicles: job.vehicles ? { ...job.vehicles, plate: null } : null,
       addresses: address ? {
         label: null,
-        line: address.district || address.city || 'مكة المكرمة',
+        line: address.district || address.city || 'جدة',
         district: address.district,
         city: address.city,
         lat: null,
         lng: null,
         notes: null,
+        villa_number: null,
+        coverage_area_id: address.coverage_area_id,
+        coverage_block_id: address.coverage_block_id,
+        coverage_blocks: address.coverage_blocks,
+        coverage_areas: address.coverage_areas,
       } : null,
       booking_media: [],
     };
   });
-  return c.json({ team: membership.teams, jobs });
+  return c.json({ team, jobs });
 });
 
 driverRoute.get('/jobs/done', async (c) => {
@@ -121,7 +129,7 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
   // Scoped to this technician, so another's job reads as "not found" rather
   // than confirming it exists.
   if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
-  if (booking.status === 'cancelled') return c.json({ error: { code: 'cancelled' } }, 409);
+  if (!['scheduled', 'active'].includes(booking.status)) return c.json({ error: { code: 'jobClosed' } }, 409);
 
   // Forward only, one beat at a time. Without this a mis-tap could mark a wash
   // verified before the technician has arrived, and the customer would be told
@@ -149,9 +157,9 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
     }
   }
 
-  await db(c.env, `bookings?id=eq.${id}`, {
+  const [advanced] = await db(c.env, `bookings?id=eq.${id}&technician_id=eq.${caller.id}&stage=eq.${booking.stage}&status=eq.${booking.status}`, {
     method: 'PATCH',
-    prefer: 'return=minimal',
+    prefer: 'return=representation',
     body: {
       stage,
       // The wash is under way from the moment someone arrives, and finished
@@ -160,6 +168,8 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
       status: stage === 'verified' ? 'done' : 'active',
     },
   });
+
+  if (!advanced) return c.json({ error: { code: 'jobChanged' } }, 409);
 
   // Append-only: the booking holds the latest beat, this holds how it got
   // there — and who moved it, which an audit needs.
@@ -296,7 +306,7 @@ driverRoute.post('/jobs/:id/media', async (c) => {
     `bookings?id=eq.${id}&technician_id=eq.${caller.id}&select=id,stage,status`,
   );
   if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
-  if (booking.status === 'cancelled') return c.json({ error: { code: 'cancelled' } }, 409);
+  if (!['scheduled', 'active'].includes(booking.status)) return c.json({ error: { code: 'jobClosed' } }, 409);
   if ((phase === 'before' && booking.stage !== 'arrived') || (phase === 'after' && booking.stage !== 'washed')) {
     return c.json({ error: { code: 'mediaWrongStage' } }, 409);
   }

@@ -1,5 +1,5 @@
 {
-  "name": "@sama/design-tokens",
+  "name": "@bubbles/design-tokens",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",

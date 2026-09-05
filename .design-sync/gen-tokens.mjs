@@ -11,14 +11,14 @@ const root = new URL('..', import.meta.url).pathname;
 const tmp = mkdtempSync(join(tmpdir(), 'bb-tokens-'));
 const outFile = join(tmp, 'css.mjs');
 await build({
-  entryPoints: [join(root, 'libs/design-tokens/src/css.ts')],
+  entryPoints: [join(root, 'libs/design-tokens/src/webCss.ts')],
   bundle: true,
   format: 'esm',
   outfile: outFile,
 });
 const { themeCss } = await import(pathToFileURL(outFile).href);
 const header =
-  '/* GENERATED from @sama/design-tokens themeCss() — do not edit.\n' +
+  '/* GENERATED from @bubbles/design-tokens themeCss() — do not edit.\n' +
   '   Regenerate: node .design-sync/gen-tokens.mjs */\n';
 writeFileSync(join(root, 'libs/design-tokens/tokens.css'), header + themeCss() + '\n');
 rmSync(tmp, { recursive: true, force: true });

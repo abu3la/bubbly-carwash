@@ -1,0 +1,17 @@
+:root{
+/* Base palette — from colors.md brand board */
+--violet:#5A42FF;--violet-600:#4A33E6;--violet-700:#3D28C4;--violet-200:#C9C1FF;--violet-100:#EEEBFF;
+--guava:#FF5E7E;--guava-600:#E84A6B;--guava-100:#FFE9EE;
+--yellow:#FFD84D;--yellow-600:#EFC53B;--yellow-100:#FFF5D6;
+--ice:#BDEEFF;--ice-100:#E7F8FF;
+--ink:#17162E;--ink-72:rgba(23,22,46,.72);--ink-56:rgba(23,22,46,.56);--ink-40:rgba(23,22,46,.4);--ink-16:rgba(23,22,46,.16);--ink-10:rgba(23,22,46,.1);--ink-06:rgba(23,22,46,.06);
+--cloud:#FAFAF5;--white:#FFFFFF;
+/* Semantic aliases */
+--surface-page:var(--cloud);--surface-card:var(--white);--surface-booking:var(--ice);--surface-booking-soft:var(--ice-100);--surface-dark:var(--ink);--surface-tint:var(--violet-100);
+--text-primary:var(--ink);--text-secondary:var(--ink-72);--text-muted:var(--ink-56);--text-inverse:var(--white);--text-inverse-soft:rgba(255,255,255,.72);
+--action-primary:var(--violet);--action-primary-hover:var(--violet-600);--action-primary-active:var(--violet-700);--action-on-primary:var(--white);
+--status-arrived:var(--violet);--status-washed:var(--guava);--status-verified:var(--yellow);--on-status-verified:var(--ink);
+--border-subtle:var(--ink-10);--border-strong:var(--ink-16);
+--link:var(--violet);--link-hover:var(--violet-600);
+--focus-ring:0 0 0 3px rgba(90,66,255,.35);
+}

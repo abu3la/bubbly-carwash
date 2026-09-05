@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
-import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,14 +12,16 @@ import {
   IBMPlexSansArabic_600SemiBold,
   IBMPlexSansArabic_700Bold,
 } from '@expo-google-fonts/ibm-plex-sans-arabic';
-import { LocaleProvider, ToastProvider } from '@sama/ui-native';
-import { theme } from '@sama/ui-native/theme';
+import { LocaleProvider, ToastProvider } from '@bubbles/ui-native';
+import { theme } from '@bubbles/ui-native/theme';
 import { Boot } from '../src/components/Boot';
 import { loadLanguage } from '../src/language';
 import { CatalogueProvider } from '../src/catalogue';
 import { SessionProvider, useSession } from '../src/session';
 import { AuthSessionProvider, useAuthSession } from '../src/authSession';
-import { CustomerDataProvider } from '../src/customerData';
+import { BookingDraftProvider, useBookingDraft } from '../src/bookingDraft';
+import { ClubDraftProvider, useClubDraft } from '../src/clubDraft';
+import { CustomerDataProvider, useCustomerData } from '../src/customerData';
 import { registerFirebaseMessaging } from '../src/firebase';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -53,7 +55,7 @@ export default function RootLayout() {
           <SessionProvider>
           <Localised>
             <StatusBar style="dark" />
-            <AuthGate><Stack
+            <AuthGate><PurchaseDrafts><Stack
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: theme.surface.page },
@@ -71,7 +73,7 @@ export default function RootLayout() {
               <Stack.Screen name="book" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="packages" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="club" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-            </Stack></AuthGate>
+            </Stack></PurchaseDrafts></AuthGate>
           </Localised>
           </SessionProvider>
           </CatalogueProvider>
@@ -102,13 +104,25 @@ function FirebaseRegistration() {
 function AuthGate({ children }: { children: ReactNode }) {
   const { loading, session } = useAuthSession();
   const segments = useSegments() as string[];
-  if (loading) {
-    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator /></View>;
-  }
+  const router = useRouter();
+  const navigation = useRootNavigationState();
+  const restoring = useRef(true);
   const publicOnboarding = segments[0] === 'onboarding'
     && (!segments[1] || segments[1] === 'index' || segments[1] === 'phone' || segments[1] === 'otp');
-  if (!session && !publicOnboarding) return <Redirect href="/onboarding/phone" />;
-  return children;
+  useEffect(() => {
+    if (loading || !navigation?.key) return;
+    const restored = restoring.current;
+    restoring.current = false;
+    if (!session && !publicOnboarding) router.replace('/onboarding');
+    // The index route may reach onboarding while disk storage is loading.
+    // Restore an existing customer without interrupting a fresh OTP flow.
+    else if (restored && session && publicOnboarding) router.replace('/(tabs)/home');
+  }, [loading, navigation?.key, publicOnboarding, router, session]);
+  const blocked = loading || (!session && !publicOnboarding);
+  return <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} accessibilityElementsHidden={blocked} importantForAccessibility={blocked ? 'no-hide-descendants' : 'auto'}>{children}</View>
+    {blocked ? <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page }}><ActivityIndicator /></View> : null}
+  </View>;
 }
 
 /**
@@ -135,4 +149,27 @@ function Localised({ children }: { children: React.ReactNode }) {
       </Boot>
     </LocaleProvider>
   );
+}
+
+/** Keep an in-progress purchase while the customer adds a car or villa in onboarding. */
+function PurchaseDrafts({ children }: { children: ReactNode }) {
+  const { membership } = useCustomerData();
+  return <BookingDraftProvider sources={membership ? ['club', 'cash'] : ['cash']}>
+    <ClubDraftProvider><ResetPurchaseDrafts />{children}</ClubDraftProvider>
+  </BookingDraftProvider>;
+}
+
+/** Clear account-owned drafts without remounting their navigator. */
+function ResetPurchaseDrafts() {
+  const { session } = useAuthSession();
+  const { reset: resetBooking } = useBookingDraft();
+  const { reset: resetClub } = useClubDraft();
+  const previousUser = useRef(session?.userId);
+  useLayoutEffect(() => {
+    if (previousUser.current === session?.userId) return;
+    previousUser.current = session?.userId;
+    resetBooking();
+    resetClub();
+  }, [resetBooking, resetClub, session?.userId]);
+  return null;
 }

@@ -1,5 +1,9 @@
 # Development deployment
 
+**Migration pending:** the table below records the existing deployment, not the
+new local Worker names. Do not deploy until the [brand migration](BRAND_MIGRATION.md)
+is coordinated; the commands below target the new Bubbles Workers.
+
 The shared development environment runs in the Cloudflare account
 the Taz development account (`57118b773c4166fafe8b041d792cb2ef`). Production
 configuration stays in the original Wrangler files; development uses the
@@ -36,9 +40,9 @@ authentication key or certificate configured in Firebase.
 Never commit their values. Deploy from the repository root with:
 
 ```sh
-pnpm --filter @sama/api deploy:dev
-pnpm --filter @sama/dashboard deploy:dev
-pnpm --filter @sama/landing deploy:dev
+pnpm --filter @bubbles/api deploy:dev
+pnpm --filter @bubbles/dashboard deploy:dev
+pnpm --filter @bubbles/landing deploy:dev
 ```
 
 The `deploy:dev:triggers` script in each package reapplies its `workers.dev`

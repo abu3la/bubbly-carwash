@@ -14,8 +14,8 @@ export interface Place {
   city: string;
 }
 
-/** Central Makkah, the pilot service area, used until the device tells us better. */
-export const FALLBACK = { lat: 21.4225, lng: 39.8262 };
+/** Sharbatly Village map center only, never a service boundary or coverage grant. */
+export const FALLBACK = { lat: 21.6054953, lng: 39.2002795 };
 
 function toPlace(a: Location.LocationGeocodedAddress, lat: number, lng: number): Place {
   // Apple splits an address differently per country. In Saudi the street tends
@@ -57,9 +57,9 @@ export async function search(query: string): Promise<Place | null> {
 
 /** The device's own position, if the customer allows it. */
 export async function currentPosition(): Promise<{ lat: number; lng: number } | null> {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return null;
   try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
     const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     return { lat: p.coords.latitude, lng: p.coords.longitude };
   } catch {

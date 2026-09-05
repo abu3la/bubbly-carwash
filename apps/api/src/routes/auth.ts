@@ -243,3 +243,21 @@ authRoute.post('/refresh', async (c) => {
     user: { id: user.id, phone },
   });
 });
+
+/** Revoke this device's refresh session. Other signed-in devices stay active. */
+authRoute.post('/logout', async (c) => {
+  const authorization = c.req.header('Authorization') ?? '';
+  if (!authorization.startsWith('Bearer ') || authorization.length <= 7) {
+    return c.json({ error: { code: 'unauthorized' } }, 401);
+  }
+  const response = await fetch(`${c.env.SUPABASE_URL}/auth/v1/logout?scope=local`, {
+    method: 'POST',
+    headers: { apikey: c.env.SUPABASE_SERVICE_ROLE_KEY!, Authorization: authorization },
+  });
+  // A session already expired/revoked is also signed out. The native client
+  // always clears local credentials, including while offline.
+  if (!response.ok && ![401,403,404].includes(response.status)) {
+    return c.json({ error: { code: 'logoutUnavailable' } }, 503);
+  }
+  return c.json({ signedOut: true });
+});

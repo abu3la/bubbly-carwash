@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { BookingTicket, Button } from '@sama/ui-native';
+import { BookingTicket, Button } from '@bubbles/ui-native';
 import { SuccessScreen } from '../../src/components/SuccessScreen';
 import { useCopy } from '../../src/i18n';
 import { useBookingDraft } from '../../src/bookingDraft';

@@ -1,3 +1,5 @@
+> Historical design guidance. For the approved Bubbles landing, read [DESIGN.md](../DESIGN.md) first; its imported handoff and user decisions take precedence.
+
 # Bubbly Design System
 
 Instructions for building out `@bubbly/design-tokens`, `@bubbly/ui-native`, and

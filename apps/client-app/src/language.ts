@@ -1,8 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Language } from '@sama/ui-native';
+import type { Language } from '@bubbles/ui-native';
 
 /** The customer's chosen language. */
-const LANGUAGE_KEY = 'sama.language';
+const LANGUAGE_KEY = 'bubbles.language';
+// Compatibility only: migrate existing installations without losing stored data.
+const LEGACY_LANGUAGE_KEY = 'sama.language';
+
+async function readStoredValue(): Promise<string | null> {
+  const current = await AsyncStorage.getItem(LANGUAGE_KEY);
+  if (current !== null) return current;
+  const legacy = await AsyncStorage.getItem(LEGACY_LANGUAGE_KEY);
+  if (legacy !== null) {
+    try {
+      await AsyncStorage.setItem(LANGUAGE_KEY, legacy);
+      await AsyncStorage.removeItem(LEGACY_LANGUAGE_KEY);
+    } catch {
+      // Keep using the existing value if migration cannot be persisted yet.
+    }
+  }
+  return legacy;
+}
 
 /** Arabic-first product: this is what a fresh install gets. */
 export const DEFAULT_LANGUAGE: Language = 'ar';
@@ -21,7 +38,7 @@ export const DEFAULT_LANGUAGE: Language = 'ar';
  */
 export async function loadLanguage(): Promise<Language> {
   try {
-    const stored = (await AsyncStorage.getItem(LANGUAGE_KEY)) as Language | null;
+    const stored = (await readStoredValue()) as Language | null;
     return stored ?? DEFAULT_LANGUAGE;
   } catch {
     return DEFAULT_LANGUAGE;

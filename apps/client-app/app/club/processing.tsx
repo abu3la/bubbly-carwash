@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { Processing } from '../../src/components/Processing';
 import { ApiError, confirmMembership, createMembershipCheckout } from '../../src/api';
 import { useClubDraft } from '../../src/clubDraft';
+import { useCatalogue } from '../../src/catalogue';
 import { useCustomerData } from '../../src/customerData';
 
 export default function ProcessingClub() {
@@ -12,6 +13,7 @@ export default function ProcessingClub() {
   const { id, result } = useLocalSearchParams<{ id?: string; result?: string }>();
   const { language } = useLocale();
   const draft = useClubDraft();
+  const catalogue = useCatalogue();
   const { refresh } = useCustomerData();
   const started = useRef(false);
   const [error, setError] = useState<'general' | 'refunded' | 'refundPending' | null>(null);
@@ -24,12 +26,14 @@ export default function ProcessingClub() {
       try {
         let membershipId = id;
         if (!membershipId) {
+          const plan = catalogue?.plans.find((item) => item.id === draft.planId);
+          if (!plan || !draft.vehicleId || !draft.addressId || draft.slots.length !== plan.weekly) throw new Error('incomplete');
           const checkout = await createMembershipCheckout({
             planId: draft.planId,
             slots: draft.slots.map((slot) => ({
               vehicleId: draft.vehicleId,
               addressId: draft.addressId,
-              serviceKey: draft.planId.startsWith('plus') ? 'full' : 'exterior',
+              serviceKey: plan.serviceKey,
               slotStart: slot.slotStart, addOns: [],
             })),
           });

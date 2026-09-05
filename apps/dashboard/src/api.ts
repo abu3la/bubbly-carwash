@@ -199,6 +199,60 @@ export interface OperationsSnapshot {
   paymentMode: 'live' | 'test' | 'not-configured';
 }
 
+export interface CoveragePoint { lat: number; lng: number }
+export interface CoverageVilla {
+  id: string;
+  area_id: string;
+  block_id: string;
+  villa_number: string;
+  active: boolean;
+  created_at: string;
+}
+export interface CoverageBlock {
+  id: string;
+  area_id: string;
+  code: string;
+  name_ar: string;
+  name_en: string;
+  team_id: string;
+  active: boolean;
+  created_at: string;
+  villas: CoverageVilla[];
+}
+export interface CoverageArea {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  city: string;
+  boundary: CoveragePoint[];
+  boundary_verified: boolean;
+  center_lat: number | null;
+  center_lng: number | null;
+  active: boolean;
+  created_at: string;
+  blocks: CoverageBlock[];
+}
+export interface CoverageSnapshot {
+  areas: CoverageArea[];
+  teams: Array<Pick<Team, 'id' | 'name_ar' | 'name_en' | 'active'>>;
+}
+export interface CoverageAreaInput {
+  nameAr: string;
+  nameEn: string;
+  city: string;
+  boundary: CoveragePoint[];
+  boundaryVerified: boolean;
+  active: boolean;
+}
+export interface CoverageBlockInput {
+  areaId: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  teamId: string;
+  active: boolean;
+}
+
 export const auth = {
   requestOtp: (phone: string) => call<{ sent: boolean; developmentCode?: string }>('/auth/otp', {
     method: 'POST', body: JSON.stringify({ phone }),
@@ -210,6 +264,19 @@ export const auth = {
 };
 
 export const admin = {
+  coverage: () => call<CoverageSnapshot>('/admin/coverage'),
+  createCoverageArea: (body: CoverageAreaInput) =>
+    call<{ area: CoverageArea }>('/admin/coverage/areas', { method: 'POST', body: JSON.stringify(body) }),
+  updateCoverageArea: (id: string, body: Partial<CoverageAreaInput>) =>
+    call<{ area: CoverageArea }>(`/admin/coverage/areas/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createCoverageBlock: (body: CoverageBlockInput) =>
+    call<{ block: CoverageBlock }>('/admin/coverage/blocks', { method: 'POST', body: JSON.stringify(body) }),
+  updateCoverageBlock: (id: string, body: Partial<CoverageBlockInput>) =>
+    call<{ block: CoverageBlock }>(`/admin/coverage/blocks/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  addCoverageVillas: (blockId: string, villaNumbers: string[]) =>
+    call<{ villas: CoverageVilla[] }>('/admin/coverage/villas', { method: 'POST', body: JSON.stringify({ blockId, villaNumbers, active: true }) }),
+  updateCoverageVilla: (id: string, active: boolean) =>
+    call<{ villa: CoverageVilla }>(`/admin/coverage/villas/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ active }) }),
   plans: () => call<{ plans: Plan[] }>('/admin/plans'),
   updatePlan: (id: string, patch: Record<string, unknown>) =>
     call<{ plan: Plan }>(`/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),

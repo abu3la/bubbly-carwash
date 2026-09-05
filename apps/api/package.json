@@ -1,5 +1,5 @@
 {
-  "name": "@sama/api",
+  "name": "@bubbles/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,9 +12,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@sama/types": "workspace:*",
-    "@sama/utils": "workspace:*",
-    "@sama/validation": "workspace:*",
+    "@bubbles/types": "workspace:*",
+    "@bubbles/utils": "workspace:*",
+    "@bubbles/validation": "workspace:*",
     "@hono/zod-validator": "^0.7.2",
     "@supabase/supabase-js": "^2.55.0",
     "hono": "^4.9.0",

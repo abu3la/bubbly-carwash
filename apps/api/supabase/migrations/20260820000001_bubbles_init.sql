@@ -1,4 +1,4 @@
--- Sama Car Wash — initial schema.
+-- Bubbles Car Wash — initial schema.
 --
 -- Money is stored in minor units (halalas) as integers. Never floats: 49.00 SAR
 -- is 4900, and a price is only ever divided for display.

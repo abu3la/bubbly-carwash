@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Clock } from 'lucide-react-native';
 import { Calendar, LocaleConfig, type DateData } from 'react-native-calendars';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Num, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Num, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { fetchAvailability, type Availability } from '../../src/api';
@@ -39,6 +39,7 @@ export default function ChooseSlot() {
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   const dateLabel = useMemo(() => new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
@@ -57,12 +58,12 @@ export default function ChooseSlot() {
 
   useEffect(() => {
     draft.setDay(selectedDate, dateLabel);
-    if (draft.addressLat == null || draft.addressLng == null) {
+    if (draft.addressLat == null || draft.addressLng == null || !draft.villaNumber) {
       setAvailability(null); setFailed(true); setLoading(false); return;
     }
     let alive = true;
-    setLoading(true); setFailed(false);
-    fetchAvailability(draft.addressLat, draft.addressLng, selectedDate)
+    setLoading(true); setFailed(false); setAvailability(null);
+    fetchAvailability(draft.addressLat, draft.addressLng, selectedDate, draft.villaNumber)
       .then((result) => {
         if (!alive) return;
         setAvailability(result);
@@ -72,10 +73,12 @@ export default function ChooseSlot() {
       .catch(() => { if (alive) { setAvailability(null); setFailed(true); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [selectedDate, dateLabel, draft.addressLat, draft.addressLng]);
+  }, [selectedDate, dateLabel, draft.addressLat, draft.addressLng, draft.villaNumber, retry]);
 
   const message = failed
     ? copy.authErrors.offline
+    : !availability?.covered && availability
+      ? (language === 'ar' ? 'العنوان غير متاح للخدمة. تحقق من الموقع ورقم الفيلا.' : 'This address is not available. Verify the pin and villa number.')
     : availability?.reason === 'outsideServiceArea'
       ? copy.booking.outsideTeamArea
       : availability?.reason === 'full'
@@ -149,11 +152,16 @@ export default function ChooseSlot() {
           ) : null}
         </View>
 
+        {!loading && (failed || !availability?.covered) ? <Button
+          label={language === 'ar' ? 'تحقق من عنوانك' : 'Verify your address'} variant="secondary" fullWidth
+          onPress={() => router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })}
+        /> : null}
+        {failed ? <Button label={language === 'ar' ? 'إعادة المحاولة' : 'Try again'} variant="ghost" fullWidth onPress={() => setRetry((value) => value + 1)} /> : null}
         <View style={styles.hold}>
           <Clock size={theme.scale(14)} color={theme.text.muted} strokeWidth={2} />
           <Txt variant="caption" tone="muted" style={styles.holdText}>{copy.booking.holdNote}</Txt>
         </View>
-        <Button label={copy.common.continue} size="lg" fullWidth disabled={loading || !draft.slotStart || !!message} onPress={() => router.push('/book/review')} />
+        <Button label={copy.common.continue} size="lg" fullWidth disabled={loading || !draft.slotStart || !!message || !availability?.covered || !availability.slots.some((slot) => slot.period === draft.period)} onPress={() => router.push('/book/review')} />
       </View>
     </Screen>
   );

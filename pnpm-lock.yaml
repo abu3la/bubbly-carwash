@@ -33,13 +33,13 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.2
         version: 0.7.6(hono@4.13.1)(zod@3.25.76)
-      '@sama/types':
+      '@bubbles/types':
         specifier: workspace:*
         version: link:../../libs/types
-      '@sama/utils':
+      '@bubbles/utils':
         specifier: workspace:*
         version: link:../../libs/utils
-      '@sama/validation':
+      '@bubbles/validation':
         specifier: workspace:*
         version: link:../../libs/validation
       '@supabase/supabase-js':
@@ -79,22 +79,22 @@ importers:
       '@react-native-firebase/messaging':
         specifier: ^26.3.3
         version: 26.3.3(@react-native-firebase/app@26.3.3(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0)))(expo@54.0.36)(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(expo@54.0.36)
-      '@sama/api-client':
+      '@bubbles/api-client':
         specifier: workspace:*
         version: link:../../libs/api-client
-      '@sama/design-tokens':
+      '@bubbles/design-tokens':
         specifier: workspace:*
         version: link:../../libs/design-tokens
-      '@sama/i18n':
+      '@bubbles/i18n':
         specifier: workspace:*
         version: link:../../libs/i18n
-      '@sama/types':
+      '@bubbles/types':
         specifier: workspace:*
         version: link:../../libs/types
-      '@sama/ui-native':
+      '@bubbles/ui-native':
         specifier: workspace:*
         version: link:../../libs/ui-native
-      '@sama/utils':
+      '@bubbles/utils':
         specifier: workspace:*
         version: link:../../libs/utils
       '@tanstack/react-query':
@@ -234,10 +234,10 @@ importers:
       '@react-native-firebase/messaging':
         specifier: ^26.3.3
         version: 26.3.3(@react-native-firebase/app@26.3.3(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0)))(expo@54.0.36)(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(expo@54.0.36)
-      '@sama/design-tokens':
+      '@bubbles/design-tokens':
         specifier: workspace:*
         version: link:../../libs/design-tokens
-      '@sama/ui-native':
+      '@bubbles/ui-native':
         specifier: workspace:*
         version: link:../../libs/ui-native
       expo:
@@ -310,7 +310,7 @@ importers:
 
   apps/landing:
     dependencies:
-      '@sama/design-tokens':
+      '@bubbles/design-tokens':
         specifier: workspace:*
         version: link:../../libs/design-tokens
       next:
@@ -344,10 +344,10 @@ importers:
 
   libs/api-client:
     dependencies:
-      '@sama/types':
+      '@bubbles/types':
         specifier: workspace:*
         version: link:../types
-      '@sama/validation':
+      '@bubbles/validation':
         specifier: workspace:*
         version: link:../validation
       '@tanstack/react-query':
@@ -396,10 +396,10 @@ importers:
 
   libs/ui-native:
     dependencies:
-      '@sama/design-tokens':
+      '@bubbles/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
-      '@sama/types':
+      '@bubbles/types':
         specifier: workspace:*
         version: link:../types
       lucide-react-native:
@@ -439,10 +439,10 @@ importers:
 
   libs/ui-web:
     dependencies:
-      '@sama/design-tokens':
+      '@bubbles/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
-      '@sama/types':
+      '@bubbles/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
@@ -470,7 +470,7 @@ importers:
 
   libs/validation:
     dependencies:
-      '@sama/types':
+      '@bubbles/types':
         specifier: workspace:*
         version: link:../types
       zod:

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { admin, type AdminBooking, type Team } from '../api';
 
-/** Pilot team coverage: one active team, with the others staged for launch. */
+/** Team 1 starts active; each team can operate independently as coverage expands. */
 export function Teams() {
   const [rows, setRows] = useState<Team[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const load = () =>
     Promise.all([admin.teams(), admin.bookings()])
@@ -16,6 +18,7 @@ export function Teams() {
   useEffect(() => { load(); }, []);
 
   const patch = async (id: string, body: Record<string, unknown>) => {
+    setBusy(id);
     setErr(null);
     setSaved(null);
     try {
@@ -23,18 +26,20 @@ export function Teams() {
       setSaved(id);
       await load();
     } catch {
-      setErr('لم يُحفظ التغيير.');
-      await load();
+      setErr('تعذّر حفظ التغيير. حاول مرة أخرى.');
+    } finally {
+      setBusy(null);
     }
   };
 
-  if (!rows) return <p className="note">{err ?? 'جارٍ التحميل…'}</p>;
+  if (!rows) return <div><p className="note">{err ?? 'جارٍ التحميل…'}</p>{err ? <button className="ghost" onClick={() => { setErr(null); void load(); }}>إعادة المحاولة</button> : null}</div>;
 
   return (
     <>
       <div className="page-head">
         <h1>فرق التشغيل</h1>
-        <p>إحداثيات الفريق تحدّد المواعيد التي تظهر للعميل. يعمل فريق واحد فقط في التجربة.</p>
+        <p>أدر فرق التشغيل وسعتها. أهلية العميل تعتمد على نطاق التغطية والبلوك ورقم الفيلا.</p>
+        <p style={{ marginTop: 8 }}>يمكن تفعيل عدة فرق. إيقاف فريق يمنع الحجوزات الجديدة لبلوكاته ولا يلغي حجوزاته الحالية. <Link to="/coverage">إدارة البلوكات والفلل</Link></p>
       </div>
 
       <div className="ops-summary" aria-label="ملخص التشغيل">
@@ -43,14 +48,11 @@ export function Teams() {
         <span>السعة القصوى لكل فريق: 40 حجزًا يوميًا</span>
       </div>
 
-      <div className="sheet">
+      <div className="sheet teams-configuration">
         <table>
           <thead>
             <tr>
               <th>الفريق</th>
-              <th>خط العرض</th>
-              <th>خط الطول</th>
-              <th>نطاق الخدمة (كم)</th>
               <th>السعة اليومية</th>
               <th>التشغيل</th>
             </tr>
@@ -61,33 +63,15 @@ export function Teams() {
                 <td>
                   <div className="headline">{team.name_ar}</div>
                   <div className="note num">{team.id}</div>
-                  <div className="row-detail">{team.members.length} سائقين</div>
+                  <div className="row-detail">عدد السائقين: {team.members.length}</div>
                 </td>
-                {([
-                  ['lat', team.lat],
-                  ['lng', team.lng],
-                  ['serviceRadiusKm', team.service_radius_km],
-                  ['dailyCapacity', team.daily_capacity],
-                ] as const).map(([field, value]) => (
-                  <td key={field}>
-                    <input
-                      type="number"
-                      step={field === 'dailyCapacity' ? 1 : 0.0001}
-                      min={field === 'dailyCapacity' ? 1 : undefined}
-                      max={field === 'dailyCapacity' ? 40 : undefined}
-                      defaultValue={value}
-                      onBlur={(event) => {
-                        const next = Number(event.target.value);
-                        if (Number.isFinite(next) && next !== value) patch(team.id, { [field]: next });
-                      }}
-                    />
-                  </td>
-                ))}
+                <td><TeamCapacity key={`${team.id}-${team.daily_capacity}`} team={team} busy={busy !== null} save={(capacity) => patch(team.id, { dailyCapacity: capacity })} /></td>
                 <td>
-                  <button className={team.active ? 'state active' : 'state'} disabled={team.active} onClick={() => patch(team.id, { active: true })}>
-                    {team.active ? 'نشط الآن' : 'نقل التشغيل لهذا الفريق'}
+                  <div className="note" style={{ marginBottom: 8 }}>{team.active ? 'نشط الآن' : 'متوقف'}</div>
+                  <button className="ghost" disabled={busy !== null} onClick={() => void patch(team.id, { active: !team.active })}>
+                    {busy === team.id ? 'جارٍ الحفظ…' : team.active ? 'إيقاف الفريق' : 'تفعيل الفريق'}
                   </button>
-                  {saved === team.id ? <span className="saved">تم الحفظ</span> : null}
+                  {saved === team.id ? <span className="saved" role="status">حُفظت التغييرات</span> : null}
                 </td>
               </tr>
             ))}
@@ -109,7 +93,7 @@ export function Teams() {
                       : 'لا يوجد سائقون مرتبطون بهذا الفريق.'}
                   </p>
                 </div>
-                <strong className="num">{jobs.filter((job) => job.status === 'scheduled' || job.status === 'active').length}/{team.daily_capacity}</strong>
+                <strong>{jobs.filter((job) => job.status === 'scheduled' || job.status === 'active').length} مهام مفتوحة</strong>
               </div>
               {jobs.length === 0 ? <p className="empty">لا توجد غسلات لهذا الفريق.</p> : (
                 <table>
@@ -129,7 +113,17 @@ export function Teams() {
           );
         })}
       </div>
-      {err ? <p className="err" style={{ marginTop: 14 }}>{err}</p> : null}
+      {err ? <p className="err" role="alert" style={{ marginTop: 14 }}>{err}</p> : null}
     </>
   );
+}
+
+function TeamCapacity({ team, busy, save }: { team: Team; busy: boolean; save: (capacity: number) => Promise<void> }) {
+  const [value, setValue] = useState(String(team.daily_capacity));
+  const next = Number(value);
+  const valid = Number.isInteger(next) && next >= 1 && next <= 40;
+  return <form className="team-capacity" onSubmit={(event) => { event.preventDefault(); if (valid && next !== team.daily_capacity) void save(next); }}>
+    <input type="number" step={1} min={1} max={40} required value={value} aria-label={`السعة اليومية لفريق ${team.name_ar}`} disabled={busy} onChange={(event) => setValue(event.target.value)} />
+    <button className="ghost" type="submit" disabled={busy || !valid || next === team.daily_capacity}>حفظ السعة</button>
+  </form>;
 }

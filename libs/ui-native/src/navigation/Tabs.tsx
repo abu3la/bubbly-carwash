@@ -25,14 +25,15 @@ export function Tabs({ tabs, value, onChange, style }: TabsProps) {
   const [width, setWidth] = useState(0);
 
   const index = Math.max(0, tabs.indexOf(value));
-  const cell = width / Math.max(tabs.length, 1);
+  const inset = theme.scale(3);
+  const cell = Math.max(0, width - inset * 2) / Math.max(tabs.length, 1);
 
   const indicator = useAnimatedStyle(() => ({
     width: cell,
     // `start` is mirrored by the layout engine, so the indicator travels the
     // right way in Arabic without any manual sign flipping.
     transform: [{ translateX: 0 }],
-    start: withTiming(cell * index, { duration: reduced ? 0 : theme.duration.base }),
+    start: withTiming(inset + cell * index, { duration: reduced ? 0 : theme.duration.base }),
   }));
 
   return (
@@ -82,7 +83,9 @@ const styles = StyleSheet.create((theme) => ({
   },
   tab: {
     flex: 1,
-    minHeight: theme.scale(34),
+    minHeight: theme.scale(44),
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
     alignItems: 'center',
     justifyContent: 'center',
   },

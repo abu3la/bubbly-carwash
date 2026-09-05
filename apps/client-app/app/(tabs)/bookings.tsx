@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, LocaleConfig, type DateData } from 'react-native-calendars';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { BookingTicket, Button, Card, Num, Screen, Tabs, Txt, useLocale } from '@sama/ui-native';
+import { BookingTicket, Button, Card, Num, Screen, Tabs, Txt, useLocale } from '@bubbles/ui-native';
 import { bookingMediaSource, cancelBooking, type RealBooking } from '../../src/api';
 import { useCustomerData } from '../../src/customerData';
 import { addCalendarDays, isFriday, riyadhDateKey } from '../../src/dates';
@@ -22,10 +22,16 @@ type TabKey = 'upcoming' | 'active' | 'past';
 export default function Bookings() {
   const { theme } = useUnistyles();
   const { language } = useLocale();
-  const { bookings, loading, error, refresh } = useCustomerData();
+  const { bookings, membership, loading, error, refresh } = useCustomerData();
+  const params = useLocalSearchParams<{ bookingId?: string; tab?: string; date?: string }>();
   const [tab, setTab] = useState<TabKey>('upcoming');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const ar = language === 'ar';
+  useFocusEffect(useCallback(() => {
+    if (!params.bookingId) return;
+    setTab(params.tab === 'active' ? 'active' : 'upcoming');
+    setSelectedDate(params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : null);
+  }, [params.bookingId, params.tab, params.date]));
   LocaleConfig.defaultLocale = ar ? 'ar' : '';
   useEffect(() => { void refresh(); }, [refresh]);
   const labels: Record<TabKey, string> = ar
@@ -116,7 +122,7 @@ export default function Bookings() {
       }} />
       {loading && rows.length === 0 ? <Txt variant="small" tone="secondary">{ar ? 'جارٍ تحميل الحجوزات…' : 'Loading bookings…'}</Txt> : null}
       {error ? <Button label={ar ? 'إعادة المحاولة' : 'Retry'} variant="secondary" onPress={() => void refresh()} /> : null}
-      {!loading && rows.length === 0 ? <Empty ar={ar} /> : null}
+      {!loading && !error && rows.length === 0 ? <Empty ar={ar} tab={tab} filtered={selectedDate !== null} subscribed={!!membership} /> : null}
       <View style={styles.stack}>{rows.map((booking) => <BookingRow key={booking.id} booking={booking} onRefresh={refresh} />)}</View>
     </Screen>
   );
@@ -180,9 +186,18 @@ function Detail({ label, value }: { label: string; value: string }) {
   return <View style={styles.detail}><Txt variant="caption" tone="muted">{label}</Txt><Txt variant="small" weight="semibold" style={styles.detailValue}>{value}</Txt></View>;
 }
 
-function Empty({ ar }: { ar: boolean }) {
+function Empty({ ar, tab, filtered, subscribed }: { ar: boolean; tab: TabKey; filtered: boolean; subscribed: boolean }) {
   const router = useRouter();
-  return <View style={styles.empty}><Txt variant="body" weight="bold" center>{ar ? 'لا توجد حجوزات هنا.' : 'No bookings here.'}</Txt><Button label={ar ? 'احجز غسلة' : 'Book a wash'} onPress={() => router.push('/book/service')} /></View>;
+  const messages: Record<TabKey, string> = ar
+    ? { upcoming: 'لا توجد مواعيد غسيل قادمة.', active: 'لا توجد غسلة جارية الآن.', past: 'لا توجد حجوزات سابقة.' }
+    : { upcoming: 'No upcoming wash appointments.', active: 'No wash is in progress now.', past: 'No past bookings.' };
+  return <View style={styles.empty}>
+    <Txt variant="body" weight="bold" center>{filtered ? (ar ? 'لا توجد حجوزات في هذا القسم للتاريخ المحدد.' : 'No bookings in this tab for the selected date.') : messages[tab]}</Txt>
+    {!filtered && tab === 'upcoming' ? <Button
+      label={subscribed ? (ar ? 'إدارة اشتراكي' : 'Manage my subscription') : (ar ? 'اشترك الآن' : 'Subscribe now')}
+      onPress={() => router.push(subscribed ? '/club/dashboard' : '/club')}
+    /> : null}
+  </View>;
 }
 
 const styles = StyleSheet.create((theme) => ({

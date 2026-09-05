@@ -1,5 +1,5 @@
 {
-  "name": "@sama/api-client",
+  "name": "@bubbles/api-client",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -12,8 +12,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@sama/types": "workspace:*",
-    "@sama/validation": "workspace:*",
+    "@bubbles/types": "workspace:*",
+    "@bubbles/validation": "workspace:*",
     "@tanstack/react-query": "^5.85.0"
   },
   "peerDependencies": {

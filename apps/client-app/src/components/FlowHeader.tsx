@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, withSpring } from 'react-native-reanimated';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { IconButton, Num, Txt, useLocale } from '@sama/ui-native';
+import { IconButton, Num, Txt, useLocale } from '@bubbles/ui-native';
 import { useCopy } from '../i18n';
 
 interface FlowHeaderProps {

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import type { Language } from '@sama/ui-native';
+import type { Language } from '@bubbles/ui-native';
 import { DEFAULT_LANGUAGE, saveLanguage } from './language';
 
 /** The wash itself is paid directly or by an active weekly membership. */

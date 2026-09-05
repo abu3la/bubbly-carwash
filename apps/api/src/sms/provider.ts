@@ -2,7 +2,7 @@
  * SMS delivery, behind one interface.
  *
  * Supabase's built-in phone auth only speaks to Twilio, MessageBird, Vonage and
- * Textlocal. Sama sends to Saudi numbers, where the sensible providers are
+ * Textlocal. Bubbles sends to Saudi numbers, where the sensible providers are
  * local — Taqnyat, Msegat — and none of them are on that list. So Supabase does
  * not talk to a provider at all: it generates the code and hands it to us
  * through the Send SMS Hook, and we deliver it.

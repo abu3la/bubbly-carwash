@@ -19,7 +19,7 @@ import {
   space,
   spring,
   tracking,
-} from '@sama/design-tokens';
+} from '@bubbles/design-tokens';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 

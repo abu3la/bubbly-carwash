@@ -1,5 +1,5 @@
 import type { AddOn, Plan, Service, Slot } from '../content';
-import type { BeatKey } from '@sama/design-tokens';
+import type { BeatKey } from '@bubbles/design-tokens';
 
 /**
  * Every piece of copy the app can show, in one shape.
@@ -49,6 +49,10 @@ export interface Copy {
 
   /** Failures while saving the address, worded for the customer. */
   addressErrors: {
+    villaRequired: string;
+    villaUnavailable: string;
+    invalidVillaNumber: string;
+    coverageUnavailable: string;
     outsideServiceArea: string;
     locationRequired: string;
     badCoordinates: string;
@@ -142,12 +146,26 @@ export interface Copy {
   };
 
   home: {
+    planName: (name: string) => string;
+    weeklyWashes: (count: number) => string;
+    selectedDays: string;
+    scheduleUnavailable: string;
+    weekdays: string[];
+    retryWash: string;
+    nextWash: string;
+    currentWash: string;
+    scheduled: string;
+    washStages: Record<'booked' | 'arrived' | 'washed' | 'verified', string>;
+    viewWash: string;
+    refreshWash: string;
+    loadingWash: string;
+    washLoadError: string;
+    noUpcomingWash: string;
+    chooseWashTime: string;
+    scheduleWash: string;
     greeting: (name: string) => string;
-    bookWash: string;
-    chooseWhatSuits: string;
-    singleWash: string;
-    singleWashSub: string;
-    club: string;
+    subscriptionTitle: string;
+    monthlyCycle: string;
     clubTeaser: string;
     join: string;
     myClub: string;

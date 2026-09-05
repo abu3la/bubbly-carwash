@@ -1,0 +1,39 @@
+/* Original tokens remain canonical; these imports are local to the landing app. */
+@import '../../../design/claude/project/_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/colors.css';
+@import '../../../design/claude/project/_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/typography.css';
+@import '../../../design/claude/project/_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/spacing.css';
+@import '../../../design/claude/project/_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/effects.css';
+
+:root {
+  --violet-35: rgba(90, 66, 255, 0.35);
+  --ink-32: rgba(23, 22, 46, 0.32);
+  --ink-12: rgba(23, 22, 46, 0.12);
+  --white-80: rgba(255, 255, 255, 0.8);
+  --white-35: rgba(255, 255, 255, 0.35);
+  --white-72: rgba(255, 255, 255, 0.72);
+  --white-16: rgba(255, 255, 255, 0.16);
+  --white-14: rgba(255, 255, 255, 0.14);
+  --violet-40: rgba(90, 66, 255, 0.4);
+  --ink-22: rgba(23, 22, 46, 0.22);
+  --white-60: rgba(255, 255, 255, 0.6);
+  --white-70: rgba(255, 255, 255, 0.7);
+  --ink-14: rgba(23, 22, 46, 0.14);
+  --ink-60: rgba(23, 22, 46, 0.6);
+  --white-78: rgba(255, 255, 255, 0.78);
+  --white-18: rgba(255, 255, 255, 0.18);
+  --white-28: rgba(255, 255, 255, 0.28);
+  --white-55: rgba(255, 255, 255, 0.55);
+  --white-12: rgba(255, 255, 255, 0.12);
+  --ink-86: rgba(23, 22, 46, 0.86);
+  --white-32: rgba(255, 255, 255, 0.32);
+  --white-10: rgba(255, 255, 255, 0.1);
+  --landing-link-hover: #4534d6;
+  --landing-plan-ground: #221f45;
+  --landing-block: #2a2756;
+  --landing-building: #3a3670;
+}
+
+:root {
+  --landing-max-width: 1320px;
+  --white-08: rgba(255, 255, 255, 0.08);
+}

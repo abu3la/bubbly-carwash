@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { theme } from '@sama/ui-native/theme';
+import { theme } from '@bubbles/ui-native/theme';
 
 /** Six steps, each a real route — so back always means "the previous step". */
 export default function OnboardingLayout() {

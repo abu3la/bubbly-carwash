@@ -1,5 +1,5 @@
 {
-  "name": "@sama/landing",
+  "name": "@bubbles/landing",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,13 +8,13 @@
     "build": "next build",
     "start": "next start",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "deploy:dev": "NEXT_PUBLIC_DASHBOARD_URL=https://sama-dashboard-dev.taz2886.workers.dev opennextjs-cloudflare build && wrangler deploy --config wrangler.dev.jsonc",
+    "deploy:dev": "NEXT_PUBLIC_DASHBOARD_URL=https://bubbles-dashboard-dev.taz2886.workers.dev opennextjs-cloudflare build && wrangler deploy --config wrangler.dev.jsonc",
     "deploy:dev:triggers": "wrangler triggers deploy --config wrangler.dev.jsonc",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@sama/design-tokens": "workspace:*",
+    "@bubbles/design-tokens": "workspace:*",
     "next": "^15.5.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"

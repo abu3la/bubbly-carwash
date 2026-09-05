@@ -1,7 +1,7 @@
-import { useCallback } from 'react';
-import { View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { AppState, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Bell, ChevronDown, Clock, Droplets, MapPin, MessageSquare, ShieldCheck } from 'lucide-react-native';
+import { Bell, ChevronDown, MapPin } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import {
   BeatIcon,
@@ -11,32 +11,75 @@ import {
   Num,
   Screen,
   Txt,
-} from '@sama/ui-native';
-import { PROMISE_ICONS } from '../../src/content';
+} from '@bubbles/ui-native';
 import { useCopy } from '../../src/i18n';
-import { SectionLabel, Stagger } from '../../src/components/Bits';
+import { Stagger } from '../../src/components/Bits';
 import { useCustomerData } from '../../src/customerData';
-import { useCatalogue } from '../../src/catalogue';
-import { useLocale } from '@sama/ui-native';
+import { useCatalogueStatus } from '../../src/catalogue';
+import { checkCoverage, hasVillaAddress, type Coverage } from '../../src/api';
+import { useLocale } from '@bubbles/ui-native';
+import { useBookingDraft } from '../../src/bookingDraft';
+import { formatHomeBookingDate, selectHomeBooking } from '../../src/homeBooking';
+import { riyadhDateKey } from '../../src/dates';
+import { MembershipSummary } from '../../src/components/MembershipSummary';
 
-const ICONS = { clock: Clock, shield: ShieldCheck, chat: MessageSquare };
 
 export default function Home() {
   const { theme } = useUnistyles();
   const router = useRouter();
   const { language } = useLocale();
   const copy = useCopy();
-  const { profile, addresses, bookings, membership, refresh } = useCustomerData();
-  const catalogue = useCatalogue();
-  const cheapest = catalogue?.services.find((service) => service.key === 'exterior') ?? null;
+  const { profile, addresses, bookings, membership, loading, error, refresh } = useCustomerData();
+  const draft = useBookingDraft();
+  const [now, setNow] = useState(() => new Date());
+  const { catalogue, loading: catalogueLoading, error: catalogueError } = useCatalogueStatus();
+  const [coverage, setCoverage] = useState<Coverage | null>(null);
+  const [checking, setChecking] = useState(false);
+  const ar = language === 'ar';
+  const monthlyPrice = catalogue?.plans.length
+    ? Math.min(...catalogue.plans.map((plan) => plan.priceMinor)) / 100
+    : null;
   const address = addresses.find((item) => item.is_default) ?? addresses[0] ?? null;
-  const booking = bookings.find((item) => item.payment_confirmed
-    && item.status === 'scheduled'
-    && Date.parse(item.ends_at) > Date.now()) ?? null;
+  const booking = selectHomeBooking(bookings, now);
+  const appointment = booking ? formatHomeBookingDate(booking.scheduled_at, language, now) : null;
+  const stage = booking?.stage ?? 'booked';
+  const status = booking?.status === 'active' ? copy.home.washStages[stage] : copy.home.scheduled;
+  const progress = ({ booked: 0, arrived: 1, washed: 2, verified: 3 } as const)[stage];
+  const openAppointment = () => {
+    if (!booking) return;
+    router.push({ pathname: '/(tabs)/bookings', params: {
+      bookingId: booking.id,
+      tab: booking.status === 'active' ? 'active' : 'upcoming',
+      date: riyadhDateKey(new Date(booking.scheduled_at)),
+    } });
+  };
+  const scheduleWash = () => {
+    draft.reset();
+    draft.setSource('club');
+    draft.setService(membership?.plan_id.startsWith('plus') ? 'full' : 'exterior');
+    router.push('/book/vehicle');
+  };
+
+  useEffect(() => {
+    let live = true;
+    setCoverage(null);
+    if (address?.lat == null || address.lng == null) return;
+    setChecking(true);
+    checkCoverage(address.lat, address.lng, address.villa_number ?? undefined)
+      .then((value) => { if (live) setCoverage(value); })
+      .catch(() => { if (live) setCoverage(null); })
+      .finally(() => { if (live) setChecking(false); });
+    return () => { live = false; };
+  }, [address?.id, address?.lat, address?.lng, address?.villa_number]);
 
   useFocusEffect(useCallback(() => {
+    setNow(new Date());
     void refresh();
-    return () => {};
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') { setNow(new Date()); void refresh(); }
+    });
+    return () => { clearInterval(timer); subscription.remove(); };
   }, [refresh]));
 
   const labelIndex = address?.label === 'work' ? 1 : address?.label === 'other' ? 2 : 0;
@@ -70,93 +113,81 @@ export default function Home() {
         <Txt variant="title" weight="bold">
           {copy.home.greeting(profile?.full_name || (language === 'ar' ? 'عميلنا' : 'there'))}
         </Txt>
-        <Txt variant="body" tone="secondary">
-          {copy.brand.tagline}.
-        </Txt>
+        {!membership ? <Txt variant="body" tone="secondary">
+          {ar ? 'غسيل سيارتك عند بيتك بأعلى جودة' : 'A quality car wash at your home'}
+        </Txt> : null}
       </View>
 
-      {booking ? (
-        <Stagger index={0}>
+      {booking && appointment ? (
+        <Stagger index={0} style={styles.nextWash}>
+          <Txt variant="heading" weight="bold">
+            {booking.status === 'active' ? copy.home.currentWash : copy.home.nextWash}
+          </Txt>
           <BookingTicket
-            time={new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' }).format(new Date(booking.scheduled_at))}
-            meta={`${new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Riyadh' }).format(new Date(booking.scheduled_at))} · ${language === 'ar' ? booking.services.name_ar : booking.services.name_en}`}
-            stub={<BeatIcon size="sm" active={0} />}
-            onPress={() => router.push('/(tabs)/bookings')}
+            label={appointment.day}
+            time={appointment.time}
+            meta={appointment.date}
+            stub={<View style={styles.washState}>
+              <BeatIcon size="sm" active={progress} />
+              <Txt variant="caption" weight="semibold" center>{status}</Txt>
+            </View>}
+            onPress={openAppointment}
           />
+          <View style={styles.washDetails}>
+            <Txt variant="body" weight="semibold">
+              {ar ? booking.services.name_ar : booking.services.name_en} · {booking.vehicles.make} {booking.vehicles.model}
+            </Txt>
+            <Txt variant="small" tone="secondary">{booking.addresses.line}</Txt>
+          </View>
+          <Button label={copy.home.viewWash} size="lg" fullWidth onPress={openAppointment} />
+          {error ? <View style={styles.washDetails}><Txt variant="small" tone="secondary">{copy.home.refreshWash}</Txt><Button label={copy.home.retryWash} variant="ghost" size="sm" onPress={() => void refresh()} /></View> : null}
         </Stagger>
+      ) : membership ? (
+        <Card variant="booking" style={styles.nextWash}>
+          <Txt variant="heading" weight="bold">{copy.home.nextWash}</Txt>
+          <Txt variant="body" weight="semibold">
+            {loading ? copy.home.loadingWash : error ? copy.home.washLoadError : copy.home.noUpcomingWash}
+          </Txt>
+          {!loading && !error ? <Txt variant="small" tone="secondary">{copy.home.chooseWashTime}</Txt> : null}
+          {!loading ? <Button
+            label={error ? copy.home.retryWash : copy.home.scheduleWash}
+            size="lg" fullWidth
+            onPress={error ? () => void refresh() : scheduleWash}
+          /> : null}
+        </Card>
       ) : null}
 
-      <Stagger index={1}>
-        <Button label={copy.home.bookWash} size="lg" fullWidth onPress={() => router.push('/book/service')} />
+      <Stagger index={booking || membership ? 1 : 0}>
+        {membership ? <MembershipSummary membership={membership} onManage={() => router.push('/club/dashboard')} /> : (
+          <Card variant="dark" style={styles.subscription}>
+            <View style={styles.subscriptionCopy}>
+              <Txt variant="heading" weight="bold" tone="inverse">{copy.home.subscriptionTitle}</Txt>
+              <Txt variant="body" tone="inverseSoft">{copy.home.clubTeaser}</Txt>
+            </View>
+            {monthlyPrice !== null && !catalogueLoading && !catalogueError ? (
+              <View style={styles.subscriptionPrice}>
+                <Num variant="heading" weight="bold" tone="inverse">{copy.common.fromPrice(monthlyPrice)}</Num>
+                <Txt variant="small" tone="inverseSoft">{copy.home.monthlyCycle}</Txt>
+              </View>
+            ) : null}
+            <Button label={copy.home.join} size="lg" fullWidth onPress={() => router.push('/club')} />
+          </Card>
+        )}
       </Stagger>
 
-      <View>
-        <SectionLabel>{copy.home.chooseWhatSuits}</SectionLabel>
-        <View style={styles.options}>
-          <Stagger index={2}>
-            <Card onPress={() => router.push('/book/service')} style={styles.option}>
-              <Droplets size={theme.scale(24)} color={theme.action.primary} strokeWidth={2} />
-              <View style={styles.optionText}>
-                <Txt variant="body" weight="bold">
-                  {copy.home.singleWash}
-                </Txt>
-                <Txt variant="caption" tone="secondary">
-                  {copy.home.singleWashSub}
-                </Txt>
-              </View>
-              <View style={styles.optionPrice}>
-                {cheapest ? <>
-                  <Num variant="bodyLg" weight="bold">
-                    {copy.common.fromPrice(cheapest.priceMinor / 100)}
-                  </Num>
-                  <Num variant="caption" tone="muted">
-                    {copy.common.minutes(cheapest.minutes)}
-                  </Num>
-                </> : <Txt variant="caption" tone="muted">{language === 'ar' ? 'جارٍ تحميل السعر…' : 'Loading price…'}</Txt>}
-              </View>
-            </Card>
-          </Stagger>
-
-          <Stagger index={3}>
-            <Card variant="dark" onPress={() => router.push('/club')} style={styles.club}>
-              <BeatIcon size="md" active={3} />
-              <View style={styles.optionText}>
-                <Txt variant="body" weight="bold" tone="inverse">
-                  {copy.home.club}
-                </Txt>
-                <Txt variant="caption" tone="inverseSoft">
-                  {membership
-                    ? (language === 'ar' ? `${membership.usedThisWeek} من ${membership.plans.weekly} مواعيد مجدولة هذا الأسبوع` : `${membership.usedThisWeek} of ${membership.plans.weekly} appointments scheduled this week`)
-                    : copy.home.clubTeaser}
-                </Txt>
-              </View>
-              <Button
-                label={membership ? copy.home.myClub : copy.home.join}
-                variant="secondary"
-                size="sm"
-                onPress={() => router.push('/club')}
-              />
-            </Card>
-          </Stagger>
+      <View style={styles.coverage}>
+        <View style={styles.coverageTitle}>
+          <MapPin size={20} color={theme.text.primary} />
+          <Txt variant="body" weight="bold">{ar ? 'شربتلي فيلج، جدة' : 'Sharbatly Village, Jeddah'}</Txt>
         </View>
+        <Txt variant="small" tone="secondary">{checking ? (ar ? 'نتحقق من تغطية عنوانك…' : 'Checking your address coverage…')
+          : coverage?.status === 'covered' ? (ar ? `فيلا ${coverage.villaNumber} · بلوك ${coverage.block?.code} · ${coverage.team?.name.ar}` : `Villa ${coverage.villaNumber} · Block ${coverage.block?.code} · ${coverage.team?.name.en}`)
+          : !hasVillaAddress(address) ? (ar ? 'حدّد موقعك وأدخل رقم الفيلا لمعرفة توفر الخدمة.' : 'Choose your location and enter your villa number to check service.')
+          : (ar ? 'تحقق من عنوانك لمعرفة توفر الخدمة حاليًا.' : 'Verify your address to check current service availability.')}</Txt>
+        {coverage?.status !== 'covered' && !checking ? <Button label={ar ? 'تحقق من فيلتك' : 'Check your villa'} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/onboarding/map', params: { returnTo: 'home' } })} /> : null}
       </View>
 
-      <Stagger index={4}>
-        <View style={styles.promises}>
-          {PROMISE_ICONS.map((icon) => {
-            const Icon = ICONS[icon];
-            const label = { clock: copy.home.promises.onTime, shield: copy.home.promises.documented, chat: copy.home.promises.support }[icon];
-            return (
-              <View key={icon} style={styles.promise}>
-                <Icon size={theme.scale(18)} color={theme.action.primary} strokeWidth={2} />
-                <Txt variant="label" weight="semibold" tone="secondary" center>
-                  {label}
-                </Txt>
-              </View>
-            );
-          })}
-        </View>
-      </Stagger>
+
     </Screen>
   );
 }
@@ -175,27 +206,16 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1] + 2,
     paddingVertical: theme.spacing[2] - 1,
     paddingHorizontal: theme.spacing[3] + 1,
-    borderRadius: theme.radius.pill,
+    borderRadius: theme.radius.md,
   },
   placeText: { flexShrink: 1 },
   greeting: { gap: 2 },
-  options: { gap: theme.spacing[3] },
-  option: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[2] + 2 },
-  club: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3] + 2 },
-  optionText: { flex: 1, gap: 1 },
-  // Prices hold their own column so every row's amount shares one end edge.
-  optionPrice: { alignItems: 'flex-end', flexShrink: 0 },
-  promises: { flexDirection: 'row', gap: theme.spacing[2] },
-  promise: {
-    flex: 1,
-    alignItems: 'center',
-    gap: theme.spacing[1] + 2,
-    paddingVertical: theme.spacing[3],
-    paddingHorizontal: theme.spacing[1] + 2,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    backgroundColor: theme.surface.card,
-    borderWidth: theme.border.width,
-    borderColor: theme.border.subtle,
-  },
+  coverage: { backgroundColor: theme.surface.bookingSoft, borderRadius: theme.radius.lg, padding: theme.spacing[4], gap: theme.spacing[2] },
+  coverageTitle: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[2] },
+  nextWash: { gap: theme.spacing[2] },
+  washState: { alignItems: 'center', gap: theme.spacing[2] },
+  washDetails: { gap: theme.spacing[1] },
+  subscription: { gap: theme.spacing[4] },
+  subscriptionCopy: { gap: theme.spacing[2] },
+  subscriptionPrice: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: theme.spacing[2] },
 }));

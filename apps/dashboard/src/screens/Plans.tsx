@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { admin, type Plan } from '../api';
 
-/** Club plans: the monthly fee, and the limits that make the fee viable. */
+/** Monthly packages and their actual weekly wash frequency. */
 export function Plans() {
   const [rows, setRows] = useState<Plan[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -19,15 +19,15 @@ export function Plans() {
   return (
     <>
       <div className="page-head">
-        <h1>اشتراكات النادي</h1>
-        <p>اشتراك أسبوعي بلا رصيد: الموعد الفائت لا يُرحّل ولا يُعوّض.</p>
+        <h1>الباقات الشهرية</h1>
+        <p>سعر شهري وغسلات أسبوعية بموعد ثابت. الغسلة التي يفوّتها العميل لا تُرحّل ولا تُعوّض.</p>
       </div>
 
       <div className="sheet">
         <table>
           <thead>
             <tr>
-              <th>الخطة</th>
+              <th>الباقة</th>
               <th>الشهري (ر.س)</th>
               <th>الغسلات أسبوعيًا</th>
               <th>الحالة</th>

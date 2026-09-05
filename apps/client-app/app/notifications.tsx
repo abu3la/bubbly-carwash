@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Card, Screen, Txt, useLocale } from '@sama/ui-native';
+import { Button, Card, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { listNotifications, markNotificationRead, type CustomerNotification } from '../src/api';
 
 export default function Notifications() {

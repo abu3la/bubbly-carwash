@@ -1,5 +1,5 @@
 /**
- * Sama's palette, ported verbatim from the handoff's `tokens/colors.css`.
+ * Bubbles's palette, ported verbatim from the handoff's `tokens/colors.css`.
  * Electric violet is the one action colour; guava, yellow and ice are the
  * supporting brand tones. Ink is a single near-black expressed in alpha steps
  * rather than a ladder of greys, so every muted tone is provably the same hue.

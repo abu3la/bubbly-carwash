@@ -5,6 +5,8 @@ import { db } from '../db';
 import { createInvoice, getInvoice, invoiceMatches, refundInvoice } from '../moyasar';
 import { notifyTeamOfBooking } from '../dispatch';
 import { notify } from '../notifications';
+import { checkCoverage, coverageError } from '../coverage';
+import { membershipWeeklySchedule } from '../membershipSchedule';
 
 export const membershipsRoute = new Hono<{ Bindings: Env }>();
 membershipsRoute.use('*', requireAuth());
@@ -30,6 +32,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const terminalScheduleErrors = [
   'slotFull',
   'outsideServiceArea',
+  'villaRequired',
+  'villaUnavailable',
+  'coverageUnavailable',
+  'coverageTeamMismatch',
   'slotInPast',
   'weeklyCapReached',
   'scheduleIncomplete',
@@ -74,11 +80,25 @@ membershipsRoute.get('/current', async (c) => {
   );
   if (!membership) return c.json({ membership: null });
 
-  const [usage] = await db<number>(c.env, 'rpc/club_week_used', {
-    method: 'POST',
-    body: { p_membership: membership.id, at: new Date().toISOString() },
+  const [[usage], signupSlots] = await Promise.all([
+    db<number>(c.env, 'rpc/club_week_used', {
+      method: 'POST',
+      body: { p_membership: membership.id, at: new Date().toISOString() },
+    }),
+    // The selected membership was scoped to caller.id above. Signup slots are
+    // the persisted choices, independent of later individual booking changes.
+    db<{ slot_start: string }>(
+      c.env,
+      `membership_signup_slots?membership_id=eq.${encodeURIComponent(membership.id)}&select=slot_start&order=slot_start`,
+    ),
+  ]);
+  return c.json({
+    membership: {
+      ...membership,
+      usedThisWeek: Number(usage ?? 0),
+      weeklySchedule: membershipWeeklySchedule(signupSlots),
+    },
   });
-  return c.json({ membership: { ...membership, usedThisWeek: Number(usage ?? 0) } });
 });
 
 membershipsRoute.post('/checkout', async (c) => {
@@ -137,9 +157,9 @@ membershipsRoute.post('/checkout', async (c) => {
   for (const slot of baseSlots) {
     const [[vehicle], [address]] = await Promise.all([
       db<{ id: string }>(c.env, `vehicles?id=eq.${slot.vehicleId}&profile_id=eq.${caller.id}&archived_at=is.null&select=id`),
-      db<{ id: string; lat: number | null; lng: number | null }>(
+      db<{ id: string; lat: number | null; lng: number | null; villa_number: string | null }>(
         c.env,
-        `addresses?id=eq.${slot.addressId}&profile_id=eq.${caller.id}&archived_at=is.null&select=id,lat,lng`,
+        `addresses?id=eq.${slot.addressId}&profile_id=eq.${caller.id}&archived_at=is.null&select=id,lat,lng,villa_number`,
       ),
     ]);
     if (!vehicle) return c.json({ error: { code: 'vehicleUnavailable' } }, 409);
@@ -147,11 +167,14 @@ membershipsRoute.post('/checkout', async (c) => {
       return c.json({ error: { code: 'addressUnavailable' } }, 409);
     }
 
+    const coverage = await checkCoverage(c.env, address.lat, address.lng, address.villa_number);
+    if (coverage.status !== 'covered') return c.json({ error: { code: coverageError(coverage.status) }, coverage }, 409);
+
     for (let stamp = Date.parse(slot.slotStart); stamp < cycleEnd.getTime(); stamp += 7 * DAY_MS) {
       const local = riyadhSlotParts(stamp);
       const available = await db<{ starts_at: string }>(c.env, 'rpc/available_slots', {
         method: 'POST',
-        body: { p_lat: address.lat, p_lng: address.lng, p_date: local.date },
+        body: { p_lat: address.lat, p_lng: address.lng, p_date: local.date, p_villa_number: address.villa_number },
       });
       if (!available.some((row) => String(row.starts_at).slice(0, 5) === local.time)) {
         return c.json({ error: { code: 'scheduleUnavailable', date: local.date } }, 409);

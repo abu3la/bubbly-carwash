@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 import { View } from 'react-native';
 import { SlideOutDown } from 'react-native-reanimated';
 import { StyleSheet } from 'react-native-unistyles';
-import type { BeatKey } from '@sama/design-tokens';
+import type { BeatKey } from '@bubbles/design-tokens';
 import { Reveal } from '../primitives/Reveal';
 import { Txt } from '../primitives/Text';
 

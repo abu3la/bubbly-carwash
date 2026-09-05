@@ -1,4 +1,4 @@
--- Sama Car Wash — catalogue seed.
+-- Bubbles Car Wash — catalogue seed.
 --
 -- These rows are the same catalogue the app is built against
 -- (apps/client-app/src/content.ts and the two i18n catalogues). Prices are in

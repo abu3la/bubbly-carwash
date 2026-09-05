@@ -9,6 +9,7 @@ import { Teams } from './screens/Teams';
 import { Drivers } from './screens/Drivers';
 import { Dispatch } from './screens/Dispatch';
 import { Operations } from './screens/Operations';
+import { Coverage } from './screens/Coverage';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="drivers" element={<Drivers />} />
           <Route path="dispatch" element={<Dispatch />} />
           <Route path="operations" element={<Operations />} />
+          <Route path="coverage" element={<Coverage />} />
         </Route>
       </Routes>
     </BrowserRouter>

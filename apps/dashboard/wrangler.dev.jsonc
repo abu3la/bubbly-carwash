@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sama-dashboard-dev",
+  "name": "bubbles-dashboard-dev",
   "account_id": "57118b773c4166fafe8b041d792cb2ef",
   "main": "src/worker.ts",
   "compatibility_date": "2026-08-01",

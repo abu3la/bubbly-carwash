@@ -27,11 +27,11 @@ A monorepo for the BubblesCarWash mobile car-wash platform, structured per
 pnpm install
 pnpm dev          # every app in dev mode (or target one, below)
 
-pnpm --filter @sama/api dev        # Hono API on http://localhost:8787
-pnpm --filter @sama/dashboard dev  # dashboard on http://localhost:5173
-pnpm --filter @sama/landing dev    # landing on http://localhost:3000
-pnpm --filter @sama/client-app dev # Expo dev server (customer app)
-pnpm --filter @sama/driver-app dev # Expo dev server (driver app)
+pnpm --filter @bubbles/api dev        # Hono API on http://localhost:8787
+pnpm --filter @bubbles/dashboard dev  # dashboard on http://localhost:5173
+pnpm --filter @bubbles/landing dev    # landing on http://localhost:3000
+pnpm --filter @bubbles/client-app dev # Expo dev server (customer app)
+pnpm --filter @bubbles/driver-app dev # Expo dev server (driver app)
 ```
 
 Workspace-wide checks:
@@ -57,9 +57,9 @@ gitignored `apps/api/.dev.vars` credentials.
 Deploys are manual and need `wrangler login` first:
 
 ```bash
-pnpm --filter @sama/api deploy        # Worker
-pnpm --filter @sama/dashboard deploy  # static assets Worker
-pnpm --filter @sama/landing deploy    # OpenNext build + Worker
+pnpm --filter @bubbles/api deploy        # Worker
+pnpm --filter @bubbles/dashboard deploy  # static assets Worker
+pnpm --filter @bubbles/landing deploy    # OpenNext build + Worker
 ```
 
 Production secrets for the API: `wrangler secret put SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`

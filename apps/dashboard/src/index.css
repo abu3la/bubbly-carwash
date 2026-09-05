@@ -1,29 +1,11 @@
-/*
- * BubblesCarWash back office.
- *
- * The tokens are the app's, restated as CSS custom properties so the two
- * surfaces cannot drift: the same water tones, foam surface and deep ink. What
- * differs is density — a phone shows one booking at a time, a back office shows
- * forty rows and needs to stay readable at that scale.
- *
- * Arabic, right to left, because the operations team reads Arabic. An
- * English back office over an Arabic product is a seam nobody benefits from.
- */
+@import './fonts.css';
+@import '../../../design/claude/project/_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/colors.css';
+@import '../../../design/claude/project/_ds/bubbles-design-system-9de8efbd-0623-4c1a-ab59-9938b468e3ce/tokens/typography.css';
+
+/* Same approved brand sources as the landing; denser operating layouts. */
 :root {
-  --violet: #0d7e8f;
-  --violet-600: #0a5f6c;
-  --violet-100: #dcecea;
-  --yellow: #d1a54c;
-  --guava: #a83a32;
-  --ice: #7fcbd0;
-  --ice-100: #e2efed;
-  --ink: #142b30;
-  --ink-72: rgba(20, 43, 48, 0.72);
-  --ink-56: rgba(20, 43, 48, 0.58);
-  --ink-12: rgba(20, 43, 48, 0.12);
-  --ink-06: rgba(20, 43, 48, 0.06);
-  --cloud: #eaf2f1;
-  --white: #f8fbfa;
+  --ink-12: rgba(23, 22, 46, 0.12);
+  --feedback-error: #9f2639;
   --radius: 14px;
 }
 
@@ -36,7 +18,7 @@ body {
   direction: rtl;
   background: var(--cloud);
   color: var(--ink);
-  font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  font-family: var(--font-arabic);
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
 }
@@ -54,7 +36,8 @@ body {
   gap: 30px;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; }
+.brand { display: flex; align-items: center; padding: 8px 12px; }
+.dashboard-logo { display: block; width: 160px; max-width: 100%; height: auto; }
 
 /* The product's own mark: three beats. Reused rather than redrawn, so the back
    office is visibly the same company as the app. */
@@ -79,7 +62,7 @@ body {
 
 .rail .foot { margin-top: auto; font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.6; }
 
-.content { padding: 34px 40px 60px; overflow-y: auto; }
+.content { padding: 34px 40px 60px; overflow-y: auto; min-width: 0; }
 
 /* ------------------------------------------------------------------- page */
 
@@ -110,7 +93,7 @@ th {
 
 td { padding: 13px 18px; border-top: 1px solid var(--ink-06); vertical-align: middle; }
 
-tbody tr.off { opacity: 0.45; }
+tbody tr.off { color: var(--ink-72); background: var(--surface-page); }
 
 /* Money and counts are data — a tabular figure keeps columns from jittering as
    digits change, and the LTR direction keeps 219 from ever rendering as 912. */
@@ -169,7 +152,7 @@ button.ghost:hover:not(:disabled) { background: var(--violet-100); }
 
 .note { color: var(--ink-56); font-size: 13px; }
 .pending-copy { color: var(--ink-72); font-size: 12px; margin-top: 4px; }
-.err { color: var(--guava); font-size: 13.5px; }
+.err { color: var(--feedback-error); font-size: 13.5px; }
 .ok { color: #0f9d58; font-size: 13.5px; }
 
 .ops-summary {
@@ -204,14 +187,14 @@ button.state.active:hover:not(:disabled) { background: var(--ink-72); }
   padding: clamp(24px, 5vw, 72px);
   position: relative;
   overflow: hidden;
-  background: #0d1c1f;
+  background: var(--surface-dark);
 }
 .gate::before {
   content: 'BubblesCarWash';
   position: absolute;
   inset-inline-start: clamp(24px, 5vw, 72px);
   bottom: -0.19em;
-  color: rgba(217, 233, 231, 0.12);
+  color: rgba(255, 255, 255, 0.12);
   font-size: clamp(64px, 12vw, 180px);
   font-weight: 750;
   letter-spacing: -0.045em;
@@ -225,17 +208,18 @@ button.state.active:hover:not(:disabled) { background: var(--ink-72); }
   min-width: 0;
   position: relative;
   z-index: 1;
-  background: #16363a;
-  color: #f4fbfa;
+  background: var(--surface-dark);
+  color: var(--text-inverse);
   border-radius: 28px 28px 8px 28px;
   padding: 38px 34px;
 }
 .gate-card h1 { margin: 16px 0 4px; font-size: 22px; }
-.gate-card p { margin: 0 0 22px; color: rgba(217, 233, 231, 0.68); font-size: 14px; }
+.gate-card p { margin: 0 0 22px; color: var(--text-inverse-soft); font-size: 14px; }
 .gate-card input { width: 100%; margin-bottom: 12px; }
 .gate-card button { width: 100%; }
-.gate-card button.ghost { color: #9ddde1; }
-.gate-card button.ghost:hover:not(:disabled) { background: rgba(125, 211, 222, 0.10); }
+.gate-card button.ghost { color: var(--ice); }
+.gate-card button.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.10); }
+.gate-card .err { color: var(--guava-100); }
 
 .dial {
   display: flex; align-items: center; gap: 8px; direction: ltr;
@@ -262,6 +246,8 @@ button.state.active:hover:not(:disabled) { background: var(--ink-72); }
   .gate::before { inset-inline-start: 20px; font-size: clamp(56px, 20vw, 96px); }
 }
 .team-jobs { display: grid; gap: 18px; margin-top: 24px; }
+.team-capacity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.teams-configuration table { min-width: 480px; }
 .team-jobs-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px 10px; }
 .team-jobs-head h2 { margin: 0 0 4px; font-size: 20px; }
 .team-roster { margin: 7px 0 0; color: var(--ink-72); font-size: 12px; line-height: 1.7; }

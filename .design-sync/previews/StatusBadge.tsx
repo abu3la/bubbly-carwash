@@ -1,4 +1,4 @@
-import { StatusBadge } from '@sama/ui-web';
+import { StatusBadge } from '@bubbles/ui-web';
 
 export const AllStatuses = () => (
   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

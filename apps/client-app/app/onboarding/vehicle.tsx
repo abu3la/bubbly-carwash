@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Input, Screen, Tag, Txt } from '@sama/ui-native';
+import { Button, Input, Screen, Tag, Txt } from '@bubbles/ui-native';
 import { useCopy } from '../../src/i18n';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { SectionLabel } from '../../src/components/Bits';
 import { ApiError, saveVehicle } from '../../src/api';
+import { useBookingDraft } from '../../src/bookingDraft';
+import { useClubDraft } from '../../src/clubDraft';
 import { useCustomerData } from '../../src/customerData';
 
 const SIZES = ['sedan', 'suv', 'pickup'] as const;
@@ -15,6 +17,8 @@ export default function RegisterVehicle() {
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { refresh } = useCustomerData();
+  const bookingDraft = useBookingDraft();
+  const monthlyDraft = useClubDraft();
   const copy = useCopy();
 
   const [make, setMake] = useState('');
@@ -33,13 +37,15 @@ export default function RegisterVehicle() {
     setError(null);
     setSaving(true);
     try {
-      await saveVehicle({ make, model, color, plate, size: SIZES[size] });
+      const { vehicle } = await saveVehicle({ make, model, color, plate, size: SIZES[size] });
       await refresh();
+      if (returnTo === 'subscription') { monthlyDraft.setVehicleId(vehicle.id); router.replace('/club/schedule'); return; }
       if (returnTo === 'booking' || returnTo === 'vehicles') {
+        if (returnTo === 'booking') bookingDraft.setVehicle(vehicle);
         router.replace(returnTo === 'booking' ? '/book/vehicle' : '/account/vehicles');
         return;
       }
-      router.replace('/(tabs)/home');
+      router.replace('/club');
     } catch (e) {
       setError(
         copy.vehicleErrors[
@@ -68,10 +74,10 @@ export default function RegisterVehicle() {
         </View>
 
         <View style={styles.fields}>
-          <Input value={make} onChangeText={setMake} placeholder={copy.onboarding.vehicleMake} />
-          <Input value={model} onChangeText={setModel} placeholder={copy.onboarding.vehicleModel} />
-          <Input value={color} onChangeText={setColor} placeholder={copy.onboarding.vehicleColour} />
-          <Input value={plate} onChangeText={setPlate} placeholder={copy.onboarding.vehiclePlate} />
+          <Input label={copy.onboarding.vehicleMake} value={make} onChangeText={setMake} placeholder={copy.onboarding.vehicleMake} />
+          <Input label={copy.onboarding.vehicleModel} value={model} onChangeText={setModel} placeholder={copy.onboarding.vehicleModel} />
+          <Input label={copy.onboarding.vehicleColour} value={color} onChangeText={setColor} placeholder={copy.onboarding.vehicleColour} />
+          <Input label={copy.onboarding.vehiclePlate} value={plate} onChangeText={setPlate} placeholder={copy.onboarding.vehiclePlate} />
         </View>
 
         <View>

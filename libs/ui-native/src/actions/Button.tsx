@@ -64,7 +64,7 @@ export function Button({
     >
       <View style={styles.inner}>
         {icon}
-        <Txt variant={size === 'lg' ? 'bodyLg' : size === 'sm' ? 'small' : 'body'} weight="semibold" style={styles.label(variant)}>
+        <Txt center variant={size === 'lg' ? 'bodyLg' : size === 'sm' ? 'small' : 'body'} weight="semibold" style={styles.label(variant)}>
           {label}
         </Txt>
       </View>
@@ -74,7 +74,8 @@ export function Button({
 
 const styles = StyleSheet.create((theme) => ({
   button: (variant: ButtonVariant, size: ButtonSize, disabled: boolean, fullWidth: boolean) => ({
-    height: { sm: theme.scale(32), md: theme.scale(42), lg: theme.scale(52) }[size],
+    minHeight: { sm: theme.scale(44), md: theme.scale(46), lg: theme.scale(52) }[size],
+    paddingVertical: theme.spacing[2],
     paddingHorizontal: { sm: theme.scale(14), md: theme.spacing[5], lg: theme.scale(28) }[size],
     borderRadius: theme.radius.pill,
     borderCurve: 'continuous',
@@ -97,8 +98,10 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing[2],
+    maxWidth: '100%',
   },
   label: (variant: ButtonVariant) => ({
+    flexShrink: 1,
     color: {
       primary: theme.action.onPrimary,
       secondary: theme.text.primary,

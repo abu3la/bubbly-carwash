@@ -1,7 +1,7 @@
-import { isolate } from '@sama/ui-native';
+import { isolate } from '@bubbles/ui-native';
 import type { Copy } from './types';
 
-/** Arabic — the source copy. The product is written here first, not translated into here. */
+/** Arabic، the source copy. The product is written here first, not translated into here. */
 export const ar: Copy = {
   brand: {
     name: 'BubblesCarWash',
@@ -23,7 +23,7 @@ export const ar: Copy = {
     minutes: (count) => `≈ ${count} دقيقة`,
     monthly: 'شهريًا',
     totalWithVat: 'الإجمالي شامل الضريبة',
-    securePayment: 'دفع آمن عبر بوابة معتمدة — لا نحفظ بيانات بطاقتك.',
+    securePayment: 'دفع آمن عبر بوابة معتمدة، لا نحفظ بيانات بطاقتك.',
   },
 
   authErrors: {
@@ -35,7 +35,11 @@ export const ar: Copy = {
   },
 
   addressErrors: {
-    outsideServiceArea: 'نخدم داخل نطاق مكة المكرمة حاليًا. اختر موقعًا داخل نطاق الخدمة.',
+    villaRequired: 'أدخل رقم الفيلا للتحقق من التغطية.',
+    villaUnavailable: 'رقم الفيلا غير متاح حاليًا. راجع الرقم أو جرّب لاحقًا.',
+    invalidVillaNumber: 'أدخل رقم الفيلا كما هو على المنزل.',
+    coverageUnavailable: 'الخدمة غير متاحة لهذا النطاق حاليًا. جرّب لاحقًا.',
+    outsideServiceArea: 'نخدم شربتلي فيلج في جدة فقط. اختر موقع الفيلا داخل النطاق.',
     locationRequired: 'حدّد الموقع على الخريطة حتى يصل إليك فريق الغسيل.',
     badCoordinates: 'تعذّر تحديد الموقع. حرّك الخريطة وحاول مرة أخرى.',
     addressLineRequired: 'أدخل عنوانًا واضحًا حتى يصل الفنّي.',
@@ -47,7 +51,7 @@ export const ar: Copy = {
   vehicleErrors: {
     makeRequired: 'أدخل نوع السيارة.',
     modelRequired: 'أدخل موديل السيارة.',
-    plateRequired: 'أدخل رقم اللوحة — يحتاجها الفنّي ليتعرّف على سيارتك.',
+    plateRequired: 'أدخل رقم اللوحة، يحتاجها الفنّي ليتعرّف على سيارتك.',
     unauthorized: 'انتهت جلستك. سجّل الدخول مرة أخرى.',
     offline: 'لا يوجد اتصال بالإنترنت. تحقق من الشبكة.',
     unknown: 'تعذّر حفظ السيارة. حاول مرة أخرى.',
@@ -58,7 +62,7 @@ export const ar: Copy = {
   tabs: { home: 'الرئيسية', bookings: 'حجوزاتي', profile: 'حسابي' },
 
   onboarding: {
-    blurb: 'غسيل سيارتك عند بابك — احجز موعدك، وتابع كل خطوة حتى تلمع سيارتك.',
+    blurb: 'اشترك في باقة شهرية لغسيل سيارتك عند بيتك، واختر مواعيدك الأسبوعية.',
     start: 'ابدأ الآن',
     skip: 'تخطي إلى التطبيق',
     languageArabic: 'العربية',
@@ -86,7 +90,7 @@ export const ar: Copy = {
     fullNamePlaceholder: 'الاسم الكامل',
 
     locationTitle: 'أين سيارتك؟',
-    locationBlurb: 'نستخدم موقعك لنعرض لك الأسعار والمواعيد المتاحة فعلًا في منطقتك — قبل أي التزام.',
+    locationBlurb: 'نخدم شربتلي فيلج في جدة. حدّد موقعك، ثم أدخل رقم الفيلا لنتحقق من التغطية.',
     allowLocation: 'السماح بتحديد الموقع',
     enterManually: 'اختيار الموقع على الخريطة يدويًا',
 
@@ -105,7 +109,7 @@ export const ar: Copy = {
     addressHeading: 'احفظ عنوانك',
     addressLabelSection: 'تسمية العنوان',
     addressManualSub: 'اكتب عنوانك بوضوح حتى يصل الفنّي إليك.',
-    addressLinePlaceholder: 'مثل: فيلا 12، شارع إبراهيم الجفالي، حي العوالي',
+    addressLinePlaceholder: 'اسم الشارع أو تفاصيل الوصول داخل شربتلي فيلج',
     addressLabels: ['المنزل', 'العمل', 'آخر'],
     accessNotes: 'ملاحظات للوصول (اختياري)',
     accessNotesPlaceholder: 'البوابة الزرقاء، بجوار المسجد',
@@ -114,23 +118,37 @@ export const ar: Copy = {
     vehicleTitle: 'سيارتك',
     vehicleHeading: 'سجّل سيارتك',
     vehicleSub: 'حتى يتعرّف عليها الفنّي عند وصوله.',
-    vehicleMake: 'النوع — مثل لكزس',
-    vehicleModel: 'الموديل — مثل LX 600',
-    vehicleColour: 'اللون — مثل أبيض',
+    vehicleMake: 'النوع، مثل لكزس',
+    vehicleModel: 'الموديل، مثل LX 600',
+    vehicleColour: 'اللون، مثل أبيض',
     vehiclePlate: 'رقم اللوحة',
     vehicleSizeSection: 'حجم السيارة',
   },
 
   home: {
-    greeting: (name) => `صباح النور يا ${name}`,
-    bookWash: 'احجز غسلة',
-    chooseWhatSuits: 'اختر ما يناسبك',
-    singleWash: 'غسلة واحدة',
-    singleWashSub: 'الأسرع — لموعد واحد يناسبك',
-    club: 'Bubbles Club',
+    planName: (name) => `باقة ${name}`,
+    weeklyWashes: (count) => count === 1 ? 'غسلة أسبوعيًا' : count === 2 ? 'غسلتان أسبوعيًا' : count >= 3 && count <= 10 ? `${count} غسلات أسبوعيًا` : `${count} غسلة أسبوعيًا`,
+    selectedDays: 'الأيام المختارة للغسيل',
+    scheduleUnavailable: 'الجدول الأسبوعي غير متاح. راجع مواعيدك من جدول الغسيل.',
+    weekdays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+    retryWash: 'إعادة المحاولة',
+    nextWash: 'غسلتك القادمة',
+    currentWash: 'الغسلة الجارية',
+    scheduled: 'مجدولة',
+    washStages: { booked: 'قيد التنفيذ', arrived: 'وصل الفريق', washed: 'الغسيل مكتمل', verified: 'التوثيق مكتمل' },
+    viewWash: 'عرض تفاصيل الغسلة',
+    refreshWash: 'تعذّر تحديث الموعد. حاول مجددًا',
+    loadingWash: 'نحمّل موعد غسلتك…',
+    washLoadError: 'تعذّر تحميل موعدك. حاول مرة أخرى.',
+    noUpcomingWash: 'لا توجد غسلة قادمة',
+    chooseWashTime: 'اختر موعدًا يناسبك من المواعيد المتاحة.',
+    scheduleWash: 'جدولة غسلة',
+    greeting: (name) => `مرحبًا، ${name}`,
+    subscriptionTitle: 'غسيل منتظم باشتراك شهري',
+    monthlyCycle: 'لمدة 30 يومًا',
     clubTeaser: 'أساسي أو سوبر ووش: غسلتان أو ثلاث أسبوعيًا',
-    join: 'انضم',
-    myClub: 'لوحتي',
+    join: 'اشترك الآن',
+    myClub: 'إدارة اشتراكي',
     promises: {
       onTime: 'في الموعد دائمًا',
       documented: 'صور أو فيديو 360° قبل وبعد',
@@ -158,14 +176,14 @@ export const ar: Copy = {
     day: 'اليوم',
     availableSlots: 'المواعيد المتاحة',
     takenNote: 'المواعيد الباهتة محجوزة.',
-    takenNoteMember: 'المواعيد الباهتة محجوزة · موعد الذروة مفتوح لك كعضو.',
-    prioritySlot: 'أولوية',
+    takenNoteMember: 'تظهر المواعيد المتاحة لعنوانك فقط.',
+    prioritySlot: 'متاح',
     holdNote: 'نحجز لك الموعد لمدة 15 دقيقة أثناء إتمام الدفع.',
     periods: { morning: 'صباحًا', afternoon: 'ظهرًا', night: 'مساءً' },
     fridayOff: 'الجمعة إجازة للفرق',
-    checkingAvailability: 'نتحقق من أقرب فريق…',
-    teamAvailable: (team, distanceKm, capacity) =>
-      `${team} يغطّي موقعك · يبعد ${distanceKm} كم · سعته ${capacity} حجزًا يوميًا`,
+    checkingAvailability: 'نتحقق من مواعيد فريق البلوك…',
+    teamAvailable: (team) =>
+      `${team} مسؤول عن بلوك الفيلا`,
     outsideTeamArea: 'الموقع خارج نطاق الفريق النشط حاليًا.',
     dayFull: 'اكتملت سعة الفريق لهذا اليوم. اختر يومًا آخر.',
     remainingSlots: (count) => `${count} متاح`,
@@ -173,14 +191,14 @@ export const ar: Copy = {
     addOnsSection: 'إضافات اختيارية',
     addOnWithPrice: (label, price) => `${label} (+${price})`,
     useCredit: 'استخدام رصيد الباقة',
-    useCreditSub: (credits) => `لديك ${credits} غسلات — تُخصم غسلة واحدة`,
-    creditCoversWashOnly: 'الرصيد يغطي الغسلة فقط — الإضافات تُدفع نقدًا.',
-    fromPackage: (service) => `${service} — من رصيد الباقة`,
-    fromClub: (service) => `${service} — من اشتراك النادي`,
+    useCreditSub: (credits) => `لديك ${credits} غسلات، تُخصم غسلة واحدة`,
+    creditCoversWashOnly: 'الرصيد يغطي الغسلة فقط، الإضافات تُدفع نقدًا.',
+    fromPackage: (service) => `${service}، من رصيد الباقة`,
+    fromClub: (service) => `${service}، من الباقة الشهرية`,
     oneWash: 'غسلة 1',
 
     paySourceSection: 'طريقة الدفع',
-    sourceClub: 'من اشتراك النادي',
+    sourceClub: 'من الباقة الشهرية',
     sourcePackage: 'من رصيد الباقة',
     sourceCash: 'ادفع الآن',
     cashNote: 'تُدفع الغسلة والإضافات عند الحجز.',
@@ -193,19 +211,19 @@ export const ar: Copy = {
     payAmount: (amount) => `ادفع ${amount}`,
 
     processingPayment: 'نعالج الدفع بأمان…',
-    processingPaymentSub: 'لا تغلق التطبيق — لن يُخصم المبلغ مرتين.',
+    processingPaymentSub: 'لا تغلق التطبيق، لن يُخصم المبلغ مرتين.',
     paymentFailed: 'لم يكتمل الدفع. لم نؤكد الحجز ويمكنك المحاولة مرة أخرى.',
     processingCredit: 'نؤكد حجزك…',
     processingCreditSub: 'نثبت الموعد ضمن غسلات هذا الأسبوع.',
 
-    paidTitle: 'تم الدفع، حجزك مؤكد!',
-    creditTitle: 'تم تأكيد الموعد ضمن اشتراكك',
+    paidTitle: 'اكتمل الدفع، حجزك مؤكد',
+    creditTitle: 'موعدك مؤكد ضمن باقتك',
     successSub: 'سنرسل إشعارًا عند تعيين الفنّي وقبل وصوله.',
     trackWash: 'تتبع الغسلة',
     backHome: 'العودة للرئيسية',
   },
 
-  club: { title: 'Bubbles Club' },
+  club: { title: 'الباقات الشهرية' },
 
   profile: {
     verified: 'موثّق',
@@ -247,7 +265,7 @@ export const ar: Copy = {
 
   beats: {
     arrived: { title: 'وصل', copy: 'الفنّي عند البوابة.' },
-    washed: { title: 'الغسيل', copy: 'اكتمل الغسيل — التجفيف جارٍ.' },
-    verified: { title: 'تأكد', copy: 'فُحصت الجودة — توثيق قبل وبعد جاهز.' },
+    washed: { title: 'الغسيل', copy: 'اكتمل الغسيل، التجفيف جارٍ.' },
+    verified: { title: 'تأكد', copy: 'فُحصت الجودة، توثيق قبل وبعد جاهز.' },
   },
 };

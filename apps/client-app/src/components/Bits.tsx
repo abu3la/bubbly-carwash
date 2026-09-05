@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Num, Reveal, Txt } from '@sama/ui-native';
+import { Num, Reveal, Txt } from '@bubbles/ui-native';
 
 /** The one small tracked-out label in the system, above a group. */
 export function SectionLabel({ children }: { children: string }) {

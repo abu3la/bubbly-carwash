@@ -8,7 +8,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import { easingPoints } from '@sama/design-tokens';
+import { easingPoints } from '@bubbles/design-tokens';
 
 interface RevealProps {
   children: ReactNode;

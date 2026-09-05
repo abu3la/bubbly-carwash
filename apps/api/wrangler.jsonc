@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sama-api",
+  "name": "bubbles-api",
   // Legacy production Cloudflare account. It has its own
   // workers.dev subdomain, `samacarwash`, which is why the API lives here and
   // not alongside another project — that subdomain is one per account, and

@@ -24,6 +24,10 @@ export const webhooksRoute = new Hono<{ Bindings: Env }>();
 const terminalScheduleErrors = [
   'slotFull',
   'outsideServiceArea',
+  'villaRequired',
+  'villaUnavailable',
+  'coverageUnavailable',
+  'coverageTeamMismatch',
   'slotInPast',
   'weeklyCapReached',
   'scheduleIncomplete',
@@ -145,7 +149,7 @@ webhooksRoute.post('/moyasar/invoice', async (c) => {
     });
   } catch (error) {
     const membershipId = payment.membership_id;
-    if (membershipId && isTerminalScheduleError(error)) {
+    if ((membershipId || payment.booking_id) && isTerminalScheduleError(error)) {
       try {
         await refundInvoice(c.env, ref);
         const now = new Date().toISOString();
@@ -155,17 +159,19 @@ webhooksRoute.post('/moyasar/invoice', async (c) => {
             prefer: 'return=minimal',
             body: { state: 'refunded', failure: 'scheduleUnavailable', updated_at: now },
           }),
-          db(c.env, `memberships?id=eq.${membershipId}`, {
-            method: 'PATCH',
-            prefer: 'return=minimal',
-            body: { state: 'cancelled', cancelled_at: now },
-          }),
+          membershipId
+            ? db(c.env, `memberships?id=eq.${membershipId}`, {
+                method: 'PATCH', prefer: 'return=minimal', body: { state: 'cancelled', cancelled_at: now },
+              })
+            : db(c.env, `bookings?id=eq.${payment.booking_id}`, {
+                method: 'PATCH', prefer: 'return=minimal', body: { status: 'cancelled', cancelled_at: now },
+              }),
         ]);
         await notify(c.env, {
           profileId: payment.profile_id,
           kind: 'payment_refunded',
-          titleAr: 'أُعيد مبلغ الاشتراك',
-          titleEn: 'Subscription payment refunded',
+          titleAr: 'أُعيد مبلغ الدفع',
+          titleEn: 'Payment refunded',
           bodyAr: 'تعذر تثبيت جميع مواعيدك، لذلك أرسلنا طلب استرجاع المبلغ إلى ميسر.',
           bodyEn: 'We could not secure every appointment, so the payment was refunded through Moyasar.',
         }).catch((notifyError) => console.warn('[moyasar] schedule refund notification failed', notifyError));

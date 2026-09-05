@@ -1,36 +1,34 @@
-# Sama database
+# Bubbles database
 
-Two migrations, applied in order:
+Apply **all files in `migrations/` in filename order**. The initial schema and catalogue seed are only the beginning: later files add team dispatch, customer checkout, recurring appointments, archive handling, expiry, and coverage enforcement. Applying only the first two files cannot run the current application.
 
-| File | What it does |
-| --- | --- |
-| `migrations/0001_sama_init.sql` | Tables, enums, indexes, constraints, RLS lockdown |
-| `migrations/0002_sama_seed.sql` | The catalogue: services, add-ons, packages, plans, slot grid |
-
-`0002` is idempotent (`on conflict … do update`), so re-running it updates the
-catalogue rather than failing. `0001` is not — it is a first-run migration.
+The current final migration is `20260905000019_sharbatly_coverage.sql`. It seeds Sharbatly Village in Jeddah with active Block A assigned to Team 1, which is the only team active initially. It does not invent villa numbers or a surveyed boundary. Coverage fails closed until an administrator enters and verifies the polygon and adds the actual covered villas. See [coverage behavior and rollout notes](COVERAGE.md).
 
 ## Applying to a project
 
-Both files are plain SQL with no CLI-specific syntax, so either route works.
+The Supabase CLI tracks previously applied migrations. On an authorized target, apply the pending files in order with `supabase db push`. For a local Supabase development database, `supabase db reset` rebuilds from the complete migration sequence and destroys that local database's current data. Do not use reset on a database whose data must be retained.
 
-**SQL editor** — open the project, paste `0001` and run, then `0002`.
+Do not apply production migrations as an incidental test. API and application changes for coverage must be released together with the database migration. The coverage migration has **not been applied to any remote database in this task**.
 
-**CLI**, once per machine:
+## Local verification
 
-```bash
-npx supabase login
+Contract tests execute real Hono routes with controlled Auth, PostgREST and payment boundaries:
+
+```sh
+node --test apps/api/tests/coverage-api.test.mjs
+pnpm --filter @bubbles/api type-check
+pnpm --filter @bubbles/api lint
 ```
 
-Then per project:
+After all migrations are applied to a fresh **local** database, run the SQL integration assertions from the repository root:
 
-```bash
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push
+```sh
+psql "$LOCAL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f apps/api/tests/coverage.sql
 ```
 
-`link` prompts for the database password on its own. Do not put it in a file,
-a command, or a chat message.
+The fixture uses synthetic coordinates and villa records, and rolls its transaction back. It checks boundary validation, villa and block activation, exact team assignment, availability, address and booking enforcement, archived assets, membership signup and RPC privileges. Do not run it against production.
+
+The SQL fixture is prepared but **not executed in this workspace**. No local PostgreSQL server was available, and installation of a temporary test runtime was cancelled. The 14 API contract tests, TypeScript and ESLint checks passed; those do not replace the SQL execution required before deploying this migration.
 
 ## Secrets
 

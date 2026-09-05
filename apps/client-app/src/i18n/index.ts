@@ -1,5 +1,5 @@
-import { useLocale } from '@sama/ui-native';
-import type { Language } from '@sama/ui-native';
+import { useLocale } from '@bubbles/ui-native';
+import type { Language } from '@bubbles/ui-native';
 import { ar } from './ar';
 import { en } from './en';
 import type { Copy } from './types';

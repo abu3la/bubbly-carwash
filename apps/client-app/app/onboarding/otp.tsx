@@ -3,19 +3,19 @@ import { Pressable, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useReducedMotion, withSpring, withTiming } from 'react-native-reanimated';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
-import { Button, Num, Screen, Txt } from '@sama/ui-native';
+import { Button, Num, Screen, Txt } from '@bubbles/ui-native';
 import { useCopy } from '../../src/i18n';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { AuthError, requestOtp, toE164, verifyOtp } from '../../src/auth';
 import { useAuthSession } from '../../src/authSession';
-import { fetchMe, listAddresses, listVehicles } from '../../src/api';
+import { fetchMe, hasVillaAddress, listAddresses, listVehicles } from '../../src/api';
 
 const LIVE_OTP_LENGTH = 6;
 const RESEND_SECONDS = 24;
 
 export default function Otp() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phone?: string; developmentCode?: string }>();
+  const params = useLocalSearchParams<{ phone?: string; developmentCode?: string; intent?: string }>();
   const { phone } = params;
   const national = phone ?? '';
   const [developmentCode, setDevelopmentCode] = useState(params.developmentCode);
@@ -106,9 +106,9 @@ export default function Otp() {
                 fetchMe(), listAddresses(), listVehicles(),
               ]);
               if (!me.profile.full_name?.trim()) router.replace('/onboarding/profile');
-              else if (!addresses.addresses.length) router.replace('/onboarding/permission');
+              else if (!addresses.addresses.some(hasVillaAddress)) router.replace('/onboarding/permission');
               else if (!vehicles.vehicles.length) router.replace('/onboarding/vehicle');
-              else router.replace('/(tabs)/home');
+              else router.replace(params.intent === 'subscription' ? '/club' : '/(tabs)/home');
             } catch (e) {
               setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);
               setCode('');

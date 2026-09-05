@@ -1,15 +1,25 @@
-import { useCallback, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Linking, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, ArrowRight, Camera, Car, MapPin, Phone, Sparkles, Video } from 'lucide-react-native';
+import { ArrowRight, Camera, Check, MapPin, Phone, Video } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { BeatIcon, Button, Card, IconButton, Input, Num, Screen, Txt, useToast } from '@sama/ui-native';
+import { BeatIcon, Button, Card, IconButton, Input, Num, Screen, Txt, useToast } from '@bubbles/ui-native';
 import { ApiError, advance, claimJob, jobs as fetchJobs, nextStage, reportIncident, uploadEvidence, type Job } from '../../src/api';
 import { copy } from '../../src/copy';
 import { useSession } from '../../src/session';
+import { jobDate, jobTime } from '../../src/jobPresentation';
+import { WashProgress } from '../../src/WashProgress';
 
 const LIT: Record<string, 0 | 1 | 2 | 3> = { booked: 0, arrived: 1, washed: 2, verified: 3 };
+const ANGLES = ['front', 'right', 'rear', 'left'] as const;
+const STAGE_HELP: Record<string, string> = {
+  booked: 'اتجه إلى الفيلا، ثم أكد وصولك من الموقع.',
+  arrived: 'وثّق حالة السيارة قبل الغسيل، ثم أكمل الغسيل.',
+  washed: 'وثّق النتيجة بعد الغسيل، ثم راجع الجودة.',
+  verified: 'اكتملت المهمة وحُفظ التوثيق للعميل.',
+};
+const errorMessage = (e: unknown) => copy.errors[e instanceof ApiError ? e.code : 'unknown'] ?? copy.errors.unknown;
 
 export default function JobScreen() {
   const { theme } = useUnistyles();
@@ -17,319 +27,180 @@ export default function JobScreen() {
   const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useSession();
-
   const [job, setJob] = useState<Job | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [fresh, setFresh] = useState(false);
+  const requestSequence = useRef(0);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const captureLock = useRef(false);
+  const actionLock = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [showIncident, setShowIncident] = useState(false);
   const [incidentCategory, setIncidentCategory] = useState('access');
   const [incidentNote, setIncidentNote] = useState('');
-
-  // There is no single-job endpoint: a technician has a handful of jobs, so
-  // reusing the list is cheaper than another route and keeps the two in step.
-  const load = useCallback(async () => {
-    setLoaded(false);
+  const load = useCallback(async (clearError = true) => {
+    const request = ++requestSequence.current;
     try {
       const all = (await fetchJobs()).jobs;
+      if (request !== requestSequence.current) return;
       setJob(all.find((j) => j.id === id) ?? null);
-      setError(null);
-    } catch (e) {
-      setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']);
-    } finally {
-      setLoaded(true);
-    }
+      setFresh(true);
+      if (clearError) setError(null);
+    } catch (e) { if (request === requestSequence.current) { setError(errorMessage(e)); setFresh(false); } }
+    finally { if (request === requestSequence.current) setLoaded(true); }
   }, [id]);
+  useFocusEffect(useCallback(() => { void load(); return () => { requestSequence.current += 1; }; }, [load]));
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  const step = async () => {
+  const run = async (operation: () => Promise<void>) => {
+    if (actionLock.current || captureLock.current || !fresh) return;
+    actionLock.current = true; setBusy(true); setError(null);
+    try { await operation(); }
+    catch (e) { setError(errorMessage(e)); await load(false); }
+    finally { actionLock.current = false; setBusy(false); }
+  };
+  const step = () => {
     if (!job) return;
     const next = nextStage(job.stage);
     if (!next) return;
-    setError(null);
-    setBusy(true);
-    try {
+    return run(async () => {
       await advance(job.id, next);
-      if (next === 'verified') {
-        toast.show(copy.done);
-        router.back();
-      } else {
-        await load();
-      }
-    } catch (e) {
-      setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']);
-      // Re-read rather than trust local state: the beat may have been advanced
-      // on another device, and the server is the only truth about where it is.
-      load();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const capture = async (mode: 'photo' | 'video', angle: 'front' | 'right' | 'rear' | 'left' | '360') => {
-    if (!job || (job.stage !== 'arrived' && job.stage !== 'washed')) return;
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      setError(copy.cameraDenied);
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: mode === 'video' ? ['videos'] : ['images'],
-      allowsEditing: false,
-      quality: 0.85,
-      videoMaxDuration: 60,
+      if (next === 'verified') { toast.show(copy.done); router.replace('/jobs'); }
+      else await load();
     });
-    if (result.canceled || !result.assets[0]) return;
-
-    setError(null);
-    setUploading(true);
+  };
+  const capture = async (mode: 'photo' | 'video', angle: typeof ANGLES[number] | '360') => {
+    if (!job || !fresh || captureLock.current || actionLock.current || (job.stage !== 'arrived' && job.stage !== 'washed')) return;
+    captureLock.current = true; setUploading(true); setError(null);
     try {
-      const phase = job.stage === 'arrived' ? 'before' : 'after';
-      await uploadEvidence(job.id, phase, angle, result.assets[0]);
-      toast.show(copy.evidenceSaved);
-      await load();
-    } catch (e) {
-      setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']);
-    } finally {
-      setUploading(false);
-    }
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) { setError(copy.cameraDenied); return; }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: mode === 'video' ? ['videos'] : ['images'], allowsEditing: false,
+        quality: 0.85, videoMaxDuration: 60,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      await uploadEvidence(job.id, job.stage === 'arrived' ? 'before' : 'after', angle, result.assets[0]);
+      toast.show(copy.evidenceSaved); await load();
+    } catch (e) { setError(e instanceof ApiError ? errorMessage(e) : 'تعذّر فتح الكاميرا أو رفع التوثيق. حاول مرة أخرى.'); }
+    finally { captureLock.current = false; setUploading(false); }
   };
-
-  const claim = async () => {
-    if (!job) return;
-    setBusy(true); setError(null);
-    try { await claimJob(job.id); await load(); toast.show(copy.claimed); }
-    catch (e) { setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']); await load(); }
-    finally { setBusy(false); }
+  const openLink = async (url: string) => {
+    try { await Linking.openURL(url); }
+    catch { setError('تعذّر فتح التطبيق. تحقق من توفره على جهازك.'); }
   };
+  const claim = () => job && run(async () => { await claimJob(job.id); await load(); toast.show(copy.claimed); });
+  const sendIncident = () => job && run(async () => {
+    await reportIncident(job.id, incidentCategory, incidentNote.trim());
+    setIncidentNote(''); setShowIncident(false); toast.show(copy.incidentSent);
+  });
 
-  const sendIncident = async () => {
-    if (!job || !incidentNote.trim()) return;
-    setBusy(true); setError(null);
-    try {
-      await reportIncident(job.id, incidentCategory, incidentNote.trim());
-      setIncidentNote(''); setShowIncident(false); toast.show(copy.incidentSent);
-    } catch (e) { setError(copy.errors[e instanceof ApiError ? e.code : 'unknown']); }
-    finally { setBusy(false); }
-  };
+  if (!job || job.id !== id) return <Screen contentStyle={styles.page}>
+    <Txt variant="heading" weight="bold">تفاصيل المهمة</Txt>
+    {!loaded ? <ActivityIndicator /> : null}
+    <Txt tone={error ? 'danger' : 'secondary'}>{error ?? (loaded ? copy.unavailableJob : 'جارٍ تحميل المهمة')}</Txt>
+    {error ? <Button label="إعادة المحاولة" onPress={() => void load()} /> : null}
+    <Button label={copy.backToJobs} variant="ghost" onPress={() => router.replace('/jobs')} />
+  </Screen>;
 
-  if (!job) {
-    return (
-      <Screen contentStyle={styles.page}>
-        <Txt variant="body" tone={error ? 'danger' : 'secondary'} center>
-          {error ?? (loaded ? copy.unavailableJob : '…')}
-        </Txt>
-        {loaded ? <Button label={copy.backToJobs} fullWidth onPress={() => router.replace('/jobs')} /> : null}
-      </Screen>
-    );
-  }
-
-  const v = job.vehicles;
   const a = job.addresses;
+  const v = job.vehicles;
   const next = nextStage(job.stage);
-  const extras = job.booking_add_ons ?? [];
-  const media = job.booking_media ?? [];
-  const evidencePhase = job.stage === 'arrived' ? 'before' : job.stage === 'washed' ? 'after' : null;
   const claimed = job.technician_id === session?.userId;
-  const phaseMedia = evidencePhase ? media.filter((item) => item.phase === evidencePhase) : [];
-  const capturedPhotoAngles = new Set(phaseMedia.filter((item) => item.kind === 'photo').map((item) => item.angle));
+  const evidencePhase = job.stage === 'arrived' ? 'before' : job.stage === 'washed' ? 'after' : null;
+  const phaseMedia = (job.booking_media ?? []).filter((item) => item.phase === evidencePhase);
+  const capturedAngles = new Set(phaseMedia.filter((item) => item.kind === 'photo').map((item) => item.angle));
   const has360 = phaseMedia.some((item) => item.kind === 'video' && item.angle === '360');
-  const fullPhotoSet = ['front', 'right', 'rear', 'left'].every((angle) => capturedPhotoAngles.has(angle));
-  const currentEvidenceReady = has360 || fullPhotoSet;
-  const requiredEvidenceReady = next === 'washed' || next === 'verified' ? currentEvidenceReady : true;
+  const nextAngle = ANGLES.find((angle) => !capturedAngles.has(angle));
+  const evidenceReady = has360 || !nextAngle;
+  const canAdvance = !evidencePhase || evidenceReady;
+  const extras = job.booking_add_ons ?? [];
+  const destination = a?.lat != null && a.lng != null ? `${a.lat},${a.lng}` : a?.line;
 
-  // Google Maps directions by coordinates when we have them, by address text when not.
-  const openMaps = () => {
-    const q = a?.lat && a?.lng ? `${a.lat},${a.lng}` : encodeURIComponent(a?.line ?? '');
-    Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${q}`);
-  };
+  return <Screen scroll contentStyle={styles.page} bottomInset={theme.spacing[4]}>
+    <View style={styles.row}>
+      <IconButton label={copy.backToJobs} variant="ghost" onPress={() => router.replace('/jobs')}><ArrowRight size={theme.scale(22)} color={theme.text.primary} /></IconButton>
+      <View style={styles.grow}><Num variant="body" weight="bold">{job.ref}</Num><Txt variant="caption" tone="secondary">{jobDate(job.scheduled_at)}</Txt></View>
+      <BeatIcon size="sm" active={LIT[job.stage]} />
+    </View>
+    <View style={styles.destination}>
+      <Txt variant="title" weight="bold">{claimed && a?.villa_number ? `فيلا ${a.villa_number}` : a?.line || copy.teamJob}</Txt>
+      <Txt variant="small" tone="secondary">{[a?.coverage_areas?.name_ar, a?.coverage_blocks ? `بلوك ${a.coverage_blocks.code}` : null, a?.city].filter(Boolean).join(' · ')}</Txt>
+      <Num variant="heading" weight="bold">{jobTime(job.scheduled_at)} - {jobTime(job.ends_at)}</Num>
+      <Txt variant="body" weight="semibold">{copy.services[job.service_key] ?? job.service_key}</Txt>
+      {extras.length ? <Txt variant="small" tone="secondary">{extras.map((e) => copy.addOns[e.add_on_key] ?? e.add_on_key).join(' · ')}</Txt> : null}
+    </View>
 
-  return (
-    <Screen scroll contentStyle={styles.page} bottomInset={theme.spacing[6]}>
-      <View style={styles.top}>
-        <IconButton label={copy.backToJobs} variant="ghost" size="md" onPress={() => router.back()}>
-          <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
-        </IconButton>
-        <Num variant="body" weight="bold" style={styles.grow}>
-          {job.ref}
-        </Num>
+    {error ? <View accessibilityLiveRegion="polite" style={styles.error}><Txt tone="danger" variant="small">{error}</Txt>{!fresh ? <Button label="إعادة تحميل المهمة" variant="ghost" disabled={busy || uploading} onPress={() => void load()} /> : null}</View> : null}
+
+    {!claimed ? <View style={styles.block}>
+      <Txt variant="heading" weight="bold">{copy.teamJob}</Txt>
+      <Txt variant="small" tone="secondary">{copy.teamJobSub}</Txt>
+      <Button label={busy ? copy.working : copy.claimJob} size="lg" fullWidth disabled={busy || !fresh} onPress={() => void claim()} />
+    </View> : <>
+      <View style={styles.progress}>
+        <WashProgress stage={job.stage} />
+        <Txt variant="heading" weight="bold">{copy.stages[job.stage]}</Txt>
+        <Txt variant="small" tone="secondary">{STAGE_HELP[job.stage]}</Txt>
+        {next && !evidencePhase ? <Button label={busy ? copy.working : copy.actions[next]} size="lg" fullWidth disabled={busy || uploading || !fresh} onPress={() => void step()} /> : null}
       </View>
-
-      {/* The three beats are the job's state, shown the same way the customer
-          sees them — so a technician knows exactly what was reported. */}
-      <View style={styles.beats}>
-        <BeatIcon size="lg" active={LIT[job.stage] ?? 0} />
-        <Txt variant="body" weight="bold">
-          {copy.stages[job.stage]}
-        </Txt>
+      <View style={styles.block}>
+        <Txt variant="heading" weight="bold">{v ? `${v.make} ${v.model}` : copy.vehicle}</Txt>
+        <View style={styles.row}><Num variant="body" weight="bold">{v?.plate}</Num><Txt variant="small" tone="secondary">{[v?.color, v ? copy.sizes[v.size] : null].filter(Boolean).join(' · ')}</Txt></View>
+        <Txt variant="body">{job.customers?.full_name || copy.customer}</Txt>
+        <Num variant="small" tone="secondary">{job.customers?.phone}</Num>
+        <Txt variant="small" tone="secondary">{a?.line}</Txt>
+        {a?.notes ? <View style={styles.notes}><Txt variant="small" weight="semibold">{copy.accessNotes}</Txt><Txt variant="small">{a.notes}</Txt></View> : null}
+        <View style={styles.actions}>
+          {destination ? <Button label="الاتجاهات" variant="ghost" icon={<MapPin size={theme.scale(18)} color={theme.action.primary} />} onPress={() => void openLink(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`)} /> : null}
+          {job.customers?.phone ? <Button label={copy.callCustomer} variant="ghost" icon={<Phone size={theme.scale(18)} color={theme.action.primary} />} onPress={() => void openLink(`tel:${job.customers!.phone}`)} /> : null}
+        </View>
       </View>
-
-      {!claimed ? <Card variant="booking" style={styles.block}>
-        <Txt variant="body" weight="bold">{copy.teamJob}</Txt>
-        <Txt variant="small" tone="secondary">{copy.teamJobSub}</Txt>
-        <Button label={busy ? copy.working : copy.claimJob} fullWidth disabled={busy} onPress={claim} />
-      </Card> : null}
-
-      {claimed ? <Card style={styles.block}>
-        <View style={styles.row}><Phone size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} /><Txt variant="label" weight="semibold" tone="muted">{copy.customer}</Txt></View>
-        <Txt variant="body" weight="bold">{job.customers?.full_name || copy.customer}</Txt>
-        <Num variant="small" tone="secondary">{job.customers?.phone || '—'}</Num>
-        {job.customers?.phone ? <Button label={copy.callCustomer} variant="secondary" size="sm" onPress={() => Linking.openURL(`tel:${job.customers!.phone}`)} /> : null}
-      </Card> : null}
-
-      {claimed ? <Card style={styles.block}>
-        <View style={styles.row}>
-          <Car size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} />
-          <Txt variant="label" weight="semibold" tone="muted">
-            {copy.vehicle}
-          </Txt>
+      {evidencePhase ? <Card variant="booking" style={styles.block}>
+        <Txt variant="heading" weight="bold">{evidencePhase === 'before' ? copy.beforeEvidence : copy.afterEvidence}</Txt>
+        <Txt variant="small" tone="secondary">{copy.evidenceInstruction}</Txt>
+        <View style={styles.photoGrid}>
+          {ANGLES.map((angle) => <View key={angle} style={styles.angle}>
+            {has360 || capturedAngles.has(angle) ? <Check size={theme.scale(19)} color={theme.text.primary} /> : <Camera size={theme.scale(19)} color={theme.text.secondary} />}
+            <Txt variant="small" weight={capturedAngles.has(angle) || has360 ? 'bold' : 'regular'}>{copy.photoAngles[angle]}</Txt>
+            <Txt variant="caption" tone="secondary">{has360 || capturedAngles.has(angle) ? 'موثّق' : 'بانتظار الصورة'}</Txt>
+          </View>)}
         </View>
-        <Txt variant="heading" weight="bold">
-          {v ? `${v.make} ${v.model}` : '—'}
-        </Txt>
-        <View style={styles.row}>
-          {v?.plate ? (
-            <Num variant="body" weight="bold">
-              {v.plate}
-            </Num>
-          ) : null}
-          <Txt variant="small" tone="secondary">
-            {[v?.color, v ? copy.sizes[v.size] : null].filter(Boolean).join(' · ')}
-          </Txt>
-        </View>
+        {uploading ? <View style={styles.row}><ActivityIndicator /><Txt variant="small">الكاميرا والتوثيق قيد المعالجة</Txt></View> : null}
+        {!evidenceReady && nextAngle ? <>
+          <Button label={`صوّر ${copy.photoAngles[nextAngle]}`} fullWidth disabled={uploading || busy || !fresh} onPress={() => void capture('photo', nextAngle)} />
+          <Button label={copy.record360} variant="ghost" fullWidth disabled={uploading || busy || !fresh} icon={<Video size={theme.scale(18)} color={theme.action.primary} />} onPress={() => void capture('video', '360')} />
+        </> : <Txt variant="body" weight="bold">{copy.evidenceReady}</Txt>}
+        {has360 ? <Button label="إعادة تسجيل الفيديو" variant="ghost" disabled={uploading || busy || !fresh} onPress={() => void capture('video', '360')} /> : null}
+        {!has360 && capturedAngles.size > 0 ? <View style={styles.actions}>{ANGLES.filter((angle) => capturedAngles.has(angle)).map((angle) => <Button key={angle} label={`إعادة تصوير ${copy.photoAngles[angle]}`} size="sm" variant="ghost" disabled={uploading || busy || !fresh} onPress={() => void capture('photo', angle)} />)}</View> : null}
+        {next && canAdvance ? <Button label={busy ? copy.working : copy.actions[next]} size="lg" fullWidth disabled={busy || uploading || !fresh} onPress={() => void step()} /> : null}
       </Card> : null}
-
-      {claimed && evidencePhase ? (
-        <Card variant="booking" style={styles.block}>
-          <Txt variant="body" weight="bold">
-            {evidencePhase === 'before' ? copy.beforeEvidence : copy.afterEvidence}
-          </Txt>
-          <Txt variant="small" tone="secondary">
-            {copy.evidenceInstruction}
-          </Txt>
-          <View style={styles.evidenceActions}>
-            <View style={styles.photoGrid}>
-              {(['front', 'right', 'rear', 'left'] as const).map((angle) => (
-                <Button
-                  key={angle}
-                  label={capturedPhotoAngles.has(angle) ? `${copy.photoAngles[angle]} ✓` : copy.photoAngles[angle]}
-                  variant="secondary"
-                  disabled={uploading || has360 || capturedPhotoAngles.has(angle)}
-                  icon={<Camera size={theme.scale(16)} color={theme.text.primary} strokeWidth={2} />}
-                  onPress={() => capture('photo', angle)}
-                />
-              ))}
-            </View>
-            <Button
-              label={uploading ? copy.uploadingEvidence : copy.record360}
-              variant="secondary"
-              fullWidth
-              disabled={uploading || currentEvidenceReady}
-              icon={<Video size={theme.scale(17)} color={theme.text.primary} strokeWidth={2} />}
-              onPress={() => capture('video', '360')}
-            />
+      <View style={styles.block}>
+        {!showIncident ? <Button label={copy.openReport} variant="ghost" onPress={() => setShowIncident(true)} /> : <>
+          <Txt variant="heading" weight="bold">{copy.reportProblem}</Txt>
+          <View style={styles.actions}>
+            <Button label={copy.accessProblem} variant={incidentCategory === 'access' ? 'dark' : 'ghost'} onPress={() => setIncidentCategory('access')} />
+            <Button label={copy.otherProblem} variant={incidentCategory === 'other' ? 'dark' : 'ghost'} onPress={() => setIncidentCategory('other')} />
           </View>
-          <Txt variant="caption" tone={currentEvidenceReady ? 'action' : 'muted'}>
-            {currentEvidenceReady ? copy.evidenceReady : copy.evidenceProgress(capturedPhotoAngles.size)}
-          </Txt>
-        </Card>
-      ) : null}
-
-      {claimed ? <Card style={styles.block}>
-        <View style={styles.row}>
-          <MapPin size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} />
-          <Txt variant="label" weight="semibold" tone="muted">
-            {copy.address}
-          </Txt>
-        </View>
-        <Txt variant="body" weight="bold">
-          {a?.line || '—'}
-        </Txt>
-        <Txt variant="small" tone="secondary">
-          {[a?.district, a?.city].filter(Boolean).join('، ')}
-        </Txt>
-        {a?.notes ? (
-          <View style={styles.notes}>
-            <Txt variant="label" weight="semibold" tone="muted">
-              {copy.accessNotes}
-            </Txt>
-            <Txt variant="small">{a.notes}</Txt>
-          </View>
-        ) : null}
-        <Button label="الاتجاهات" variant="secondary" size="sm" onPress={openMaps} />
-      </Card> : null}
-
-      {claimed ? <Card style={styles.block}>
-        <View style={styles.row}><AlertTriangle size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} /><Txt variant="body" weight="bold">{copy.reportProblem}</Txt></View>
-        {!showIncident ? <Button label={copy.openReport} variant="ghost" size="sm" onPress={() => setShowIncident(true)} /> : <>
-          <View style={styles.incidentKinds}>
-            <Button label={copy.accessProblem} variant={incidentCategory === 'access' ? 'dark' : 'secondary'} size="sm" onPress={() => setIncidentCategory('access')} />
-            <Button label={copy.otherProblem} variant={incidentCategory === 'other' ? 'dark' : 'secondary'} size="sm" onPress={() => setIncidentCategory('other')} />
-          </View>
-          <Input label={copy.problemDetails} value={incidentNote} onChangeText={setIncidentNote} placeholder={copy.problemPlaceholder} />
-          <Button label={busy ? copy.working : copy.sendReport} disabled={busy || !incidentNote.trim()} onPress={sendIncident} />
-          <Button label={copy.cancel} variant="ghost" size="sm" onPress={() => setShowIncident(false)} />
+          <Input label={copy.problemDetails} value={incidentNote} onChangeText={setIncidentNote} placeholder={copy.problemPlaceholder} multiline maxLength={2000} />
+          <Button label={busy ? copy.working : copy.sendReport} fullWidth disabled={busy || uploading || !fresh || !incidentNote.trim()} onPress={() => void sendIncident()} />
+          <Button label={copy.cancel} variant="ghost" disabled={busy || !fresh} onPress={() => setShowIncident(false)} />
         </>}
-      </Card> : null}
-
-      <Card style={styles.block}>
-        <View style={styles.row}>
-          <Sparkles size={theme.scale(18)} color={theme.text.primary} strokeWidth={2} />
-          <Txt variant="label" weight="semibold" tone="muted">
-            {copy.extras}
-          </Txt>
-        </View>
-        <Txt variant="body">
-          {extras.length
-            ? extras.map((e) => copy.addOns[e.add_on_key] ?? e.add_on_key).join(' · ')
-            : copy.noExtras}
-        </Txt>
-      </Card>
-
-      {error ? (
-        <Txt variant="small" tone="danger" center>
-          {error}
-        </Txt>
-      ) : null}
-
-      {/* One action, and only the next one. Advancing is the whole job, so the
-          button is large and unmistakable — this is used one-handed, outdoors,
-          often with wet hands. */}
-      {claimed && next ? (
-        <Button
-          label={busy ? copy.working : copy.actions[next]}
-          size="lg"
-          fullWidth
-          disabled={busy || uploading || !requiredEvidenceReady}
-          onPress={step}
-        />
-      ) : claimed ? (
-        <Txt variant="body" weight="bold" center tone="action">
-          {copy.done}
-        </Txt>
-      ) : null}
-    </Screen>
-  );
+      </View>
+    </>}
+  </Screen>;
 }
 
 const styles = StyleSheet.create((theme) => ({
-  page: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[4], gap: theme.spacing[3] },
-  top: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[2] },
+  page: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[3], gap: theme.spacing[5] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3] },
   grow: { flex: 1 },
-  beats: { alignItems: 'center', gap: theme.spacing[2], paddingVertical: theme.spacing[4] },
-  block: { gap: theme.spacing[2] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[1] + 2 },
-  notes: {
-    gap: 2,
-    padding: theme.spacing[3],
-    borderRadius: theme.radius.sm,
-    borderCurve: 'continuous',
-    backgroundColor: theme.surface.bookingSoft,
-  },
-  evidenceActions: { gap: theme.spacing[2] },
+  destination: { gap: theme.spacing[2] },
+  block: { gap: theme.spacing[3], boxShadow: undefined },
+  progress: { backgroundColor: theme.surface.bookingSoft, borderRadius: theme.radius.lg, padding: theme.spacing[5], gap: theme.spacing[3] },
+  notes: { gap: theme.spacing[2], padding: theme.spacing[4], borderRadius: theme.radius.md, backgroundColor: theme.surface.bookingSoft },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: theme.spacing[2] },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
-  incidentKinds: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
+  angle: { minWidth: '45%', flex: 1, paddingVertical: theme.spacing[3], gap: theme.spacing[1], alignItems: 'center' },
+  error: { paddingVertical: theme.spacing[2] },
 }));

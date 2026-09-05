@@ -1,4 +1,4 @@
-import { clearSession, loadSession, refreshSession } from './auth';
+import { AuthError, clearSession, getSessionGeneration, loadSession, refreshSession } from './auth';
 
 /**
  * The API, which is the only thing this app talks to.
@@ -17,12 +17,16 @@ export class ApiError extends Error {
 
 interface ErrorPayload { error?: { code?: string } }
 
-async function authorizedFetch(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
+async function authorizedFetch(path: string, init: RequestInit = {}, retry = true, generation = getSessionGeneration()): Promise<Response> {
   const session = await loadSession();
+  if (generation !== getSessionGeneration()) throw new ApiError('unauthorized');
   let response: Response;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
     response = await fetch(`${API}${path}`, {
       ...init,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...(session ? { Authorization: `Bearer ${session.accessToken}` } : {}),
@@ -31,21 +35,28 @@ async function authorizedFetch(path: string, init: RequestInit = {}, retry = tru
     });
   } catch {
     throw new ApiError('offline');
+  } finally {
+    clearTimeout(timer);
   }
+  if (generation !== getSessionGeneration()) throw new ApiError('unauthorized');
   if (response.status === 401 && retry && session?.refreshToken) {
     try {
-      await refreshSession(session);
-      return authorizedFetch(path, init, false);
-    } catch {
-      await clearSession();
+      await refreshSession(session, generation);
+      return authorizedFetch(path, init, false, generation);
+    } catch (error) {
+      if (generation !== getSessionGeneration()) throw new ApiError('unauthorized');
+      if (error instanceof AuthError && error.code === 'offline') throw new ApiError('offline');
+      await clearSession(generation).catch(() => undefined);
     }
   }
   return response;
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const generation = getSessionGeneration();
   const res = await authorizedFetch(path, init);
   const json = await res.json().catch(() => ({}));
+  if (generation !== getSessionGeneration()) throw new ApiError('unauthorized');
   if (!res.ok) throw new ApiError((json as ErrorPayload).error?.code ?? 'unknown');
   return json as T;
 }
@@ -60,6 +71,9 @@ export interface SavedAddress {
   lng: number | null;
   notes: string;
   is_default: boolean;
+  villa_number: string | null;
+  coverage_area_id: string | null;
+  coverage_block_id: string | null;
 }
 
 export function saveAddress(input: {
@@ -70,6 +84,7 @@ export function saveAddress(input: {
   lat?: number;
   lng?: number;
   notes: string;
+  villaNumber: string;
 }): Promise<{ address: SavedAddress }> {
   return call('/me/addresses', { method: 'POST', body: JSON.stringify({ ...input, isDefault: true }) });
 }
@@ -157,10 +172,41 @@ export function fetchCatalogue(): Promise<Catalogue> {
   return call('/catalogue');
 }
 
+export interface CoverageArea {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  city: string;
+  center_lat: number;
+  center_lng: number;
+  boundary: Array<{ lat: number; lng: number }>;
+  boundary_verified: boolean;
+}
+export const listCoverageAreas = (): Promise<{ areas: CoverageArea[] }> => call('/catalogue/coverage');
+
+export interface Coverage {
+  status: 'outside' | 'villaRequired' | 'villaUnavailable' | 'covered' | 'areaUnavailable';
+  area: { id: string; name: { ar: string; en: string }; city: string } | null;
+  block: { id: string; code: string; name: { ar: string; en: string } } | null;
+  team: { id: string; name: { ar: string; en: string } } | null;
+  villaNumber: string | null;
+}
+
+export function checkCoverage(lat: number, lng: number, villaNumber?: string): Promise<Coverage> {
+  const query = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+  if (villaNumber) query.set('villaNumber', villaNumber);
+  return call(`/catalogue/coverage?${query}`);
+}
+
+export const hasVillaAddress = (address: SavedAddress | null | undefined): boolean =>
+  Boolean(address?.villa_number && address.coverage_area_id && address.coverage_block_id
+    && address.lat != null && address.lng != null);
+
 export interface Availability {
   date: string;
   closed: boolean;
-  reason: 'friday' | 'full' | 'outsideServiceArea' | null;
+  reason: 'friday' | 'full' | 'outsideServiceArea' | 'villaRequired' | 'villaUnavailable' | 'areaUnavailable' | 'coverageUnavailable' | null;
+  coverage?: Coverage;
   covered: boolean;
   team: null | {
     id: string;
@@ -176,8 +222,8 @@ export interface Availability {
   }>;
 }
 
-export function fetchAvailability(lat: number, lng: number, date: string): Promise<Availability> {
-  const query = new URLSearchParams({ lat: String(lat), lng: String(lng), date });
+export function fetchAvailability(lat: number, lng: number, date: string, villaNumber: string): Promise<Availability> {
+  const query = new URLSearchParams({ lat: String(lat), lng: String(lng), date, villaNumber });
   return call(`/catalogue/availability?${query}`);
 }
 
@@ -296,6 +342,8 @@ export interface RealMembership {
   cycle_end: string;
   payment_confirmed: boolean;
   usedThisWeek: number;
+  /** Original selected days/times in Riyadh; omitted by older API versions. */
+  weeklySchedule?: Array<{ weekday: number; time: string }>;
   plans: { id: string; name_ar: string; name_en: string; price_minor: number; weekly: number };
 }
 

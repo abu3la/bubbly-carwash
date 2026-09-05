@@ -1,4 +1,4 @@
-import { LedgerRow, LedgerTotal } from '@sama/ui-web';
+import { LedgerRow, LedgerTotal } from '@bubbles/ui-web';
 
 export const PaymentSummary = () => (
   <div style={{ maxWidth: 360 }}>

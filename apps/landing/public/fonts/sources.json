@@ -1,0 +1,47 @@
+[
+  {
+    "file": "ibm-plex-0.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXEKVElMYYaJe8bpLHnCwDKhdTEG46kmUZQCX598fQbM4jw8V78x9OWIhqbQ6g9.ttf",
+    "sha256": "20cce584e83aebf7f7188abf9e3b47c20d84d7cfdd3450b2f97063c187a85aae"
+  },
+  {
+    "file": "ibm-plex-1.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSD6llzAA.ttf",
+    "sha256": "6dbe082463cf749cfa057d45c3048c90f4df031496498e5b5bdfd0b6babb9d16"
+  },
+  {
+    "file": "ibm-plex-2.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSD2FlzAA.ttf",
+    "sha256": "6f7a8c4219e021ff7c9131bc5f1f7af97bcd1436a59578d444a8cb92e9791742"
+  },
+  {
+    "file": "ibm-plex-3.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSDNF5zAA.ttf",
+    "sha256": "5311c66fd6d04ae45671236f7eae667b671c06c1dc7e88d52c206e5fadd0fb21"
+  },
+  {
+    "file": "ibm-plex-4.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSDDV5zAA.ttf",
+    "sha256": "e129a20e8ff7c907ffd07124b573e88c323b7b18afc934d4aa539a3e0f2fe100"
+  },
+  {
+    "file": "ibm-plex-5.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6bs6.ttf",
+    "sha256": "02609c5ef845ef511676c8badb24d1fc8b4aed3dc3b9d8bbdab22c14431b7c16"
+  },
+  {
+    "file": "ibm-plex-6.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3NZRtWPQCuHme67tEYUIx3Kh0PHR9N6YPO_9CT.ttf",
+    "sha256": "1fe214ca7ff822ff8b73e5bb9584414bfc6c845e7ddab41f24ac4fce8e55a860"
+  },
+  {
+    "file": "ibm-plex-7.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3NZRtWPQCuHme67tEYUIx3Kh0PHR9N6YPi-NCT.ttf",
+    "sha256": "9e8b030f3326946e481c874a2f751c1321cb0708cba81b79e6c3f9ffacc931df"
+  },
+  {
+    "file": "ibm-plex-8.ttf",
+    "source": "https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3NZRtWPQCuHme67tEYUIx3Kh0PHR9N6YOG-dCT.ttf",
+    "sha256": "05616a64c5dca137a327b30b1fe7f4fcd1e16892a332e1665b49d52038858044"
+  }
+]

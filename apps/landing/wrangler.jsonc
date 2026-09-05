@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bubbly-landing",
+  "name": "bubbles-site",
+  "account_id": "57118b773c4166fafe8b041d792cb2ef",
+  "workers_dev": true,
+  "routes": [{ "pattern": "bubblescarwash.co/*", "zone_name": "bubblescarwash.co" }],
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],

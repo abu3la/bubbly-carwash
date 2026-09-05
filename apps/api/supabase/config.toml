@@ -255,7 +255,7 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
-# Phone is the only way into Sama — the onboarding is phone-first by design.
+# Phone is the only way into Bubbles — the onboarding is phone-first by design.
 enable_signup = true
 enable_confirmations = true
 # Template for sending OTP to users
@@ -277,7 +277,7 @@ max_frequency = "5s"
 966500000002 = "222222"
 
 # Delivery is ours, not Supabase's. Its built-in providers are Twilio,
-# MessageBird, Vonage and Textlocal — none of which we will use, because Sama
+# MessageBird, Vonage and Textlocal — none of which we will use, because Bubbles
 # sends to Saudi numbers where the sensible providers are local (Taqnyat,
 # Msegat). Supabase generates the code and hands it to the Worker; the Worker
 # delivers it. Swapping providers is then our code, not a vendor migration.

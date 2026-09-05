@@ -61,6 +61,7 @@ export function Input({ label, hint, error, ltr, containerStyle, ...rest }: Inpu
       ) : null}
       <TextInput
         {...rest}
+        accessibilityLabel={rest.accessibilityLabel ?? label}
         onFocus={(e) => {
           setFocused(true);
           rest.onFocus?.(e);
@@ -84,7 +85,8 @@ export function Input({ label, hint, error, ltr, containerStyle, ...rest }: Inpu
 const styles = StyleSheet.create((theme) => ({
   field: { gap: theme.spacing[1] + 2 },
   input: (focused: boolean, error: boolean) => ({
-    height: theme.scale(44),
+    minHeight: theme.scale(48),
+    paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.scale(14),
     fontFamily: theme.font.regular,
     fontSize: theme.fontSize.body,

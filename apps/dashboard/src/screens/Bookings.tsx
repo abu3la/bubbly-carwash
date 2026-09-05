@@ -5,7 +5,7 @@ const STATUS_AR: Record<string, string> = {
   scheduled: 'مجدول', active: 'جارٍ', done: 'مكتمل', cancelled: 'ملغى', missed: 'فات الموعد',
 };
 const SOURCE_AR: Record<string, string> = {
-  club: 'النادي', package: 'باقة', cash: 'دفع مباشر',
+  club: 'باقة شهرية', package: 'باقة', cash: 'دفع مباشر',
 };
 const STAGE_AR: Record<string, string> = {
   booked: 'محجوز', arrived: 'وصل الفريق', washed: 'اكتمل الغسيل', verified: 'تم التوثيق',

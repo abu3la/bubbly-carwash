@@ -1,5 +1,5 @@
 {
-  "name": "@sama/driver-app",
+  "name": "@bubbles/driver-app",
   "version": "0.0.0",
   "private": true,
   "main": "index.js",
@@ -15,8 +15,8 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-firebase/app": "^26.3.3",
     "@react-native-firebase/messaging": "^26.3.3",
-    "@sama/design-tokens": "workspace:*",
-    "@sama/ui-native": "workspace:*",
+    "@bubbles/design-tokens": "workspace:*",
+    "@bubbles/ui-native": "workspace:*",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.0",
     "expo-font": "~14.0.9",

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BOOKING_STATUSES } from '@sama/types';
+import { BOOKING_STATUSES } from '@bubbles/types';
 
 export const geoPointSchema = z.object({
   lat: z.number().min(-90).max(90),

@@ -48,18 +48,40 @@ assert.deepEqual(
 );
 assert.deepEqual(catalogue.slots.map((slot) => slot.period), ['morning', 'afternoon', 'night']);
 
-const friday = await request(`/catalogue/availability?lat=21.4225&lng=39.8262&date=${nextWeekday(5)}`);
-assert.deepEqual(
-  { closed: friday.closed, reason: friday.reason, covered: friday.covered, slots: friday.slots },
-  { closed: true, reason: 'friday', covered: false, slots: [] },
-);
+const coverageDiscovery = await request('/catalogue/coverage');
+const sharbatly = coverageDiscovery.areas.find((area) => area.id === 'sharbatly-village');
+assert.ok(sharbatly, 'Sharbatly Village must be the initial active service area');
+assert.equal(sharbatly.name_en, 'Sharbatly Village');
+// A representative map center is not an approved boundary or a covered villa.
+const pin = new URLSearchParams({
+  lat: process.env.BUBBLES_COVERAGE_TEST_LAT ?? String(sharbatly.center_lat),
+  lng: process.env.BUBBLES_COVERAGE_TEST_LNG ?? String(sharbatly.center_lng),
+});
+const withoutVilla = await request(`/catalogue/availability?${pin}&date=${nextWeekday(6)}`);
+assert.equal(withoutVilla.covered, false);
+assert.deepEqual(withoutVilla.slots, []);
+assert.ok(['villaRequired', 'coverageUnavailable', 'outsideServiceArea'].includes(withoutVilla.reason));
+const oldMakkah = await request(`/catalogue/availability?lat=21.4225&lng=39.8262&date=${nextWeekday(6)}`);
+assert.equal(oldMakkah.covered, false, 'The old Makkah radius must not grant coverage');
+assert.deepEqual(oldMakkah.slots, []);
+await request('/catalogue/coverage?lat=&lng=', {}, 400);
 
-const saturday = await request(`/catalogue/availability?lat=21.4225&lng=39.8262&date=${nextWeekday(6)}`);
-assert.equal(saturday.closed, false);
-assert.equal(saturday.covered, true);
-assert.equal(saturday.team?.id, 'team-1');
-assert.equal(saturday.team?.dailyCapacity, 40);
-assert.deepEqual(saturday.slots.map((slot) => slot.period), ['morning', 'afternoon', 'night']);
+let registeredVillaAndFriday = 'not tested: supply BUBBLES_COVERAGE_TEST_VILLA and coordinates inside the verified boundary';
+if (process.env.BUBBLES_COVERAGE_TEST_VILLA) {
+  pin.set('villaNumber', process.env.BUBBLES_COVERAGE_TEST_VILLA);
+  const eligibility = await request(`/catalogue/coverage?${pin}`);
+  assert.equal(eligibility.status, 'covered', 'The explicit test villa must be registered and enabled');
+  assert.ok(eligibility.block?.id && eligibility.team?.id);
+  const friday = await request(`/catalogue/availability?${pin}&date=${nextWeekday(5)}`);
+  assert.equal(friday.closed, true);
+  assert.equal(friday.reason, 'friday');
+  assert.deepEqual(friday.slots, []);
+  const saturday = await request(`/catalogue/availability?${pin}&date=${nextWeekday(6)}`);
+  assert.equal(saturday.covered, true);
+  if (saturday.team) assert.equal(saturday.team.id, eligibility.team.id);
+  assert.ok(saturday.slots.every((slot) => slot.remaining > 0));
+  registeredVillaAndFriday = 'passed';
+}
 
 await request('/bookings', {}, 401);
 await request('/auth/verify', {
@@ -78,7 +100,7 @@ const me = await request('/me', { headers: authorized });
 assert.equal(me.profile.role, 'customer');
 
 const places = await request(
-  `/places/autocomplete?q=${encodeURIComponent('الكعبة')}&lat=21.4225&lng=39.8262&language=ar`,
+  `/places/autocomplete?q=${encodeURIComponent('Sharbatly Village')}&lat=21.6054953&lng=39.2002795&language=ar`,
   { headers: authorized },
 );
 assert.ok(places.suggestions.length > 0, 'Google Places returned no suggestions');
@@ -90,6 +112,7 @@ assert.ok(Number.isFinite(selected.place.lat) && Number.isFinite(selected.place.
 
 await request('/driver/jobs', { headers: authorized }, 403);
 await request('/admin/bookings', { headers: authorized }, 403);
+await request('/admin/coverage', { headers: authorized }, 403);
 
 const dashboard = await fetch(DASHBOARD);
 assert.equal(dashboard.status, 200);
@@ -102,8 +125,10 @@ console.log(JSON.stringify({
   checks: {
     dependencies: true,
     catalogue: true,
-    fridayClosed: true,
-    makkahTeamCapacity: true,
+    sharbatlyCoverageDiscovery: true,
+    missingVillaRejected: true,
+    legacyMakkahRadiusRejected: true,
+    registeredVillaAndFriday,
     authAndRoleGates: true,
     googlePlaces: true,
   },
