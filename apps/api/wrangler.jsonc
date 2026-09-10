@@ -7,6 +7,7 @@
   // sharing one means a rename on either side breaks the other's URLs.
   "account_id": "de8c4462ba0c1c0449f99aa8dbb71870",
   "main": "src/index.ts",
+  "assets": { "directory": "./public", "binding": "CHECKOUT_ASSETS", "run_worker_first": true },
   "compatibility_date": "2026-08-01",
   "triggers": {
     "crons": ["*/5 * * * *"]

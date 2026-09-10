@@ -9,7 +9,8 @@
     "deploy:dev": "wrangler deploy --config wrangler.dev.jsonc",
     "deploy:dev:triggers": "wrangler triggers deploy --config wrangler.dev.jsonc",
     "lint": "eslint .",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:checkout": "node --test src/checkout/*.test.cjs"
   },
   "dependencies": {
     "@bubbles/types": "workspace:*",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260831.1",
+    "@electric-sql/pglite": "^0.5.8",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2",
     "wrangler": "^4.128.0"
