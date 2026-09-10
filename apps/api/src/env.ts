@@ -13,6 +13,10 @@ export interface Env {
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   MOYASAR_SECRET_KEY?: string;
+  MOYASAR_PUBLISHABLE_KEY?: string;
+  MOYASAR_APPLE_PAY_VALIDATION_URL?: string;
+  MOYASAR_RENEWAL_CALLBACK_URL?: string;
+  CHECKOUT_ASSETS?: Fetcher;
   MOYASAR_WEBHOOK_SECRET?: string;
 
   /** Signs Supabase's auth hooks. Without it the SMS hook refuses to run. */

@@ -1,3 +1,5 @@
+import { enableConsentedRenewal } from '../checkout/billing';
+import { checkoutUrl } from '../checkout/session';
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
@@ -92,10 +94,15 @@ membershipsRoute.get('/current', async (c) => {
       `membership_signup_slots?membership_id=eq.${encodeURIComponent(membership.id)}&select=slot_start&order=slot_start`,
     ),
   ]);
+  const billing = c.env.MOYASAR_PUBLISHABLE_KEY
+    ? (await db<{ enabled: boolean; next_charge_at: string; amount_minor: number }>(c.env,
+        `membership_billing?membership_id=eq.${membership.id}&profile_id=eq.${caller.id}&select=enabled,next_charge_at,amount_minor`))[0]
+    : undefined;
   return c.json({
     membership: {
       ...membership,
       usedThisWeek: Number(usage ?? 0),
+      renewal: billing ? { enabled: billing.enabled, nextChargeAt: billing.next_charge_at, amountMinor: billing.amount_minor } : null,
       weeklySchedule: membershipWeeklySchedule(signupSlots),
     },
   });
@@ -245,7 +252,7 @@ membershipsRoute.post('/checkout', async (c) => {
     });
     return c.json({
       membershipId: membership.id,
-      checkoutUrl: invoice.url,
+      checkoutUrl: await checkoutUrl(c.env, origin, invoice.id),
       occurrenceCount: expandedSlots.length,
     }, 201);
   } catch (error) {
@@ -257,6 +264,14 @@ membershipsRoute.post('/checkout', async (c) => {
   }
 });
 
+membershipsRoute.post('/current/renewal/cancel', async (c) => {
+  const caller = c.get('caller');
+  const changed = await db(c.env, `membership_billing?profile_id=eq.${caller.id}&enabled=eq.true`, {
+    method: 'PATCH', prefer: 'return=representation', body: { enabled: false, cancelled_at: new Date().toISOString() },
+  });
+  return c.json({ cancelled: true, changed: changed.length > 0 });
+});
+
 membershipsRoute.post('/current/cancel', async (c) => {
   const caller = c.get('caller');
   const [membership] = await db<{ id: string }>(
@@ -264,6 +279,9 @@ membershipsRoute.post('/current/cancel', async (c) => {
     `memberships?profile_id=eq.${caller.id}&state=eq.active&payment_confirmed=eq.true&select=id`,
   );
   if (!membership) return c.json({ error: { code: 'notFound' } }, 404);
+  if (c.env.MOYASAR_PUBLISHABLE_KEY) await db(c.env, `membership_billing?membership_id=eq.${membership.id}&profile_id=eq.${caller.id}`, {
+    method: 'PATCH', prefer: 'return=minimal', body: { enabled: false, cancelled_at: new Date().toISOString() },
+  });
   const [futureBookingsCancelled] = await db<number>(c.env, 'rpc/cancel_membership', {
     method: 'POST',
     body: { p_membership: membership.id, p_profile: caller.id },
@@ -292,6 +310,7 @@ membershipsRoute.post('/:id/confirm', async (c) => {
       return c.json({ error: { code: 'paymentMismatch' } }, 409);
     }
     try {
+      await enableConsentedRenewal(c.env, invoice, id, caller.id);
       await db(c.env, 'rpc/activate_membership_with_slots', {
         method: 'POST', body: { p_membership: id, p_profile: caller.id },
       });

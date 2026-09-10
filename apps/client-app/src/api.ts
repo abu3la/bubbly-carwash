@@ -335,6 +335,7 @@ export const unregisterPushToken = (deviceToken: string) =>
 /* ------------------------------------------------------------- memberships */
 
 export interface RealMembership {
+  renewal?: { enabled: boolean; nextChargeAt: string; amountMinor: number } | null;
   id: string;
   plan_id: string;
   state: 'active' | 'paused' | 'cancelled';
@@ -360,3 +361,5 @@ export const abandonMembership = (id: string): Promise<{ cancelled: true }> =>
   call(`/memberships/${id}/abandon`, { method: 'POST' });
 export const cancelMembership = (): Promise<{ cancelled: true }> =>
   call('/memberships/current/cancel', { method: 'POST' });
+
+export const cancelMembershipRenewal = (): Promise<{ cancelled: boolean }> => call('/memberships/current/renewal/cancel', { method: 'POST' });

@@ -1,3 +1,4 @@
+import { checkoutUrl } from '../checkout/session';
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
@@ -196,7 +197,7 @@ bookingsRoute.post('/', async (c) => {
           provider_ref: invoice.id,
         },
       });
-      return c.json({ booking, checkoutUrl: invoice.url }, 201);
+      return c.json({ booking, checkoutUrl: await checkoutUrl(c.env, origin, invoice.id) }, 201);
     } catch (error) {
       console.error('[bookings] payment checkout failed', error);
       await db(c.env, `bookings?id=eq.${booking.id}`, {

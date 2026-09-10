@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, View } from 'react-native';
+import { BackHandler, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { StyleSheet } from 'react-native-unistyles';
-import { Button, Screen, Txt, useLocale } from '@bubbles/ui-native';
+import { BeatIcon, Button, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { API_ORIGIN } from '../api';
 import { FlowHeader } from './FlowHeader';
 
@@ -13,10 +13,14 @@ interface MoyasarCheckoutProps {
   onResult: (result: CheckoutResult) => void;
 }
 
+const localPreview = __DEV__ && process.env.EXPO_PUBLIC_CHECKOUT_PREVIEW === '1';
+const isLocalPreview = (url: URL) => localPreview && url.origin === 'http://localhost:4189';
+
 function isMoyasarCheckoutUrl(value: string) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'checkout.moyasar.com';
+    return isLocalPreview(url) || url.protocol === 'https:' && (url.hostname === 'checkout.moyasar.com'
+      || (url.origin === API_ORIGIN && /^\/payments\/checkout\/[0-9a-f-]{36}$/i.test(url.pathname)));
   } catch {
     return false;
   }
@@ -35,6 +39,11 @@ export function MoyasarCheckout({ checkoutUrl, onResult }: MoyasarCheckoutProps)
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const trustedCheckoutUrl = isMoyasarCheckoutUrl(checkoutUrl);
+  const browserUrl = trustedCheckoutUrl ? new URL(checkoutUrl) : null;
+  if (browserUrl?.origin === API_ORIGIN) {
+    browserUrl.searchParams.set('app', '1');
+    browserUrl.searchParams.set('lang', language);
+  }
 
   const finish = useCallback((result: CheckoutResult) => {
     if (handled.current) return;
@@ -61,7 +70,7 @@ export function MoyasarCheckout({ checkoutUrl, onResult }: MoyasarCheckoutProps)
         finish(parsed.searchParams.get('result') === 'success' ? 'success' : 'cancel');
         return false;
       }
-      return parsed.protocol === 'https:' || parsed.protocol === 'about:';
+      return isLocalPreview(parsed) || parsed.protocol === 'https:' || parsed.protocol === 'about:';
     } catch {
       return false;
     }
@@ -95,28 +104,32 @@ export function MoyasarCheckout({ checkoutUrl, onResult }: MoyasarCheckoutProps)
   return (
     <Screen contentStyle={styles.screen}>
       <FlowHeader
-        title={ar ? 'الدفع الآمن' : 'Secure payment'}
+        title={ar ? 'الدفع' : 'Payment'}
         onBack={() => finish('cancel')}
       />
       <View style={styles.browser}>
         <WebView
           key={reloadKey}
-          source={{ uri: checkoutUrl }}
-          originWhitelist={['https://*']}
+          source={{ uri: browserUrl!.toString() }}
+          originWhitelist={localPreview ? ['https://*', 'http://localhost:4189'] : ['https://*']}
           javaScriptEnabled
           domStorageEnabled
-          sharedCookiesEnabled
+          enableApplePay
           thirdPartyCookiesEnabled
           mixedContentMode="never"
           startInLoadingState
           setSupportMultipleWindows={false}
           onShouldStartLoadWithRequest={(request) => inspectNavigation(request.url)}
           onError={() => setFailed(true)}
+          onHttpError={(event) => {
+            if (event.nativeEvent.url === browserUrl?.toString() && event.nativeEvent.statusCode >= 400) setFailed(true);
+          }}
+          onContentProcessDidTerminate={() => setFailed(true)}
           renderLoading={() => (
             <View style={styles.loading}>
-              <ActivityIndicator />
+              <BeatIcon size="md" animate />
               <Txt variant="small" tone="secondary">
-                {ar ? 'نحمّل وسائل الدفع من ميسر…' : 'Loading Moyasar payment methods…'}
+                {ar ? 'جار تحميل وسائل الدفع…' : 'Loading Moyasar payment methods…'}
               </Txt>
             </View>
           )}
@@ -131,7 +144,7 @@ const styles = StyleSheet.create((theme) => ({
   browser: {
     flex: 1,
     marginTop: theme.spacing[3],
-    backgroundColor: theme.surface.card,
+    backgroundColor: theme.surface.page,
   },
   loading: {
     position: 'absolute',

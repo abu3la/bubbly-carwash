@@ -55,10 +55,10 @@ export default function ClubReview() {
         </View>
         <View style={styles.secure}>
           <ShieldCheck size={theme.scale(16)} color={theme.text.secondary} strokeWidth={2} />
-          <Txt variant="caption" tone="secondary" style={styles.secureText}>{ar ? 'سيظهر الدفع المستضاف والآمن من ميسر داخل التطبيق. لا نخزن بيانات بطاقتك.' : 'Moyasar secure hosted checkout will appear inside the app. We do not store your card details.'}</Txt>
+          <Txt variant="caption" tone="secondary" style={styles.secureText}>{ar ? 'اختيار وسيلة الدفع في الخطوة التالية.' : 'Choose a payment method in the next step.'}</Txt>
         </View>
         <Card style={styles.consent}>
-          <Checkbox label={ar ? `أوافق على اشتراك لمدة 30 يومًا بقيمة ${priceMinor / 100} ر.س.` : `I agree to a 30-day subscription of ${priceMinor / 100} SAR.`} checked={consented} onChange={setConsented} />
+          <Checkbox label={ar ? `أوافق على اشتراك بقيمة ${priceMinor / 100} ر.س يتجدد تلقائيًا كل 30 يومًا حتى إلغاء التجديد.` : `I agree to a subscription of ${priceMinor / 100} SAR, renewing every 30 days until renewal is cancelled.`} checked={consented} onChange={setConsented} />
         </Card>
         <Button label={ar ? 'الانتقال للدفع' : 'Continue to payment'} size="lg" fullWidth disabled={!plan || !vehicle || !hasVillaAddress(address) || !consented || draft.slots.length !== weekly} onPress={() => router.push('/club/processing')} />
       </View>

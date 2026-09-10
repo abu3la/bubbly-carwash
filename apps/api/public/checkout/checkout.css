@@ -1,0 +1,797 @@
+@font-face {
+  font-family: Plex;
+  src: url('/checkout/assets/ibm-plex-5.ttf');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Plex;
+  src: url('/checkout/assets/ibm-plex-6.ttf');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Plex;
+  src: url('/checkout/assets/ibm-plex-7.ttf');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: Plex;
+  src: url('/checkout/assets/ibm-plex-8.ttf');
+  font-weight: 700;
+  font-display: swap;
+}
+:root {
+  --page: #fafaf5;
+  --card: #fff;
+  --ice: #bdeeff;
+  --ink: #17162e;
+  --secondary: #555467;
+  --violet: #5a42ff;
+  --guava: #ff5e7e;
+  --yellow: #ffd84d;
+  --radius: 28px;
+  --shadow: 0 2px 5px #17162e06, 0 6px 20px #17162e08;
+  color-scheme: light;
+  font-family: Plex, sans-serif;
+  color: var(--ink);
+  background: var(--page);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+a {
+  color: var(--ink);
+}
+[hidden] {
+  display: none !important;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid #5a42ff80;
+  outline-offset: 4px;
+}
+button {
+  cursor: pointer;
+}
+h1,
+h2,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 22px;
+  line-height: 1.65;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 24px;
+  line-height: 1.6;
+  font-weight: 700;
+}
+p {
+  line-height: 1.85;
+}
+.checkout-shell {
+  max-width: 1056px;
+  margin: 0 auto;
+  padding: 40px max(24px, env(safe-area-inset-left)) max(32px, env(safe-area-inset-bottom));
+}
+.brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 36px;
+}
+.brand-header img {
+  display: block;
+  width: 173px;
+  height: 28px;
+  object-fit: contain;
+}
+.secure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.secure svg,
+.payment-footer svg {
+  flex-shrink: 0;
+}
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: 28px;
+  align-items: start;
+}
+.order-column {
+  display: grid;
+  gap: 16px;
+}
+.order-card {
+  padding: 24px;
+  border-radius: var(--radius);
+}
+.booking {
+  background: var(--ice);
+}
+.membership {
+  background: var(--ink);
+  color: #fff;
+}
+.order-top {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+.order-top > span:last-child {
+  font-weight: 600;
+}
+.order-description {
+  font-size: 14px;
+  margin-top: 4px;
+}
+.order-detail {
+  font-size: 14px;
+  margin-top: 8px;
+}
+.membership .order-description,
+.membership .order-detail,
+.membership .order-top {
+  color: #dedde7;
+}
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.plan-price > .money {
+  font-size: 32px;
+  font-weight: 700;
+}
+.plan-price > span:last-child {
+  font-size: 14px;
+  color: #dedde7;
+}
+.money {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.money > span {
+  font-size: 0.72em;
+  font-weight: 500;
+}
+.schedule {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed #17162e40;
+}
+.membership .schedule {
+  border-color: #ffffff40;
+}
+.schedule > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.schedule span {
+  font-size: 13px;
+}
+.schedule bdi {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.totals-card {
+  background: var(--card);
+  padding: 22px 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 14px;
+}
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  font-size: 14px;
+}
+.ledger-row > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.grand-total {
+  margin-top: 4px;
+  padding-top: 10px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.grand-total strong {
+  font-size: 18px;
+}
+.grand-total small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--secondary);
+  margin-top: 4px;
+}
+.renewal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--secondary);
+}
+.renewal-row time {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.order-note {
+  font-size: 13px;
+  padding: 0 6px;
+  color: var(--secondary);
+}
+.payment-card {
+  padding: 26px 28px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.payment-lead {
+  font-size: 14px;
+  color: var(--secondary);
+  margin: 4px 0 24px;
+}
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.9;
+  margin-bottom: 22px;
+  cursor: pointer;
+}
+.consent input {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  accent-color: var(--violet);
+  margin: 2px 0 0;
+}
+.notice {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #eeebff;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-block: 16px;
+}
+.error {
+  color: #8d2340;
+  background: #fff0f3;
+}
+.loading {
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  padding: 42px 12px;
+  color: var(--secondary);
+  font-size: 14px;
+}
+.beat {
+  display: flex;
+  gap: 7px;
+  direction: ltr;
+  padding: 5px;
+}
+.beat i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--violet);
+  animation: beat 1.2s ease-in-out infinite;
+}
+.beat i:nth-child(2) {
+  background: var(--guava);
+  animation-delay: 0.2s;
+}
+.beat i:nth-child(3) {
+  background: var(--yellow);
+  animation-delay: 0.4s;
+}
+@keyframes beat {
+  50% {
+    transform: scale(1.25);
+  }
+}
+.primary-action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px;
+  border: 0;
+  border-radius: 26px;
+  background: var(--violet);
+  color: #fff;
+  font-weight: 600;
+  line-height: 1.8;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px 20px;
+  width: 100%;
+  margin-top: 20px;
+}
+.primary-action:hover {
+  background: #4a33e6;
+}
+.text-action {
+  display: block;
+  text-align: center;
+  margin-top: 18px;
+  font-size: 14px;
+  text-underline-offset: 4px;
+}
+.payment-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 22px;
+}
+.checkout-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--secondary);
+  font-size: 12px;
+  margin-top: 28px;
+  padding-inline: 8px;
+}
+.checkout-footer bdi {
+  margin-inline-start: 6px;
+}
+.checkout-footer a {
+  text-underline-offset: 4px;
+}
+.result-mark {
+  font-family: sans-serif;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--yellow);
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  margin: 10px auto 24px;
+}
+.result-layout .payment-card {
+  text-align: center;
+}
+.result-layout .payment-card > p {
+  font-size: 14px;
+  color: var(--secondary);
+  margin-top: 12px;
+}
+.preview-note {
+  background: #eeebff;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 12px;
+  margin-bottom: 20px;
+  color: var(--ink);
+}
+/* Keep Moyasar's actual fields, brand assets, validation and wallet controls. */
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form {
+  font-family: Plex, sans-serif;
+  text-align: start;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-moyasarForm {
+  width: 100%;
+  font-family: inherit;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-label {
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.8;
+  font-weight: 600;
+  color: var(--ink);
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-labelGroup {
+  margin-bottom: 6px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-input {
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.8;
+  min-height: 50px;
+  border: 1.5px solid #17162e29;
+  border-radius: 14px !important;
+  box-shadow: none;
+  background: var(--card);
+  color: var(--ink);
+  padding: 10px 14px;
+  transition: border-color 120ms ease;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-input:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px #5a42ff25;
+  outline: 0;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-inputError {
+  border-color: #be2c50;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-inputGroup {
+  margin-bottom: 16px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-cardInfo {
+  display: flex;
+  gap: 12px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-cardInfoElement {
+  min-width: 0;
+  flex: 1;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-cardInfoHalfWidth {
+  width: calc(50% - 6px);
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button {
+  background: var(--violet);
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 52px;
+  line-height: 1.8 !important;
+  border-radius: 26px;
+  box-shadow: none;
+  overflow: visible;
+  transform: none;
+  padding: 12px 18px !important;
+  margin-top: 6px;
+  transition: background 120ms ease;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button:hover {
+  background: #4a33e6;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button:disabled {
+  background: #e4e0f5;
+  color: #68607d;
+  opacity: 1;
+  cursor: default;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button:focus-visible {
+  outline: 3px solid #5a42ff80;
+  outline-offset: 4px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-ccIconsGroup {
+  gap: 6px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-ccIcon {
+  box-shadow: none;
+  border: 0;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-applePayButton {
+  min-height: 50px;
+  border-radius: 25px;
+  box-shadow: none;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-dividerParagraph {
+  font-family: inherit;
+  color: var(--secondary);
+  font-size: 12px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-inputAlert,
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-formError {
+  font-family: inherit;
+  color: #a32045;
+  line-height: 1.7;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-alertDanger {
+  border: 0;
+  background: #fff0f3;
+  border-radius: 14px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-footer {
+  margin-top: 18px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-input::placeholder {
+  color: #767385;
+  opacity: 1;
+}
+@media (max-width: 700px) {
+  .checkout-shell {
+    max-width: 460px;
+    padding: 20px max(20px, env(safe-area-inset-left)) max(32px, env(safe-area-inset-bottom));
+  }
+  .brand-header {
+    gap: 12px;
+    padding-bottom: 24px;
+  }
+  .brand-header img {
+    width: 148px;
+    height: 24px;
+  }
+  .secure {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .checkout-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .order-card {
+    padding: 20px;
+  }
+  .order-top {
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  .totals-card {
+    padding: 20px;
+  }
+  .payment-card {
+    padding: 22px 20px;
+  }
+  h2 {
+    font-size: 22px;
+  }
+  .payment-lead {
+    margin-bottom: 20px;
+  }
+  .plan-price {
+    margin-top: 16px;
+  }
+  .schedule {
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+  .checkout-footer {
+    margin-top: 24px;
+  }
+  .grand-total {
+    font-size: 22px;
+  }
+  .payment-footer {
+    font-size: 11px;
+  }
+}
+@media (max-width: 350px) {
+  .checkout-shell {
+    padding-inline: 16px;
+  }
+  .brand-header {
+    flex-wrap: wrap;
+  }
+  .payment-card,
+  .order-card,
+  .totals-card {
+    padding: 18px;
+  }
+  .schedule bdi {
+    font-size: 18px;
+  }
+  .ledger-row {
+    gap: 10px;
+  }
+  .money {
+    gap: 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-cardInfo {
+  display: block;
+  box-shadow: none;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-ccInputGroup {
+  margin-top: 12px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp']) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px 12px;
+  direction: ltr;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp'])::before {
+  content: 'تاريخ الانتهاء';
+  grid-column: 1;
+  grid-row: 1;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp'])::after {
+  content: 'رمز الأمان';
+  grid-column: 2;
+  grid-row: 1;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp'])::before,
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp'])::after {
+  font:
+    600 13px/1.8 Plex,
+    sans-serif;
+  text-align: right;
+  color: var(--ink);
+}
+html[lang='en']
+  #moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp'])::before {
+  content: 'Expiry date';
+  text-align: left;
+}
+html[lang='en']
+  #moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-ccInputGroup:has(input[autocomplete='cc-exp'])::after {
+  content: 'Security code';
+  text-align: left;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form input[autocomplete='cc-exp'],
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form input[autocomplete='cc-csc'] {
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+  box-shadow: none;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form input[autocomplete='cc-exp'] {
+  grid-column: 1;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form input[autocomplete='cc-csc'] {
+  grid-column: 2;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button:not(:disabled)::before {
+  content: 'دفع';
+}
+html[lang='en']
+  #moyasar-form#moyasar-form#moyasar-form#moyasar-form
+  .mysr-form-button:not(:disabled)::before {
+  content: 'Pay';
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-warn-icon {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--secondary);
+  margin-top: 14px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-warn-icon-art {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+
+/* Moyasar 1.15 repeats its root ID three times. Four wrapper IDs keep these
+   scoped overrides deterministic without changing SDK internals. */
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form input[autocomplete='cc-exp'],
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form input[autocomplete='cc-csc'] {
+  width: 100% !important;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-ccInputGroup:has(#mysr-cc-number) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-ccIconsGroup {
+  position: static;
+  transform: none;
+  order: -1;
+  align-self: flex-end;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+#moyasar-form#moyasar-form#moyasar-form#moyasar-form #mysr-cc-number {
+  padding-inline: 14px;
+  direction: ltr;
+}
+.standalone-error{max-width:520px;min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:28px}.standalone-error p{margin-top:12px;font-size:14px;color:var(--secondary)}
+html[lang="en"] #moyasar-form#moyasar-form#moyasar-form#moyasar-form .mysr-form-button:not(:disabled)::before{content:none}
+@font-face{font-family:PlexLatin;src:url('/checkout/assets/ibm-plex-1.ttf');font-weight:400;font-display:swap}
+@font-face{font-family:PlexLatin;src:url('/checkout/assets/ibm-plex-2.ttf');font-weight:500;font-display:swap}
+@font-face{font-family:PlexLatin;src:url('/checkout/assets/ibm-plex-3.ttf');font-weight:600;font-display:swap}
+@font-face{font-family:PlexLatin;src:url('/checkout/assets/ibm-plex-4.ttf');font-weight:700;font-display:swap}
+html[lang="en"],html[lang="en"] #moyasar-form#moyasar-form#moyasar-form#moyasar-form{font-family:PlexLatin,sans-serif}
+
+/* One receipt: plan identity, fulfilment, then the amount to pay. */
+.order-summary {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.order-summary .order-card {
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 20px 24px;
+}
+.order-summary .order-top { margin-bottom: 8px; }
+.order-summary .totals-card {
+  box-shadow: none;
+  background: transparent;
+  padding: 20px 24px 24px;
+  gap: 20px;
+}
+.order-summary .grand-total { margin: 0; padding: 0; align-items: center; }
+.order-summary .grand-total > .money { font-size: 28px; }
+.order-summary .grand-total strong { font-size: 16px; }
+.order-summary .renewal-row { align-items: center; }
+.order-summary .renewal-row time { font-size: 13px; color: var(--ink); }
+.order-fulfilment { padding: 18px 24px 0; }
+.order-vehicle { font-size: 14px; font-weight: 600; }
+.order-address { font-size: 13px; color: var(--secondary); }
+.order-summary .schedule { border: 0; padding: 0; margin-top: 12px; gap: 6px; }
+.order-summary .schedule bdi { font-size: 15px; }
+@media (max-width: 700px) {
+  .order-summary .order-card { padding: 16px 20px; }
+  .order-summary .totals-card { padding: 18px 20px 20px; gap: 16px; }
+  .order-fulfilment { padding: 16px 20px 0; }
+  .order-summary .grand-total > .money { font-size: 26px; }
+}
+@media (max-width: 350px) {
+  .order-summary .order-card, .order-summary .totals-card { padding-inline: 18px; }
+  .order-summary .grand-total > .money { font-size: 23px; }
+  .order-summary .grand-total strong { font-size: 15px; }
+  .order-summary .renewal-row { font-size: 12px; }
+}
