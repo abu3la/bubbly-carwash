@@ -1,10 +1,13 @@
+import { checkoutUrl } from '../checkout/session';
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../db';
 import { createInvoice, getInvoice, invoiceMatches, refundInvoice } from '../moyasar';
-import { notifyTeamOfBooking } from '../dispatch';
+import { cancellationOpen } from '@bubbles/utils';
+import { notifyJobCancelled, notifyTeamOfBooking } from '../dispatch';
 import { notify } from '../notifications';
+import { refundCancelledBooking } from '../refunds';
 
 /**
  * Bookings.
@@ -59,7 +62,10 @@ bookingsRoute.get('/', async (c) => {
     `bookings?profile_id=eq.${c.get('caller').id}` +
       '&select=*,vehicles(id,make,model,color,plate,size),addresses(id,label,line,district,city,lat,lng,notes,villa_number,coverage_area_id,coverage_block_id),' +
       'services(key,name_ar,name_en),teams(id,name_ar,name_en),booking_add_ons(add_on_key,price_minor),' +
-      'booking_media(id,phase,kind,angle,content_type,byte_size,created_at)' +
+      'booking_media(id,phase,kind,angle,content_type,byte_size,created_at),' +
+      // The customer sees their own reports, never what a driver wrote.
+      'customer_issues:operations_incidents(id,category,status,created_at)' +
+      '&customer_issues.source=eq.customer&customer_issues.order=created_at.desc' +
       '&order=scheduled_at.desc',
   );
   return c.json({ bookings: rows });
@@ -196,7 +202,7 @@ bookingsRoute.post('/', async (c) => {
           provider_ref: invoice.id,
         },
       });
-      return c.json({ booking, checkoutUrl: invoice.url }, 201);
+      return c.json({ booking, checkoutUrl: await checkoutUrl(c.env, origin, invoice.id) }, 201);
     } catch (error) {
       console.error('[bookings] payment checkout failed', error);
       await db(c.env, `bookings?id=eq.${booking.id}`, {
@@ -279,7 +285,7 @@ bookingsRoute.post('/:id/cancel', async (c) => {
 
   const [booking] = await db(
     c.env,
-    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&select=id,ref,status,stage,source,membership_id,purchase_id,technician_id`,
+    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&select=id,ref,status,stage,source,membership_id,purchase_id,technician_id,total_minor,payment_confirmed,scheduled_at`,
   );
   // Scoped to the caller, so a stranger's booking id reads as "not found"
   // rather than confirming it exists.
@@ -293,25 +299,26 @@ bookingsRoute.post('/:id/cancel', async (c) => {
   if (booking.stage !== 'booked') {
     return c.json({ error: { code: 'alreadyStarted' } }, 409);
   }
+  // The notice deadline protects a confirmed appointment. An unpaid checkout
+  // hold is released whenever the customer leaves the payment page.
+  if (booking.payment_confirmed && !cancellationOpen(booking.scheduled_at)) {
+    return c.json({ error: { code: 'cancelWindowClosed' } }, 409);
+  }
 
-  await db(c.env, `bookings?id=eq.${id}`, {
+  // Conditional, so a driver arriving between the read above and this write
+  // keeps the wash they have started.
+  const [cancelled] = await db(c.env, `bookings?id=eq.${id}&status=eq.scheduled&stage=eq.booked`, {
     method: 'PATCH',
-    prefer: 'return=minimal',
+    prefer: 'return=representation',
     body: { status: 'cancelled', cancelled_at: new Date().toISOString() },
   });
+  if (!cancelled) return c.json({ error: { code: 'alreadyStarted' } }, 409);
 
-  if (booking.technician_id) {
-    await notify(c.env, {
-      profileId: booking.technician_id,
-      bookingId: id,
-      kind: 'job_cancelled',
-      titleAr: 'أُلغيت المهمة',
-      titleEn: 'Job cancelled',
-      bodyAr: `أُلغي الحجز ${booking.ref}`,
-      bodyEn: `${booking.ref} was cancelled`,
-      data: { route: '/jobs' },
-    }).catch((error) => console.warn('[bookings] cancellation notification failed', error));
-  }
+  if (booking.technician_id) await notifyJobCancelled(c.env, booking.technician_id, id, booking.ref);
+
+  const refund = booking.payment_confirmed && booking.total_minor > 0
+    ? await refundCancelledBooking(c.env, booking, caller.id, { reason: 'إلغاء العميل قبل مهلة الإلغاء', notifyCustomer: true })
+    : 'none';
 
   // Club usage is derived from non-cancelled appointments, so cancellation
   // frees that week's place without manufacturing a transferable credit.
@@ -326,5 +333,62 @@ bookingsRoute.post('/:id/cancel', async (c) => {
     }
   }
 
-  return c.json({ cancelled: true });
+  return c.json({ cancelled: true, refund });
+});
+
+const ISSUE_CATEGORIES = new Set(['wash_quality', 'team_late', 'team_no_show', 'vehicle_damage', 'other']);
+const MAX_ISSUE_NOTE = 1000;
+
+/**
+ * A customer's report on a wash. It joins the driver incidents in the operations
+ * queue, so one list holds everything that needs a person.
+ */
+bookingsRoute.post('/:id/issues', async (c) => {
+  const caller = c.get('caller');
+  const id = c.req.param('id');
+  const body = await c.req.json<{ category?: string; note?: string }>();
+  const note = body.note?.trim() ?? '';
+  if (!body.category || !ISSUE_CATEGORIES.has(body.category)) {
+    return c.json({ error: { code: 'badIssueCategory' } }, 400);
+  }
+  if (!note || note.length > MAX_ISSUE_NOTE) return c.json({ error: { code: 'issueNoteRequired' } }, 400);
+
+  const [booking] = await db<{ id: string; ref: string; status: string; scheduled_at: string }>(
+    c.env,
+    `bookings?id=eq.${id}&profile_id=eq.${caller.id}&payment_confirmed=eq.true&select=id,ref,status,scheduled_at`,
+  );
+  if (!booking) return c.json({ error: { code: 'notFound' } }, 404);
+  // Before the service window opens there is nothing to report yet.
+  if (booking.status === 'cancelled' || Date.parse(booking.scheduled_at) > Date.now()) {
+    return c.json({ error: { code: 'issueNotAvailable' } }, 409);
+  }
+
+  let issue;
+  try {
+    [issue] = await db(c.env, 'operations_incidents', {
+      method: 'POST',
+      prefer: 'return=representation',
+      body: { booking_id: id, reported_by: caller.id, category: body.category, source: 'customer', note },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('operations_incidents_one_open_customer_idx')) {
+      return c.json({ error: { code: 'issueAlreadyOpen' } }, 409);
+    }
+    throw error;
+  }
+
+  const admins = await db<{ id: string }>(c.env, 'profiles?role=eq.admin&active=eq.true&select=id');
+  await Promise.all(admins.map((admin) => notify(c.env, {
+    profileId: admin.id,
+    bookingId: id,
+    kind: 'customer_issue_reported',
+    titleAr: `بلاغ عميل على ${booking.ref}`,
+    titleEn: `Customer report on ${booking.ref}`,
+    bodyAr: note,
+    bodyEn: note,
+    data: { route: '/operations' },
+  }).catch((error) => console.warn('[bookings] admin notification failed', error))));
+
+  return c.json({ issue }, 201);
 });

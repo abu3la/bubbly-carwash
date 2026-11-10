@@ -6,3 +6,12 @@ GOOGLE_PLACES_API_KEY=""
 FIREBASE_PROJECT_ID=""
 FIREBASE_CLIENT_EMAIL=""
 FIREBASE_PRIVATE_KEY=""
+
+# Hosted checkout. Configure sandbox values before testing; never commit secrets.
+MOYASAR_SECRET_KEY=""
+MOYASAR_WEBHOOK_SECRET=""
+MOYASAR_PUBLISHABLE_KEY=""
+# HTTPS callback owned by Bubbles for renewal payment authentication outcomes.
+MOYASAR_RENEWAL_CALLBACK_URL=""
+# Optional, same-origin HTTPS merchant-validation endpoint, one-time Apple Pay only.
+MOYASAR_APPLE_PAY_VALIDATION_URL=""

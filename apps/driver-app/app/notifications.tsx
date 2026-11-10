@@ -16,9 +16,9 @@ export default function Notifications() {
     catch { setError(true); }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
-  return <Screen scroll contentStyle={styles.page}>
-    <View style={styles.head}><Txt variant="title" weight="bold">{copy.notifications}</Txt><Button label="رجوع" variant="ghost" size="sm" onPress={() => router.back()} /></View>
-    {error ? <Button label="إعادة المحاولة" variant="secondary" onPress={() => void load()} /> : null}
+  return <Screen scroll contentStyle={styles.page} header={<View style={styles.head}><Txt variant="title" weight="bold">{copy.notifications}</Txt><Button label="رجوع" variant="ghost" size="sm" onPress={() => router.back()} /></View>}>
+
+    {error ? <Button label="إعادة المحاولة" variant="secondary" onPress={() => load()} /> : null}
     {!rows && !error ? <ActivityIndicator /> : null}
     {rows?.length === 0 ? <Txt variant="small" tone="secondary" center>لا توجد إشعارات. ستظهر تحديثات المهام هنا.</Txt> : null}
     {(rows ?? []).map((item) => <Card key={item.id} variant={item.read_at ? 'default' : 'booking'} onPress={async () => {

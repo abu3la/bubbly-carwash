@@ -14,7 +14,7 @@ export { Badge, type BadgeTone } from './display/Badge';
 export { Tag } from './display/Tag';
 export { StatusBadge } from './display/StatusBadge';
 export { BeatIcon } from './display/BeatIcon';
-export { BookingTicket } from './display/BookingTicket';
+export { BookingTicket, type TicketTone } from './display/BookingTicket';
 
 // forms
 export { Input } from './forms/Input';

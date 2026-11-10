@@ -1,7 +1,7 @@
 import { useWindowDimensions, View } from 'react-native';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { Button, Card, Num, Txt, useLocale } from '@bubbles/ui-native';
+import { BeatIcon, Button, Card, Num, Txt, useLocale } from '@bubbles/ui-native';
 import type { RealMembership } from '../api';
 import { useCopy } from '../i18n';
 
@@ -25,13 +25,13 @@ export function MembershipSummary({ membership, onManage, showValidity = false }
   const Arrow = ar ? ChevronLeft : ChevronRight;
 
   return (
-    <Card style={styles.card}>
+    <Card variant="dark" style={styles.card}>
       <View style={styles.header}>
         <View style={styles.identity}>
-          <Txt variant="heading" weight="bold">{copy.planName(name)}</Txt>
-          <Txt variant="small" tone="secondary">{copy.weeklyWashes(membership.plans.weekly)}</Txt>
+          <Txt variant="heading" weight="bold" tone="inverse">{copy.planName(name)}</Txt>
+          <Txt variant="small" tone="inverseSoft">{copy.weeklyWashes(membership.plans.weekly)}</Txt>
         </View>
-        <CalendarDays size={theme.scale(28)} color={theme.text.primary} strokeWidth={1.8} accessible={false} />
+        <BeatIcon size="md" />
       </View>
       {schedule.length ? (
         <View style={styles.schedule} accessibilityLabel={copy.selectedDays}>
@@ -43,18 +43,18 @@ export function MembershipSummary({ membership, onManage, showValidity = false }
             return (
               <View key={`${weekday}-${time}`} style={styles.day(columns, stacked)}
                 accessible accessibilityRole="text" accessibilityLabel={`${day}${ar ? '،' : ','} ${timeLabel}`}>
-                <Txt variant="body" weight="bold" center={!stacked} style={styles.dayName(stacked)}>{day}</Txt>
-                <Num variant="small" tone="secondary" style={styles.time}>{timeLabel}</Num>
+                <Txt variant="body" weight="bold" tone="inverse" center={!stacked} style={styles.dayName(stacked)}>{day}</Txt>
+                <Num variant="small" tone="inverseSoft" style={styles.time}>{timeLabel}</Num>
               </View>
             );
           })}
         </View>
       ) : (
         <View style={styles.noSchedule}>
-          <Txt variant="small" tone="secondary">{copy.scheduleUnavailable}</Txt>
+          <Txt variant="small" tone="inverseSoft">{copy.scheduleUnavailable}</Txt>
         </View>
       )}
-      {showValidity ? <Txt variant="small" tone="secondary" center>
+      {showValidity ? <Txt variant="small" tone="inverseSoft" center>
         {ar ? 'ساري حتى ' : 'Active until '}
         {new Intl.DateTimeFormat(ar ? 'ar-SA-u-ca-gregory' : 'en-GB', {
           day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Riyadh',
@@ -64,8 +64,9 @@ export function MembershipSummary({ membership, onManage, showValidity = false }
         label={copy.myClub}
         variant="ghost"
         size="sm"
+        onDark
         fullWidth
-        icon={<Arrow size={theme.scale(16)} color={theme.action.primary} strokeWidth={2.2} />}
+        icon={<Arrow size={theme.scale(16)} color={theme.text.inverse} strokeWidth={2.2} />}
         onPress={onManage}
         style={styles.manage}
       /> : null}
@@ -75,7 +76,7 @@ export function MembershipSummary({ membership, onManage, showValidity = false }
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    backgroundColor: theme.surface.tint,
+    backgroundColor: theme.surface.dark,
     boxShadow: undefined,
     padding: theme.spacing[4],
     gap: theme.spacing[3],
@@ -85,7 +86,6 @@ const styles = StyleSheet.create((theme) => ({
   schedule: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: theme.surface.card,
     borderRadius: theme.radius.md,
     padding: theme.spacing[1],
   },

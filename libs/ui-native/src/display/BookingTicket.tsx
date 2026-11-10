@@ -11,6 +11,8 @@ import { BeatIcon } from './BeatIcon';
 const STUB = 0.28;
 const NOTCH_R = 11;
 
+export type TicketTone = 'booked' | 'arrived' | 'washed' | 'verified' | 'attention' | 'quiet' | 'plain';
+
 interface BookingTicketProps {
   /** Uppercase micro-label above the time. */
   label?: string;
@@ -18,6 +20,8 @@ interface BookingTicketProps {
   time: string;
   /** The line under the time: day, service, address. */
   meta?: string;
+  /** The ground for what is happening to this booking. Ice until something does. */
+  tone?: TicketTone;
   /** Content of the tear-off stub. Defaults to the three beats. */
   stub?: ReactNode;
   onPress?: () => void;
@@ -30,7 +34,7 @@ interface BookingTicketProps {
  * circles in the page colour, so the ticket keeps its silhouette on any ground
  * it is placed on.
  */
-export function BookingTicket({ label = 'بطاقة الحجز', time, meta, stub, onPress, style }: BookingTicketProps) {
+export function BookingTicket({ label = 'بطاقة الحجز', time, meta, tone = 'booked', stub, onPress, style }: BookingTicketProps) {
   const { theme } = useUnistyles();
   const { isRTL } = useLocale();
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -55,7 +59,7 @@ export function BookingTicket({ label = 'بطاقة الحجز', time, meta, stu
           <Svg width={size.width} height={size.height}>
             <Path
               d={ticketPath(size.width, size.height, theme.radius.lg, notchX, NOTCH_R)}
-              fill={theme.surface.booking}
+              fill={theme.tone[tone]}
               fillRule="evenodd"
             />
             {/* The perforation line, stopping clear of both notches. */}
@@ -123,7 +127,7 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
   },
   body: { flex: 1, minWidth: 0, paddingVertical: theme.spacing[4], paddingHorizontal: theme.scale(18), gap: 2 },
-  label: { color: theme.action.primary },
+  label: { color: theme.text.secondary },
   time: { color: theme.text.primary },
   stub: {
     width: `${STUB * 100}%`,

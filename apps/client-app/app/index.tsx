@@ -8,6 +8,7 @@ import { useAuthSession } from '../src/authSession';
  * an imperative gate bounce between them.
  */
 export default function Index() {
-  const { session } = useAuthSession();
-  return <Redirect href={session ? '/(tabs)/home' : '/onboarding'} />;
+  const { session, loading, introSeen } = useAuthSession();
+  if (loading) return null;
+  return <Redirect href={session ? '/(tabs)/home' : introSeen ? '/onboarding/phone' : '/onboarding'} />;
 }

@@ -8,6 +8,7 @@ import { useCopy } from '../i18n';
 
 interface FlowHeaderProps {
   title: string;
+  showBack?: boolean;
   /** 1-based position in the flow. Omit for single-screen flows. */
   step?: number;
   steps?: number;
@@ -19,7 +20,7 @@ interface FlowHeaderProps {
  * current step rather than redrawing, so moving through a flow reads as one
  * continuous advance instead of a series of unrelated screens.
  */
-export function FlowHeader({ title, step, steps, onBack }: FlowHeaderProps) {
+export function FlowHeader({ title, step, steps, onBack, showBack = true }: FlowHeaderProps) {
   const { theme } = useUnistyles();
   const router = useRouter();
   const reduced = useReducedMotion();
@@ -36,15 +37,15 @@ export function FlowHeader({ title, step, steps, onBack }: FlowHeaderProps) {
   return (
     <View style={styles.header}>
       <View style={styles.row}>
-        <IconButton label={copy.common.back} variant="ghost" size="md" onPress={onBack ?? (() => router.back())}>
+        {showBack ? <IconButton label={copy.common.back} variant="ghost" size="md" onPress={onBack ?? (() => router.back())}>
           {isRTL ? (
             <ArrowRight size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
           ) : (
             <ArrowLeft size={theme.scale(22)} color={theme.text.primary} strokeWidth={2} />
           )}
-        </IconButton>
+        </IconButton> : null}
 
-        <Txt variant="heading" weight="bold" numberOfLines={1} style={styles.title}>
+        <Txt variant="heading" weight="bold" style={styles.title}>
           {title}
         </Txt>
 

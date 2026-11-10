@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Moyasar checkout" description="Arabic RTL hosted-checkout page for Bubbles/Sama via Moyasar — Apple Pay, Samsung Pay, mada, Visa, Mastercard" -->
+<helmet><script src="./ds-base.js"></script><style>html,body{margin:0;min-height:100%}body{background:#ECECE5;font-family:var(--font-arabic)}input,button{font-family:var(--font-arabic)}</style></helmet>
+<div dir="rtl" lang="ar" data-screen-label="Checkout" style="width:390px;max-width:100%;min-height:100vh;margin:0 auto;background:var(--surface-page);display:flex;flex-direction:column;padding:16px 20px 40px;box-sizing:border-box;font-family:var(--font-arabic);color:var(--text-primary)">
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px"><img src="../../assets/bubbles-logo.svg" alt="Bubbles" style="height:28px;display:block"><div style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="3"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span>دفع مشفّر ومعتمد</span></div></header>
+<main style="display:flex;flex-direction:column;gap:20px">
+<sc-if value="{{ isForm }}" hint-placeholder-val="{{ true }}"><aside style="display:flex;flex-direction:column;gap:12px"><sc-if value="{{ isOnce }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface-booking);border-radius:var(--radius-xl);padding:20px 20px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--ink-72)">ملخص الطلب</div><span style="font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);background:var(--white);color:var(--ink)">حجز لمرة واحدة</span></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div><div style="font-size:18px;font-weight:700;letter-spacing:-0.01em">غسلة خارجية كاملة</div><div style="font-size:13.5px;color:var(--ink-72);margin-top:3px">لكزس LX — أبيض · فيلا 12، حي النخيل</div></div><span style="display:inline-flex;gap:5px;padding-top:6px"><span style="width:9px;height:9px;border-radius:50%;background:var(--violet)"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--guava)"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--yellow)"></span></span></div>
+<div style="display:flex;align-items:baseline;gap:10px;padding-top:10px;border-top:1.5px dashed var(--ink-16)"><span style="font-size:13px;font-weight:600;color:var(--ink-72)">الثلاثاء 14 مايو</span><span dir="ltr" style="font-size:26px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;margin-inline-start:auto">10:30–11:00</span></div>
+</div>
+<div style="background:var(--surface-card);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:18px 20px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;font-variant-numeric:tabular-nums">
+<div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:500"><span>غسلة خارجية كاملة</span><span>89.00 ر.س</span></div>
+<div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:500"><span>إضافة: تلميع الإطارات</span><span>30.00 ر.س</span></div>
+<div style="display:flex;justify-content:space-between;font-size:14.5px;color:var(--text-muted)"><span>ضريبة القيمة المضافة 15٪</span><span>17.85 ر.س</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:18px;font-weight:700;padding-top:12px;margin-top:2px;border-top:1.5px solid var(--border-subtle)"><span>الإجمالي</span><span>136.85 ر.س</span></div>
+</div>
+<div style="font-size:12.5px;color:var(--text-muted);display:flex;align-items:flex-start;gap:8px;padding:0 6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg><span>الموعد محجوز مؤقتًا لمدة 10 دقائق أثناء إتمام الدفع. الإلغاء مجاني قبل الموعد بـ 3 ساعات.</span></div>
+</sc-if><sc-if value="{{ isSub }}" hint-placeholder-val="{{ false }}"><div style="background:var(--surface-dark);color:var(--white);border-radius:var(--radius-xl);padding:20px 20px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:8px"><div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.72)">ملخص الطلب</div><span style="font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);background:var(--violet);color:var(--white)">اشتراك شهري</span></div><span style="display:inline-flex;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:var(--violet)"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--guava)"></span><span style="width:9px;height:9px;border-radius:50%;background:var(--yellow)"></span></span></div>
+<div><div style="font-size:18px;font-weight:700;letter-spacing:-0.01em">{{ planName }}</div><div style="font-size:13.5px;color:rgba(255,255,255,.72);margin-top:3px">{{ planDesc }}</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ planPerks }}" as="perk" hint-placeholder-count="3"><span style="font-size:12px;font-weight:600;padding:5px 10px;border-radius:var(--radius-pill);background:rgba(255,255,255,.12);color:var(--white)">{{ perk }}</span></sc-for></div>
+<div style="display:flex;align-items:baseline;gap:8px;padding-top:12px;border-top:1.5px solid rgba(255,255,255,.12)"><span dir="ltr" style="font-size:30px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ planPrice }}</span><span style="font-size:14px;color:rgba(255,255,255,.72)">ر.س / شهريًا · يتجدد تلقائيًا</span><span style="margin-inline-start:auto;font-size:12.5px;color:rgba(255,255,255,.72);font-variant-numeric:tabular-nums">{{ perWash }} ر.س للغسلة</span></div>
+</div>
+<div style="background:var(--surface-card);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:18px 20px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;font-variant-numeric:tabular-nums">
+<div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:500"><span>اشتراك شهري — {{ planShort }}</span><span>{{ planNet }} ر.س</span></div>
+<div style="display:flex;justify-content:space-between;font-size:14.5px;color:var(--text-muted)"><span>ضريبة القيمة المضافة 15٪</span><span>{{ planVat }} ر.س</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:18px;font-weight:700;padding-top:12px;margin-top:2px;border-top:1.5px solid var(--border-subtle)"><span>يُسحب اليوم</span><span>{{ planPrice }} ر.س</span></div>
+<div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-muted)"><span>ثم شهريًا في يوم 14</span><span>{{ planPrice }} ر.س</span></div>
+</div>
+<div style="font-size:12.5px;color:var(--text-muted);display:flex;align-items:flex-start;gap:8px;padding:0 6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 3v6h-6"></path></svg><span>الإلغاء مجاني في أي وقت، ويبقى الاشتراك فعّالًا حتى نهاية الدورة المدفوعة.</span></div></sc-if></aside></sc-if>
+<sc-if value="{{ isForm }}" hint-placeholder-val="{{ true }}">
+<section style="background:var(--surface-card);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:22px 20px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box">
+<div><div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">الدفع · PAYMENT</div><h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;line-height:1.2">اختر وسيلة الدفع</h1></div>
+<sc-if value="{{ showWallets }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-if value="{{ showApple }}" hint-placeholder-val="{{ true }}"><button onClick="{{ payApple }}" aria-label="Apple Pay" style="height:50px;border:none;border-radius:var(--radius-pill);background:#000;color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;direction:ltr;font-family:-apple-system,'IBM Plex Sans',sans-serif" style-hover="background:#1c1c1e"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"></path></svg><span style="font-size:20px;font-weight:500;letter-spacing:-0.01em">Pay</span></button></sc-if>
+<sc-if value="{{ showSamsung }}" hint-placeholder-val="{{ true }}"><button onClick="{{ paySamsung }}" aria-label="Samsung Pay" style="height:50px;border:none;border-radius:var(--radius-pill);background:#000;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;direction:ltr;font-family:'IBM Plex Sans',sans-serif" style-hover="background:#1c1c1e"><span style="font-size:15px;font-weight:700;letter-spacing:.12em">SAMSUNG</span><span style="font-size:19px;font-weight:500;letter-spacing:-0.01em">Pay</span></button></sc-if>
+</div>
+<div style="display:flex;align-items:center;gap:12px;color:var(--text-muted);font-size:12.5px;font-weight:600"><span style="flex:1;height:1.5px;background:var(--border-subtle)"></span><span>أو ادفع بالبطاقة</span><span style="flex:1;height:1.5px;background:var(--border-subtle)"></span></div>
+</sc-if>
+<div style="display:flex;align-items:center;justify-content:flex-start"><div style="display:flex;gap:8px;direction:ltr">
+<span title="mada" style="width:52px;height:32px;border-radius:var(--radius-xs);background:#fff;border:1.5px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;position:relative;transition:all 120ms cubic-bezier(.2,.8,.2,1)"><sc-if value="{{ madaDim }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border-radius:var(--radius-xs);background:rgba(255,255,255,.6)"></span></sc-if><sc-if value="{{ madaOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border-radius:var(--radius-xs);border:2px solid var(--violet);pointer-events:none"></span></sc-if><svg width="44" height="18" viewBox="0 0 44 18"><rect x="1" y="2" width="13" height="6" rx="1" fill="#84B740"></rect><rect x="1" y="10" width="13" height="6" rx="1" fill="#259BD6"></rect><text x="16" y="13" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#17162E" textLength="26" lengthAdjust="spacingAndGlyphs">mada</text></svg></span>
+<span title="Visa" style="width:52px;height:32px;border-radius:var(--radius-xs);background:#fff;border:1.5px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;position:relative;transition:all 120ms cubic-bezier(.2,.8,.2,1)"><sc-if value="{{ visaDim }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border-radius:var(--radius-xs);background:rgba(255,255,255,.6)"></span></sc-if><sc-if value="{{ visaOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border-radius:var(--radius-xs);border:2px solid var(--violet);pointer-events:none"></span></sc-if><svg width="36" height="14" viewBox="0 0 36 14"><text x="18" y="12.5" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="15" font-weight="700" font-style="italic" fill="#1A1F71" letter-spacing="-0.5">VISA</text></svg></span>
+<span title="Mastercard" style="width:52px;height:32px;border-radius:var(--radius-xs);background:#fff;border:1.5px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;position:relative;transition:all 120ms cubic-bezier(.2,.8,.2,1)"><sc-if value="{{ mcDim }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border-radius:var(--radius-xs);background:rgba(255,255,255,.6)"></span></sc-if><sc-if value="{{ mcOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border-radius:var(--radius-xs);border:2px solid var(--violet);pointer-events:none"></span></sc-if><svg width="30" height="18" viewBox="0 0 30 18"><circle cx="10" cy="9" r="8.5" fill="#EB001B"></circle><circle cx="20" cy="9" r="8.5" fill="#F79E1B"></circle><path d="M15 2.4a8.5 8.5 0 0 1 0 13.2a8.5 8.5 0 0 1 0-13.2z" fill="#FF5F00"></path></svg></span>
+</div></div>
+<form onSubmit="{{ payCard }}" style="display:flex;flex-direction:column;gap:14px">
+<x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Input" label="الاسم على البطاقة" placeholder="كما هو مطبوع على البطاقة" value="{{ name }}" on-change="{{ onName }}" auto-complete="cc-name" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Input" label="رقم البطاقة" placeholder="0000 0000 0000 0000" value="{{ number }}" on-change="{{ onNumber }}" dir="ltr" input-mode="numeric" auto-complete="cc-number" error="{{ numberError }}" hint-size="100%,72px"></x-import>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Input" label="تاريخ الانتهاء" placeholder="MM / YY" value="{{ exp }}" on-change="{{ onExp }}" dir="ltr" input-mode="numeric" auto-complete="cc-exp" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Input" label="رمز الأمان CVC" placeholder="•••" value="{{ cvc }}" on-change="{{ onCvc }}" dir="ltr" input-mode="numeric" type="password" auto-complete="cc-csc" hint-size="100%,72px"></x-import>
+</div>
+<sc-if value="{{ isSub }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Checkbox" label="{{ consentLabel }}" checked="{{ consent }}" on-change="{{ onConsent }}" hint-size="100%,44px"></x-import></sc-if>
+<sc-if value="{{ isOnce }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" size="lg" type="submit" disabled="{{ cardDisabled }}" style="width:100%;display:flex;justify-content:center;margin-top:6px" hint-size="100%,52px">ادفع 136.85 ر.س</x-import></sc-if>
+<sc-if value="{{ isSub }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" size="lg" type="submit" disabled="{{ cardDisabled }}" style="width:100%;display:flex;justify-content:center;margin-top:6px" hint-size="100%,52px">اشترك — {{ planPrice }} ر.س / شهريًا</x-import><div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:-4px">أول سحب اليوم، والتجديد التالي في 14 يونيو.</div></sc-if>
+</form>
+<div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--text-muted);padding-top:4px;border-top:1.5px solid var(--border-subtle);padding-top:16px"><span>مؤمَّن بواسطة</span><span dir="ltr" style="display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--text-secondary);font-family:'IBM Plex Sans',sans-serif;letter-spacing:-0.01em"><span style="width:14px;height:14px;border-radius:4px;background:#2D2D2D;display:inline-block"></span>Moyasar</span><span>· ميسر · متوافق مع PCI DSS</span></div>
+</section>
+</sc-if>
+<sc-if value="{{ isProcessing }}" hint-placeholder-val="{{ false }}">
+<section style="background:var(--surface-card);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:64px 26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;min-height:520px;box-sizing:border-box">
+<x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BeatIcon" size="lg" animate="{{ true }}" hint-size="64px,24px"></x-import>
+<div style="font-size:20px;font-weight:700">نعالج الدفع بأمان…</div>
+<div style="font-size:13.5px;color:var(--text-secondary);max-width:280px">لا تغلق الصفحة — لن يُخصم المبلغ مرتين.</div>
+</section>
+</sc-if>
+<sc-if value="{{ isSuccess }}" hint-placeholder-val="{{ false }}">
+<section style="background:var(--surface-card);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:48px 26px 28px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;box-sizing:border-box">
+<span style="width:88px;height:88px;border-radius:50%;background:var(--yellow);color:var(--ink);display:inline-flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+<sc-if value="{{ isOnce }}" hint-placeholder-val="{{ true }}"><div style="font-size:24px;font-weight:700;letter-spacing:-0.02em">تم الدفع، حجزك مؤكد!</div>
+<div style="font-size:13.5px;color:var(--text-secondary)">أرسلنا الإيصال إلى بريدك. سنُشعرك عند تعيين الفنّي وقبل وصوله.</div></sc-if>
+<sc-if value="{{ isSub }}" hint-placeholder-val="{{ false }}"><div style="font-size:24px;font-weight:700;letter-spacing:-0.02em">اشتراكك في نادي Bubbles فعّال!</div>
+<div style="font-size:13.5px;color:var(--text-secondary)">خُصم {{ planPrice }} ر.س اليوم. التجديد التالي: 14 يونيو — سنذكّرك قبله بثلاثة أيام.</div></sc-if>
+<div style="width:100%;margin-top:8px"><x-import component-from-global-scope="BubblesDesignSystem_9de8ef.BookingTicket" label="بطاقة الحجز" time="10:30–11:00" meta="الثلاثاء 14 مايو · فيلا 12، حي النخيل" hint-size="100%,140px"></x-import></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;width:100%;font-size:13.5px;color:var(--text-muted);padding-top:12px;border-top:1.5px solid var(--border-subtle)"><span>رقم العملية</span><span dir="ltr" style="font-variant-numeric:tabular-nums;font-family:'IBM Plex Sans',sans-serif">MYSR-8F2K-41A9</span></div>
+<x-import component-from-global-scope="BubblesDesignSystem_9de8ef.Button" variant="ghost" size="md" onClick="{{ reset }}" hint-size="160px,44px">العودة إلى التطبيق</x-import>
+</section>
+</sc-if>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;once&quot;,&quot;subscription&quot;],&quot;default&quot;:&quot;subscription&quot;,&quot;tsType&quot;:&quot;'once'|'subscription'&quot;,&quot;section&quot;:&quot;Order (set by the app)&quot;},&quot;plan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;basic&quot;,&quot;super&quot;,&quot;shine&quot;],&quot;default&quot;:&quot;super&quot;,&quot;tsType&quot;:&quot;'basic'|'super'|'shine'&quot;,&quot;section&quot;:&quot;Order (set by the app)&quot;},&quot;wallets&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;both&quot;,&quot;apple&quot;,&quot;samsung&quot;,&quot;none&quot;],&quot;default&quot;:&quot;both&quot;,&quot;tsType&quot;:&quot;'both'|'apple'|'samsung'|'none'&quot;,&quot;section&quot;:&quot;Payment&quot;},&quot;phase&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;form&quot;,&quot;processing&quot;,&quot;success&quot;],&quot;default&quot;:&quot;form&quot;,&quot;tsType&quot;:&quot;'form'|'processing'|'success'&quot;,&quot;section&quot;:&quot;Demo state&quot;}}">
+class Component extends DCLogic {
+  state = { name: '', number: '', exp: '', cvc: '', phase: null, touched: false, consent: false };
+  MADA = ['4464','4578','4886','5297','5859','588845','588846','588847','588848','588849','588850','588851','588982','588983','589005','589206','604906','605141','636120','968201','968202','968203','968204','968205','968206','968207','968208','968209','968210','968211'];
+  brand(d) {
+    if (!d) return null;
+    if (this.MADA.some(p => d.startsWith(p.slice(0, Math.min(p.length, d.length))) && d.length >= 4)) return 'mada';
+    if (d[0] === '4') return 'visa';
+    if (/^5[1-5]|^2[2-7]/.test(d)) return 'mc';
+    return null;
+  }
+  luhn(d) { let s = 0, alt = false; for (let i = d.length - 1; i >= 0; i--) { let n = +d[i]; if (alt) { n *= 2; if (n > 9) n -= 9; } s += n; alt = !alt; } return s % 10 === 0; }
+  go(phase) { this.setState({ phase }); if (phase === 'processing') setTimeout(() => this.setState({ phase: 'success' }), 1900); }
+  renderVals() {
+    const p = this.props, s = this.state;
+    const phase = s.phase ?? (p.phase && p.phase !== 'form' ? p.phase : 'form');
+    const wallets = p.wallets ?? 'both';
+    const mode = p.mode ?? 'once';
+    const isSub = mode === 'subscription';
+    const PLANS = {
+      basic: { name: 'بيسك — غسلتان شهريًا', short: 'باقة بيسك', desc: 'غسلة خارجية كاملة · لكزس LX — أبيض', perks: ['غسلتان / شهر', 'ترحيل غسلة واحدة'], price: 99, roll: 'غسلة واحدة' },
+      super: { name: 'سوبر واش — 3 غسلات شهريًا', short: 'باقة سوبر واش', desc: 'غسلة خارجية + داخلية سريعة · لكزس LX — أبيض', perks: ['3 غسلات / شهر', 'داخلية سريعة', 'ترحيل غسلتين'], price: 129, roll: 'غسلتين' },
+      shine: { name: 'لمعة — 4 غسلات شهريًا', short: 'باقة لمعة', desc: 'غسلة خارجية + داخلية · لكزس LX — أبيض', perks: ['4 غسلات / شهر', 'أولوية مواعيد 10:00', 'ترحيل غسلتين'], price: 149, roll: 'غسلتين' }
+    };
+    const plan = PLANS[p.plan] || PLANS.super;
+    const washes = { basic: 2, super: 3, shine: 4 }[p.plan] || 3;
+    const f = n => n.toFixed(2);
+    const planPrice = f(plan.price), planNet = f(plan.price / 1.15), planVat = f(plan.price - plan.price / 1.15);
+    const digits = s.number.replace(/\D/g, '');
+    const b = this.brand(digits);
+    const complete = digits.length >= 16;
+    const numberError = s.touched && complete && !this.luhn(digits) ? 'رقم البطاقة غير صحيح' : undefined;
+
+    const ready = s.name.trim().length > 1 && complete && !numberError && s.exp.length === 7 && s.cvc.length >= 3 && (!isSub || s.consent);
+    return {
+      isForm: phase === 'form', isProcessing: phase === 'processing', isSuccess: phase === 'success',
+      showWallets: wallets !== 'none',
+      isSub, isOnce: !isSub, consent: s.consent,
+      planName: plan.name, planShort: plan.short, planDesc: plan.desc, planPerks: plan.perks, planPrice, planNet, planVat, perWash: f(plan.price / washes),
+      rollover: 'الغسلات غير المستخدمة تُرحّل حتى ' + plan.roll + ' للشهر التالي.',
+      consentLabel: 'أوافق على تجديد الاشتراك وسحب ' + planPrice + ' ر.س شهريًا من هذه البطاقة حتى الإلغاء',
+      onConsent: e => this.setState({ consent: e.target.checked }), showApple: wallets === 'both' || wallets === 'apple', showSamsung: wallets === 'both' || wallets === 'samsung',
+      name: s.name, number: s.number, exp: s.exp, cvc: s.cvc, numberError,
+      madaOn: b === 'mada', madaDim: !!b && b !== 'mada', visaOn: b === 'visa', visaDim: !!b && b !== 'visa', mcOn: b === 'mc', mcDim: !!b && b !== 'mc',
+      cardDisabled: !ready,
+      onName: e => this.setState({ name: e.target.value }),
+      onNumber: e => { const d = e.target.value.replace(/\D/g, '').slice(0, 16); this.setState({ number: d.replace(/(\d{4})(?=\d)/g, '$1 '), touched: true }); },
+      onExp: e => { const d = e.target.value.replace(/\D/g, '').slice(0, 4); this.setState({ exp: d.length > 2 ? d.slice(0, 2) + ' / ' + d.slice(2) : d }); },
+      onCvc: e => this.setState({ cvc: e.target.value.replace(/\D/g, '').slice(0, 4) }),
+      payCard: e => { e.preventDefault(); if (ready) this.go('processing'); },
+      payApple: () => this.go('processing'),
+      paySamsung: () => this.go('processing'),
+      reset: () => this.setState({ phase: 'form', name: '', number: '', exp: '', cvc: '', touched: false, consent: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

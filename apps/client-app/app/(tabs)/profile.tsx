@@ -53,11 +53,11 @@ export default function Profile() {
         <Txt variant="caption" tone="secondary">{ar ? 'الاسم' : 'Name'}</Txt>
         {editing ? <View style={styles.editor}>
           <Input label={ar ? 'الاسم الكامل' : 'Full name'} value={name} onChangeText={setName} maxLength={80} autoComplete="name" autoCapitalize="words" returnKeyType="done" onSubmitEditing={() => void save()} />
-          <Button label={busy === 'name' ? (ar ? 'نحفظ الاسم…' : 'Saving…') : (ar ? 'حفظ الاسم' : 'Save name')} fullWidth disabled={!!busy || name.trim().length < 2 || name.trim() === profile?.full_name} onPress={() => void save()} />
+          <Button label={ar ? 'حفظ الاسم' : 'Save name'} loading={busy === 'name'} fullWidth disabled={!!busy || name.trim().length < 2 || name.trim() === profile?.full_name} onPress={() => save()} />
           <Button label={copy.common.cancel} variant="ghost" disabled={!!busy} fullWidth onPress={() => { setEditing(false); setError(''); }} />
         </View> : <View style={styles.nameRow}>
           <Txt variant="heading" weight="bold" style={styles.grow}>{profile?.full_name || (loading ? (ar ? 'نحمّل بياناتك…' : 'Loading your details…') : (ar ? 'أضف اسمك' : 'Add your name'))}</Txt>
-          <Button label={ar ? 'تعديل' : 'Edit'} variant="ghost" size="sm" disabled={!!busy} icon={<Pencil size={18} color={theme.action.primary} />} onPress={() => setEditing(true)} />
+          <Button label={ar ? 'تعديل' : 'Edit'} variant="ghost" size="sm" disabled={!!busy} icon={<Pencil size={18} color={theme.text.primary} />} onPress={() => setEditing(true)} />
         </View>}
         <View style={styles.phone}>
           <Txt variant="caption" tone="secondary">{ar ? 'رقم الجوال' : 'Mobile number'}</Txt>
@@ -66,7 +66,7 @@ export default function Profile() {
         </View>
       </View>
       {error ? <Txt accessibilityLiveRegion="polite" variant="small" tone="danger">{error}</Txt> : null}
-      {loadError ? <Button label={ar ? 'إعادة تحميل بياناتك' : 'Reload your details'} variant="secondary" fullWidth onPress={() => void refresh()} /> : null}
+      {loadError ? <Button label={ar ? 'إعادة تحميل بياناتك' : 'Reload your details'} variant="secondary" fullWidth onPress={() => refresh()} /> : null}
       <Card variant="booking" onPress={() => router.push(membership ? '/club/dashboard' : '/club')} style={styles.membership}>
         <View style={styles.grow}>
           <Txt variant="body" weight="bold">{membership ? (ar ? membership.plans.name_ar : membership.plans.name_en) : (ar ? 'اشترك الآن' : 'Subscribe now')}</Txt>
@@ -87,13 +87,14 @@ export default function Profile() {
           </Pressable>;
         })}
       </View>
-      <Button label={busy === 'logout' ? (ar ? 'نسجّل خروجك…' : 'Signing out…') : copy.profile.signOut} variant="ghost" fullWidth disabled={!!busy} icon={<LogOut size={18} color={theme.action.primary} />} onPress={async () => {
+      <Button label={copy.profile.signOut} variant="ghost" fullWidth disabled={!!busy} icon={<LogOut size={18} color={theme.text.primary} />} onPress={async () => {
         setBusy('logout'); setError('');
         try {
           await unregisterFirebaseMessaging().catch(() => undefined);
           await auth.signOut();
         } catch { setError(ar ? 'تعذّر تسجيل الخروج. حاول مرة أخرى.' : 'Could not sign out. Try again.'); setBusy(null); }
       }} />
+      <Button label={ar ? 'حذف الحساب' : 'Delete account'} variant="ghost" fullWidth disabled={!!busy} onPress={() => router.push('/account/delete')} />
       <Txt variant="caption" tone="muted" center>{copy.brand.version}</Txt>
     </Screen>
   );

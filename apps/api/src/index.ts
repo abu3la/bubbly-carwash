@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env } from './env';
+import { retryAccountDeletions } from './accountDeletion';
+import { runRenewals } from './checkout/billing';
 import { db } from './db';
 import { adminRoute } from './routes/admin';
 import { authRoute } from './routes/auth';
@@ -10,6 +12,7 @@ import { driverRoute } from './routes/driver';
 import { hooksRoute } from './routes/hooks';
 import { meRoute } from './routes/me';
 import { membershipsRoute } from './routes/memberships';
+import { checkoutRoute } from './routes/checkout';
 import { paymentsRoute } from './routes/payments';
 import { placesRoute } from './routes/places';
 import { webhooksRoute } from './routes/webhooks';
@@ -61,7 +64,9 @@ app.route('/driver', driverRoute);
 app.route('/hooks', hooksRoute);
 app.route('/me', meRoute);
 app.route('/memberships', membershipsRoute);
+app.route('/payments/checkout', checkoutRoute);
 app.route('/payments', paymentsRoute);
+app.get('/checkout/*', (c) => c.env.CHECKOUT_ASSETS ? c.env.CHECKOUT_ASSETS.fetch(c.req.raw) : c.notFound());
 app.route('/places', placesRoute);
 app.route('/webhooks', webhooksRoute);
 
@@ -70,6 +75,8 @@ async function runMaintenance(env: Env) {
     db<number>(env, 'rpc/expire_pending_checkouts', { method: 'POST', body: {} }),
     db<number>(env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} }),
   ]);
+  await runRenewals(env);
+  await retryAccountDeletions(env);
   console.log('[maintenance] expiry sweep completed', {
     pendingExpired: Number(pendingExpired ?? 0),
     bookingsMissed: Number(bookingsMissed ?? 0),

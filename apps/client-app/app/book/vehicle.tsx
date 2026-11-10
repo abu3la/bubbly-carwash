@@ -28,15 +28,15 @@ export default function VehicleAndPlace() {
   }, [vehicles, addresses, draft.vehicleId, draft.addressId]);
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={copy.booking.vehicleAndPlace} step={2} steps={5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={copy.booking.vehicleAndPlace} step={2} steps={5} onBack={() => router.back()} />}>
       <View style={styles.body}>
         <View style={styles.section}>
           <SectionLabel>{copy.booking.vehicleSection}</SectionLabel>
+          <View style={styles.list}>
           {vehicles.map((vehicle) => {
             const selected = draft.vehicleId === vehicle.id;
             return (
-              <Card key={vehicle.id} selected={selected} onPress={() => draft.setVehicle(vehicle)} style={styles.row}>
+              <Card key={vehicle.id} selected={selected} onPress={() => draft.setVehicle(vehicle)} style={styles.row(selected)}>
                 <Car size={theme.scale(20)} color={selected ? theme.action.primary : theme.text.secondary} strokeWidth={2} />
                 <View style={styles.text}>
                   <Txt variant="body" weight="bold">{vehicle.make} {vehicle.model}</Txt>
@@ -51,15 +51,17 @@ export default function VehicleAndPlace() {
               </Card>
             );
           })}
-          <Button label={copy.onboarding.vehicleTitle} variant="secondary" fullWidth onPress={() => router.push({ pathname: '/onboarding/vehicle', params: { returnTo: 'booking' } })} />
+          </View>
+          <Button label={copy.onboarding.vehicleTitle} variant="ghost" onPress={() => router.push({ pathname: '/onboarding/vehicle', params: { returnTo: 'booking' } })} />
         </View>
 
         <View style={styles.section}>
           <SectionLabel>{copy.booking.locationSection}</SectionLabel>
+          <View style={styles.list}>
           {addresses.map((address) => {
             const selected = draft.addressId === address.id;
             return (
-              <Card key={address.id} selected={selected} onPress={() => hasVillaAddress(address) ? draft.setAddress(address) : router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })} style={styles.row}>
+              <Card key={address.id} selected={selected} onPress={() => hasVillaAddress(address) ? draft.setAddress(address) : router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })} style={styles.row(selected)}>
                 <MapPin size={theme.scale(19)} color={selected ? theme.action.primary : theme.text.secondary} strokeWidth={2} />
                 <View style={styles.text}>
                   <Txt variant="body" weight="bold">{address.line}</Txt>
@@ -71,7 +73,8 @@ export default function VehicleAndPlace() {
               </Card>
             );
           })}
-          <Button label={copy.onboarding.saveLocation} variant="secondary" fullWidth onPress={() => router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })} />
+          </View>
+          <Button label={copy.onboarding.saveLocation} variant="ghost" onPress={() => router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })} />
         </View>
 
         {loading ? <Txt variant="small" tone="secondary" center>{copy.common.sending}</Txt> : null}
@@ -85,6 +88,7 @@ const styles = StyleSheet.create((theme) => ({
   page: { paddingBottom: theme.spacing[7] },
   body: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[4], gap: theme.spacing[5] },
   section: { gap: theme.spacing[2] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[3] },
+  list: { backgroundColor: theme.surface.card, borderRadius: theme.radius.md, gap: theme.spacing[1] },
+  row: (selected: boolean) => ({ flexDirection: 'row' as const, alignItems: 'center' as const, gap: theme.spacing[3], padding: theme.spacing[3], borderRadius: theme.radius.md, borderWidth: 0, boxShadow: undefined, backgroundColor: selected ? theme.action.tint : 'transparent' }),
   text: { flex: 1, gap: 2 },
 }));

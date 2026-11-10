@@ -26,6 +26,7 @@ export default function Done() {
       }
     >
       <BookingTicket
+        tone="plain"
         time={draft.slot}
         meta={`${draft.day} · ${draft.vehicleLabel} · ${draft.addressLabel}`}
       />

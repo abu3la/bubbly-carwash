@@ -102,7 +102,7 @@ function FirebaseRegistration() {
 }
 
 function AuthGate({ children }: { children: ReactNode }) {
-  const { loading, session } = useAuthSession();
+  const { loading, session, introSeen } = useAuthSession();
   const segments = useSegments() as string[];
   const router = useRouter();
   const navigation = useRootNavigationState();
@@ -113,11 +113,11 @@ function AuthGate({ children }: { children: ReactNode }) {
     if (loading || !navigation?.key) return;
     const restored = restoring.current;
     restoring.current = false;
-    if (!session && !publicOnboarding) router.replace('/onboarding');
+    if (!session && !publicOnboarding) router.replace(introSeen ? '/onboarding/phone' : '/onboarding');
     // The index route may reach onboarding while disk storage is loading.
     // Restore an existing customer without interrupting a fresh OTP flow.
     else if (restored && session && publicOnboarding) router.replace('/(tabs)/home');
-  }, [loading, navigation?.key, publicOnboarding, router, session]);
+  }, [loading, introSeen, navigation?.key, publicOnboarding, router, session]);
   const blocked = loading || (!session && !publicOnboarding);
   return <View style={{ flex: 1 }}>
     <View style={{ flex: 1 }} accessibilityElementsHidden={blocked} importantForAccessibility={blocked ? 'no-hide-descendants' : 'auto'}>{children}</View>

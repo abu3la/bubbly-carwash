@@ -1,5 +1,8 @@
 import type { AddOn, Plan, Service, Slot } from '../content';
+import type { PaymentFailure, PaymentRecovery } from '../paymentFailure';
 import type { BeatKey } from '@bubbles/design-tokens';
+
+interface PaymentFailureMessage { title: string; body: string }
 
 /**
  * Every piece of copy the app can show, in one shape.
@@ -89,8 +92,7 @@ export interface Copy {
     languageEnglish: string;
 
     signInTitle: string;
-    phoneTitle: string;
-    phoneSub: string;
+    phoneLabel: string;
     phonePlaceholder: string;
     sendCode: string;
     terms: string;
@@ -196,6 +198,7 @@ export interface Copy {
     takenNoteMember: string;
     prioritySlot: string;
     holdNote: string;
+    cancellationNote: string;
     periods: Record<Slot['period'], string>;
     fridayOff: string;
     checkingAvailability: string;
@@ -229,7 +232,9 @@ export interface Copy {
 
     processingPayment: string;
     processingPaymentSub: string;
-    paymentFailed: string;
+    paymentFailures: Record<PaymentFailure, PaymentFailureMessage>;
+    paymentRecovery: Record<PaymentRecovery, string>;
+    backToReview: string;
     processingCredit: string;
     processingCreditSub: string;
 
@@ -242,6 +247,8 @@ export interface Copy {
 
   club: {
     title: string;
+    paymentFailures: Record<PaymentFailure, PaymentFailureMessage>;
+    chooseNewTimes: string;
   };
 
   profile: {

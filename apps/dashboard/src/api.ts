@@ -178,6 +178,7 @@ export interface Incident {
   id: string;
   booking_id: string;
   category: string;
+  source: 'driver' | 'customer' | 'system';
   note: string;
   status: 'open' | 'resolved';
   created_at: string;

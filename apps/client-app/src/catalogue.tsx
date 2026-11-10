@@ -27,9 +27,9 @@ export function CatalogueProvider({ children }: { children: ReactNode }) {
 
   const reload = useCallback(async () => {
     setLoading(true);
-    setError(false);
     try {
       setCatalogue(await fetchCatalogue());
+      setError(false);
     } catch {
       setError(true);
     } finally {

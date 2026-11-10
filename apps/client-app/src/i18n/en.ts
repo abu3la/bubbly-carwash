@@ -75,8 +75,7 @@ export const en: Copy = {
     languageEnglish: 'English',
 
     signInTitle: 'Sign in',
-    phoneTitle: 'Sign in with your mobile number',
-    phoneSub: 'We use your mobile number to verify your identity.',
+    phoneLabel: 'Mobile number',
     phonePlaceholder: '5X XXX XXXX',
     sendCode: 'Send code',
     terms: 'By continuing you agree to the Terms and Privacy Policy.',
@@ -186,6 +185,7 @@ export const en: Copy = {
     takenNoteMember: 'Only available appointments for your address are shown.',
     prioritySlot: 'Available',
     holdNote: 'We hold your slot for 15 minutes while you pay.',
+    cancellationNote: 'Free cancellation up to 3 hours before the appointment.',
     periods: { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' },
     fridayOff: 'Teams are off on Friday',
     checkingAvailability: 'Checking your block team’s appointments…',
@@ -219,7 +219,22 @@ export const en: Copy = {
 
     processingPayment: 'Processing your payment…',
     processingPaymentSub: 'Don’t close the app. you won’t be charged twice.',
-    paymentFailed: 'Payment was not completed. The booking was not confirmed and you can try again.',
+    paymentFailures: {
+      declined: { title: 'The bank declined the payment', body: 'No charge was made and the booking is not confirmed. Try another payment method.' },
+      cancelled: { title: 'Payment was cancelled', body: 'The booking is not confirmed and the time is not held.' },
+      pending: { title: 'No payment result yet', body: 'Do not pay again. The booking is confirmed once the result arrives.' },
+      offline: { title: 'No internet connection', body: 'No charge was made and the booking is not confirmed.' },
+      verifyOffline: { title: 'No internet connection', body: 'The payment could not be checked. Do not pay again.' },
+      verifyFailed: { title: 'Could not confirm the payment result', body: 'The booking is not confirmed yet. Do not pay again before checking.' },
+      late: { title: 'Payment arrived after the hold expired', body: 'The amount returns through Moyasar and the time is not held.' },
+      refunded: { title: 'The time could not be secured', body: 'A refund was sent to Moyasar.' },
+      refundPending: { title: 'The time could not be secured', body: 'The refund is in progress.' },
+      slotTaken: { title: 'This time is no longer available', body: 'No charge was made. Choose another time.' },
+      unavailable: { title: 'Payment is unavailable right now', body: 'No charge was made and the booking is not confirmed.' },
+      general: { title: 'Booking not completed', body: 'No charge was made and the booking is not confirmed.' },
+    },
+    paymentRecovery: { verify: 'Refresh result', newTime: 'Choose a new time', pay: 'Try again' },
+    backToReview: 'Back to review',
     processingCredit: 'Confirming your booking…',
     processingCreditSub: 'Adding this appointment to your weekly washes.',
 
@@ -230,7 +245,24 @@ export const en: Copy = {
     backHome: 'Back to home',
   },
 
-  club: { title: 'Monthly packages' },
+  club: {
+    title: 'Monthly packages',
+    paymentFailures: {
+      declined: { title: 'The bank declined the payment', body: 'No charge was made and the subscription is not active. Try another payment method.' },
+      cancelled: { title: 'Payment was cancelled', body: 'The subscription is not active and the times are not held.' },
+      pending: { title: 'No payment result yet', body: 'Do not pay again. The subscription activates once the result arrives.' },
+      offline: { title: 'No internet connection', body: 'No charge was made and the subscription is not active.' },
+      verifyOffline: { title: 'No internet connection', body: 'The payment could not be checked. Do not pay again.' },
+      verifyFailed: { title: 'Could not confirm the payment result', body: 'The subscription is not active yet. Do not pay again before checking.' },
+      late: { title: 'Payment arrived after the hold expired', body: 'The amount returns through Moyasar and the times are not held.' },
+      refunded: { title: 'The times could not be secured', body: 'A refund was sent to Moyasar.' },
+      refundPending: { title: 'The times could not be secured', body: 'The refund is in progress.' },
+      slotTaken: { title: 'These times are no longer available', body: 'No charge was made. Choose other times.' },
+      unavailable: { title: 'Payment is unavailable right now', body: 'No charge was made and the subscription is not active.' },
+      general: { title: 'Subscription not completed', body: 'No charge was made and the subscription is not active.' },
+    },
+    chooseNewTimes: 'Choose new times',
+  },
 
   profile: {
     verified: 'Verified',

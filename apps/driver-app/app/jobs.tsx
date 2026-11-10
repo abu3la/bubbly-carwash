@@ -63,8 +63,8 @@ export default function Jobs() {
       <View style={styles.assignment}>
         <View style={styles.assignmentHead}>
           <Txt variant="heading" weight="bold">{list ? teamName ?? copy.noTeam : 'جارٍ تحميل فريقك'}</Txt>
-          <IconButton label="تحديث المهام" variant="ghost" disabled={refreshing} onPress={() => void load()}>
-            {refreshing ? <ActivityIndicator color={theme.text.primary} /> : <RefreshCw size={theme.scale(20)} color={theme.text.primary} />}
+          <IconButton label="تحديث المهام" variant="ghost" loading={refreshing} onPress={() => load()}>
+            <RefreshCw size={theme.scale(20)} color={theme.text.primary} />
           </IconButton>
         </View>
         {assignedBlocks.length > 0 ? assignedBlocks.map((block) => <Txt key={block.id} variant="small" tone="secondary">
@@ -79,7 +79,7 @@ export default function Jobs() {
       {error ? <View accessibilityLiveRegion="polite" style={styles.message}>
         <Txt tone="danger" variant="small">{error}</Txt>
         {list ? <Txt variant="caption" tone="secondary">تظهر آخر بيانات محمّلة. حدّث المهام قبل المتابعة.</Txt> : null}
-        <Button label="إعادة المحاولة" variant="ghost" disabled={refreshing} onPress={() => void load()} />
+        <Button label="إعادة المحاولة" variant="ghost" disabled={refreshing} onPress={() => load()} />
       </View> : null}
       {grouped.current ? <Card variant="dark" style={styles.current}>
         <View style={styles.assignmentHead}><Txt variant="body" tone="inverse" weight="bold">مهمتك الجارية</Txt><BeatIcon active={LIT[grouped.current.stage]} /></View>

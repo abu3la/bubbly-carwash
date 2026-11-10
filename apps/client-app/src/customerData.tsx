@@ -45,7 +45,6 @@ export function CustomerDataProvider({ children }: { children: ReactNode }) {
     const request = ++generation.current;
     const owner = session;
     setLoading(true);
-    setError(false);
     try {
       const [me, addressData, vehicleData, bookingData, membershipData] = await Promise.allSettled([
         fetchMe(), listAddresses(), listVehicles(), listBookings(), fetchMembership(),

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { BeatIcon, Button, Input, Num, Screen, Txt } from '@bubbles/ui-native';
+import { Button, Input, Num, Screen, Txt } from '@bubbles/ui-native';
 import { ApiError, normalizePhoneDigits, requestOtp, toE164, verifyOtp } from '../src/api';
 import { useSession } from '../src/session';
 import { copy } from '../src/copy';
@@ -39,22 +39,12 @@ export default function SignIn() {
   return (
     <Screen scroll contentStyle={styles.screen}>
       <View style={styles.head}>
-        <BeatIcon size="lg" active={3} />
-        <Txt variant="display" weight="bold" tone="action">
-          {copy.brand}
-        </Txt>
-        <Txt variant="small" tone="muted">
-          {copy.role}
-        </Txt>
+        <Txt variant="body" weight="bold">{copy.brand}</Txt>
+        <Txt variant="small" tone="secondary">{copy.role}</Txt>
       </View>
-
       <View style={styles.form}>
-        <Txt variant="title" weight="bold">
-          {copy.signInTitle}
-        </Txt>
-        <Txt variant="small" tone="secondary">
-          {sent ? `${copy.codeSentTo} ${toE164(phone)}` : copy.signInSub}
-        </Txt>
+        <Txt variant="title" weight="bold">{copy.signInTitle}</Txt>
+        {sent ? <Txt variant="small" tone="secondary">{copy.codeSentTo} <Num variant="small">{toE164(phone)}</Num></Txt> : null}
 
         {!sent ? (
           <>
@@ -79,7 +69,7 @@ export default function SignIn() {
               />
             </View>
             <Button
-              label={busy ? copy.sending : copy.sendCode}
+              label={copy.sendCode}
               size="lg"
               fullWidth
               disabled={busy || !/^\+9665\d{8}$/.test(toE164(phone))}
@@ -103,12 +93,12 @@ export default function SignIn() {
               ltr
             />
             {developmentCode ? (
-              <Txt variant="small" weight="semibold" tone="action" center>
+              <Txt variant="small" weight="semibold" tone="secondary" center>
                 {copy.developmentCode(developmentCode)}
               </Txt>
             ) : null}
             <Button
-              label={busy ? copy.verifying : copy.verify}
+              label={copy.verify}
               size="lg"
               fullWidth
               disabled={busy || code.length < requiredDigits}
@@ -138,8 +128,8 @@ export default function SignIn() {
 
 const styles = StyleSheet.create((theme) => ({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface.page },
-  screen: { padding: theme.spacing[6], justifyContent: 'center', gap: theme.spacing[8] },
-  head: { alignItems: 'center', gap: theme.spacing[2] },
+  screen: { padding: theme.spacing[6], gap: theme.spacing[7] },
+  head: { gap: theme.spacing[1] },
   form: { gap: theme.spacing[3] },
   phoneRow: { flexDirection: 'row', gap: theme.spacing[2], direction: 'ltr' },
   dial: {

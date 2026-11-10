@@ -74,6 +74,21 @@ const theme = {
   beat,
   onBeat,
 
+  /**
+   * The pale ground a surface takes for what is happening on it. Each brand
+   * colour has one job: ice for a set time, violet for arrival, guava for the
+   * wash under way or something needing attention, yellow for finished.
+   */
+  tone: {
+    booked: palette.ice,
+    arrived: palette.violet100,
+    washed: palette.guava100,
+    verified: palette.yellow100,
+    attention: palette.guava100,
+    quiet: palette.ink06,
+    plain: palette.white,
+  },
+
   border: {
     subtle: border.subtle,
     strong: border.strong,

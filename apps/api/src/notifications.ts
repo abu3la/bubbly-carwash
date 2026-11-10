@@ -12,6 +12,30 @@ interface NotificationInput {
   data?: Record<string, string>;
 }
 
+type WashStage = 'booked' | 'arrived' | 'washed' | 'verified';
+
+const STAGE_MESSAGES: Record<WashStage, { titleAr: string; titleEn: string; bodyAr: string; bodyEn: string }> = {
+  booked: { titleAr: 'تم تأكيد الحجز', titleEn: 'Booking confirmed', bodyAr: 'الموعد محجوز.', bodyEn: 'The time is reserved.' },
+  arrived: { titleAr: 'وصل الفريق', titleEn: 'Team arrived', bodyAr: 'الفريق في الموقع.', bodyEn: 'The team is at the location.' },
+  washed: { titleAr: 'اكتمل الغسيل', titleEn: 'Wash complete', bodyAr: 'تجري مراجعة الجودة.', bodyEn: 'The quality check is under way.' },
+  verified: { titleAr: 'اكتملت الغسلة', titleEn: 'Wash verified', bodyAr: 'توثيق قبل وبعد جاهز.', bodyEn: 'Before and after evidence is ready.' },
+};
+
+/**
+ * The title carries the event, because a lock screen may show nothing else. The
+ * reference moves to the body, where a customer with several cars can still
+ * match it to a booking.
+ */
+export function washStageMessage(stage: WashStage, ref: string) {
+  const message = STAGE_MESSAGES[stage];
+  return {
+    titleAr: message.titleAr,
+    titleEn: message.titleEn,
+    bodyAr: `${message.bodyAr} الحجز ${ref}`,
+    bodyEn: `${message.bodyEn} Booking ${ref}`,
+  };
+}
+
 const base64Url = (value: string | Uint8Array) => {
   const binary = typeof value === 'string'
     ? unescape(encodeURIComponent(value))

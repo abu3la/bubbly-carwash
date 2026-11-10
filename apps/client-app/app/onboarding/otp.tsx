@@ -37,8 +37,7 @@ export default function Otp() {
   const mmss = `00:${String(Math.max(0, left)).padStart(2, '0')}`;
 
   return (
-    <Screen contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.otpTitle} step={2} steps={5} onBack={() => router.back()} />
+    <Screen contentStyle={styles.screen} header={<FlowHeader title={copy.onboarding.otpTitle} onBack={() => router.back()} />}>
 
       <View style={styles.body}>
         <View style={styles.head}>
@@ -52,7 +51,7 @@ export default function Otp() {
             </Num>
           </Txt>
           {developmentCode ? (
-            <Txt variant="small" weight="semibold" tone="action">
+            <Txt variant="small" weight="semibold" tone="secondary">
               {copy.onboarding.developmentCodeHint(developmentCode)}
             </Txt>
           ) : null}
@@ -90,7 +89,7 @@ export default function Otp() {
         ) : null}
 
         <Button
-          label={checking ? copy.common.verifying : copy.onboarding.verify}
+          label={copy.onboarding.verify}
           size="lg"
           fullWidth
           disabled={code.length < length || checking}
@@ -124,10 +123,10 @@ export default function Otp() {
             fullWidth
             onPress={async () => {
               setError(null);
-              setLeft(RESEND_SECONDS);
               try {
                 const result = await requestOtp(toE164(national));
                 setDevelopmentCode(result.developmentCode);
+                setLeft(RESEND_SECONDS);
               } catch (e) {
                 setError(copy.authErrors[e instanceof AuthError ? e.code : 'unknown']);
               }

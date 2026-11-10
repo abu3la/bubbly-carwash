@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
@@ -7,10 +7,14 @@ import { useCopy } from '../../src/i18n';
 import { AuthError, requestOtp, toE164 } from '../../src/auth';
 import { FlowHeader } from '../../src/components/FlowHeader';
 
+import { useAuthSession } from '../../src/authSession';
+
 const NATIONAL_DIGITS = 9;
 
 export default function Phone() {
   const router = useRouter();
+  const { finishIntro } = useAuthSession();
+  useEffect(() => { finishIntro(); }, [finishIntro]);
   const { intent } = useLocalSearchParams<{ intent?: string }>();
   const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
@@ -20,18 +24,10 @@ export default function Phone() {
   const ready = digits.length === NATIONAL_DIGITS;
 
   return (
-    <Screen contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.signInTitle} step={1} steps={5} onBack={() => router.back()} />
+    <Screen contentStyle={styles.screen} header={<FlowHeader title={copy.onboarding.signInTitle} showBack={false} />}>
 
       <View style={styles.body}>
-        <View style={styles.head}>
-          <Txt variant="title" weight="bold">
-            {copy.onboarding.phoneTitle}
-          </Txt>
-          <Txt variant="small" tone="secondary">
-            {copy.onboarding.phoneSub}
-          </Txt>
-        </View>
+        <Txt variant="body" weight="semibold">{copy.onboarding.phoneLabel}</Txt>
 
         {/* The dial code leads the field in both languages, so the row's
             direction is set explicitly rather than inherited. */}
@@ -42,6 +38,7 @@ export default function Phone() {
             </Num>
           </View>
           <Input
+            accessibilityLabel={copy.onboarding.phoneLabel}
             value={phone}
             onChangeText={setPhone}
             placeholder={copy.onboarding.phonePlaceholder}
@@ -53,7 +50,6 @@ export default function Phone() {
           />
         </View>
 
-        <View style={styles.spacer} />
 
         {error ? (
           <Txt variant="small" tone="danger" center>
@@ -62,7 +58,7 @@ export default function Phone() {
         ) : null}
 
         <Button
-          label={sending ? copy.common.sending : copy.onboarding.sendCode}
+          label={copy.onboarding.sendCode}
           size="lg"
           fullWidth
           disabled={!ready || sending}
@@ -96,7 +92,6 @@ export default function Phone() {
 const styles = StyleSheet.create((theme) => ({
   screen: { paddingBottom: theme.spacing[7] },
   body: { flex: 1, paddingHorizontal: theme.spacing[6], paddingTop: theme.spacing[5], gap: theme.spacing[4] },
-  head: { gap: theme.spacing[1] + 2 },
   // The dial code and the digits are ONE value — +966551234567 is what gets
   // sent — so this row is a left-to-right island in both languages, never a
   // mirrored pair. `direction` pins it at the node instead of leaving it to
@@ -118,5 +113,4 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
   },
   phoneField: { flex: 1 },
-  spacer: { flex: 1 },
 }));

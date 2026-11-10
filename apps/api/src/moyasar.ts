@@ -19,6 +19,7 @@ export interface MoyasarInvoice {
     amount: number;
     refunded?: number;
     currency: string;
+    source?: { token?: string };
   }>;
 }
 
@@ -120,4 +121,46 @@ export async function refundInvoice(env: Env, invoiceId: string, amount?: number
     throw new Error(`moyasarRefund ${response.status}: ${body.message ?? 'refund failed'}`);
   }
   return { paymentId: payment.id, amount: requested, status: body.status };
+}
+
+export interface MoyasarPayment {
+  id: string; status: string; amount: number; currency: string; invoice_id?: string;
+  refunded?: number; metadata?: Record<string, string>;
+  source?: { token?: string; transaction_url?: string };
+}
+export async function getPayment(env: Env, id: string): Promise<MoyasarPayment | null> {
+  if (!env.MOYASAR_SECRET_KEY) throw new Error('moyasarNotConfigured');
+  const res = await fetch(`${BASE}/payments/${encodeURIComponent(id)}`, { headers: { Authorization: auth(env.MOYASAR_SECRET_KEY) } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`moyasarPayment ${res.status}`);
+  return await res.json() as MoyasarPayment;
+}
+export async function chargeRenewal(env: Env, input: { id: string; amount: number; token: string; membershipId: string; profileId: string; callbackUrl: string }) {
+  if (!env.MOYASAR_SECRET_KEY) throw new Error('moyasarNotConfigured');
+  const existing = await getPayment(env, input.id);
+  if (existing) return existing;
+  const res = await fetch(`${BASE}/payments`, {
+    method: 'POST', headers: { Authorization: auth(env.MOYASAR_SECRET_KEY), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ given_id: input.id, amount: input.amount, currency: 'SAR', description: 'Bubbles subscription renewal', callback_url: input.callbackUrl,
+      metadata: { membership_id: input.membershipId, profile_id: input.profileId, renewal_id: input.id }, source: { type: 'token', token: input.token } }),
+  });
+  if (!res.ok) {
+    // A parallel caller may have already created this exact idempotent charge.
+    const replay = await getPayment(env, input.id);
+    if (replay) return replay;
+    throw new Error(`moyasarRenewal ${res.status}`);
+  }
+  return await res.json() as MoyasarPayment;
+}
+export async function refundPayment(env: Env, paymentId: string) {
+  if (!env.MOYASAR_SECRET_KEY) throw new Error('moyasarNotConfigured');
+  const payment = await getPayment(env, paymentId);
+  if (!payment) throw new Error('paymentNotFound');
+  if (payment.status === 'refunded' || (payment.refunded ?? 0) >= payment.amount) return;
+  const response = await fetch(`${BASE}/payments/${encodeURIComponent(paymentId)}/refund`, {
+    method: 'POST', headers: { Authorization: auth(env.MOYASAR_SECRET_KEY) },
+  });
+  if (!response.ok) throw new Error(`moyasarRefund ${response.status}`);
+  const result = await response.json() as { status: string };
+  if (result.status !== 'refunded') throw new Error('refundPending');
 }

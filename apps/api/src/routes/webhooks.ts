@@ -1,3 +1,4 @@
+import { enableConsentedRenewal } from '../checkout/billing';
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { db } from '../db';
@@ -133,6 +134,7 @@ webhooksRoute.post('/moyasar/invoice', async (c) => {
         console.warn('[dispatch] paid booking team notification failed', error);
       });
     } else if (payment.membership_id) {
+      await enableConsentedRenewal(c.env, invoice, payment.membership_id, payment.profile_id);
       await db(c.env, 'rpc/activate_membership_with_slots', {
         method: 'POST', body: { p_membership: payment.membership_id, p_profile: payment.profile_id },
       });
