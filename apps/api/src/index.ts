@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env } from './env';
+import { retryAccountDeletions } from './accountDeletion';
 import { runRenewals } from './checkout/billing';
 import { db } from './db';
 import { adminRoute } from './routes/admin';
@@ -75,6 +76,7 @@ async function runMaintenance(env: Env) {
     db<number>(env, 'rpc/expire_missed_bookings', { method: 'POST', body: {} }),
   ]);
   await runRenewals(env);
+  await retryAccountDeletions(env);
   console.log('[maintenance] expiry sweep completed', {
     pendingExpired: Number(pendingExpired ?? 0),
     bookingsMissed: Number(bookingsMissed ?? 0),

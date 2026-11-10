@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowRight, Camera, Check, MapPin, Phone, Video } from 'lucide-react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { BeatIcon, Button, Card, IconButton, Input, Num, Screen, Txt, useToast } from '@bubbles/ui-native';
+import { BeatIcon, Button, IconButton, Input, Num, Screen, Txt, useToast } from '@bubbles/ui-native';
 import { ApiError, advance, claimJob, jobs as fetchJobs, nextStage, reportIncident, uploadEvidence, type Job } from '../../src/api';
 import { copy } from '../../src/copy';
 import { useSession } from '../../src/session';
@@ -95,12 +95,15 @@ export default function JobScreen() {
     setIncidentNote(''); setShowIncident(false); toast.show(copy.incidentSent);
   });
 
-  if (!job || job.id !== id) return <Screen contentStyle={styles.page}>
-    <Txt variant="heading" weight="bold">تفاصيل المهمة</Txt>
+  if (!job || job.id !== id) return <Screen contentStyle={styles.page} header={
+    <View style={styles.row}>
+      <Button label={copy.backToJobs} variant="ghost" onPress={() => router.replace('/jobs')} />
+      <Txt variant="heading" weight="bold" style={styles.grow}>تفاصيل المهمة</Txt>
+    </View>
+  }>
     {!loaded ? <ActivityIndicator /> : null}
     <Txt tone={error ? 'danger' : 'secondary'}>{error ?? (loaded ? copy.unavailableJob : 'جارٍ تحميل المهمة')}</Txt>
-    {error ? <Button label="إعادة المحاولة" onPress={() => void load()} /> : null}
-    <Button label={copy.backToJobs} variant="ghost" onPress={() => router.replace('/jobs')} />
+    {error ? <Button label="إعادة المحاولة" onPress={() => load()} /> : null}
   </Screen>;
 
   const a = job.addresses;
@@ -117,12 +120,12 @@ export default function JobScreen() {
   const extras = job.booking_add_ons ?? [];
   const destination = a?.lat != null && a.lng != null ? `${a.lat},${a.lng}` : a?.line;
 
-  return <Screen scroll contentStyle={styles.page} bottomInset={theme.spacing[4]}>
-    <View style={styles.row}>
+  return <Screen scroll contentStyle={styles.page} bottomInset={theme.spacing[4]} header={<View style={styles.row}>
       <IconButton label={copy.backToJobs} variant="ghost" onPress={() => router.replace('/jobs')}><ArrowRight size={theme.scale(22)} color={theme.text.primary} /></IconButton>
       <View style={styles.grow}><Num variant="body" weight="bold">{job.ref}</Num><Txt variant="caption" tone="secondary">{jobDate(job.scheduled_at)}</Txt></View>
       <BeatIcon size="sm" active={LIT[job.stage]} />
-    </View>
+    </View>}>
+
     <View style={styles.destination}>
       <Txt variant="title" weight="bold">{claimed && a?.villa_number ? `فيلا ${a.villa_number}` : a?.line || copy.teamJob}</Txt>
       <Txt variant="small" tone="secondary">{[a?.coverage_areas?.name_ar, a?.coverage_blocks ? `بلوك ${a.coverage_blocks.code}` : null, a?.city].filter(Boolean).join(' · ')}</Txt>
@@ -131,19 +134,37 @@ export default function JobScreen() {
       {extras.length ? <Txt variant="small" tone="secondary">{extras.map((e) => copy.addOns[e.add_on_key] ?? e.add_on_key).join(' · ')}</Txt> : null}
     </View>
 
-    {error ? <View accessibilityLiveRegion="polite" style={styles.error}><Txt tone="danger" variant="small">{error}</Txt>{!fresh ? <Button label="إعادة تحميل المهمة" variant="ghost" disabled={busy || uploading} onPress={() => void load()} /> : null}</View> : null}
+    {error ? <View accessibilityLiveRegion="polite" style={styles.error}><Txt tone="danger" variant="small">{error}</Txt>{!fresh ? <Button label="إعادة تحميل المهمة" variant="ghost" disabled={busy || uploading} onPress={() => load()} /> : null}</View> : null}
 
     {!claimed ? <View style={styles.block}>
       <Txt variant="heading" weight="bold">{copy.teamJob}</Txt>
       <Txt variant="small" tone="secondary">{copy.teamJobSub}</Txt>
-      <Button label={busy ? copy.working : copy.claimJob} size="lg" fullWidth disabled={busy || !fresh} onPress={() => void claim()} />
+      <Button label={copy.claimJob} size="lg" style={styles.mainAction} fullWidth disabled={busy || !fresh} onPress={() => claim()} />
     </View> : <>
       <View style={styles.progress}>
         <WashProgress stage={job.stage} />
-        <Txt variant="heading" weight="bold">{copy.stages[job.stage]}</Txt>
-        <Txt variant="small" tone="secondary">{STAGE_HELP[job.stage]}</Txt>
-        {next && !evidencePhase ? <Button label={busy ? copy.working : copy.actions[next]} size="lg" fullWidth disabled={busy || uploading || !fresh} onPress={() => void step()} /> : null}
+        {!evidencePhase ? <Txt variant="small" tone="secondary">{STAGE_HELP[job.stage]}</Txt> : null}
+        {next && !evidencePhase ? <Button label={copy.actions[next]} size="lg" style={styles.mainAction} fullWidth disabled={busy || uploading || !fresh} onPress={() => step()} /> : null}
       </View>
+      {evidencePhase ? <View style={styles.evidence}>
+        <Txt variant="heading" weight="bold">{evidencePhase === 'before' ? copy.beforeEvidence : copy.afterEvidence}</Txt>
+        <Txt variant="small" tone="secondary">{copy.evidenceInstruction}</Txt>
+        {uploading ? <View style={styles.row}><Txt variant="small">الكاميرا والتوثيق قيد المعالجة</Txt></View> : null}
+        {!evidenceReady && nextAngle ? <>
+          <Button label={`تصوير ${copy.photoAngles[nextAngle]}`} size="lg" style={styles.mainAction} fullWidth disabled={uploading || busy || !fresh} onPress={() => capture('photo', nextAngle)} />
+          <Button label={copy.record360} variant="ghost" fullWidth disabled={uploading || busy || !fresh} icon={<Video size={theme.scale(18)} color={theme.text.primary} />} onPress={() => capture('video', '360')} />
+        </> : <Txt variant="body" weight="bold">{copy.evidenceReady}</Txt>}
+        <View style={styles.photoGrid}>
+          {ANGLES.map((angle) => <View key={angle} style={styles.angle}>
+            {has360 || capturedAngles.has(angle) ? <Check size={theme.scale(19)} color={theme.text.primary} /> : <Camera size={theme.scale(19)} color={theme.text.secondary} />}
+            <Txt variant="small" weight={capturedAngles.has(angle) || has360 ? 'bold' : 'regular'} style={styles.grow}>{copy.photoAngles[angle]}</Txt>
+            <Txt variant="caption" tone="secondary">{has360 || capturedAngles.has(angle) ? 'تم التوثيق' : 'بانتظار الصورة'}</Txt>
+          </View>)}
+        </View>
+        {has360 ? <Button label="إعادة تسجيل الفيديو" variant="ghost" disabled={uploading || busy || !fresh} onPress={() => capture('video', '360')} /> : null}
+        {!has360 && capturedAngles.size > 0 ? <View style={styles.actions}>{ANGLES.filter((angle) => capturedAngles.has(angle)).map((angle) => <Button key={angle} label={`إعادة تصوير ${copy.photoAngles[angle]}`} size="sm" variant="ghost" disabled={uploading || busy || !fresh} onPress={() => capture('photo', angle)} />)}</View> : null}
+        {next && canAdvance ? <Button label={copy.actions[next]} size="lg" style={styles.mainAction} fullWidth disabled={busy || uploading || !fresh} onPress={() => step()} /> : null}
+      </View> : null}
       <View style={styles.block}>
         <Txt variant="heading" weight="bold">{v ? `${v.make} ${v.model}` : copy.vehicle}</Txt>
         <View style={styles.row}><Num variant="body" weight="bold">{v?.plate}</Num><Txt variant="small" tone="secondary">{[v?.color, v ? copy.sizes[v.size] : null].filter(Boolean).join(' · ')}</Txt></View>
@@ -152,29 +173,10 @@ export default function JobScreen() {
         <Txt variant="small" tone="secondary">{a?.line}</Txt>
         {a?.notes ? <View style={styles.notes}><Txt variant="small" weight="semibold">{copy.accessNotes}</Txt><Txt variant="small">{a.notes}</Txt></View> : null}
         <View style={styles.actions}>
-          {destination ? <Button label="الاتجاهات" variant="ghost" icon={<MapPin size={theme.scale(18)} color={theme.action.primary} />} onPress={() => void openLink(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`)} /> : null}
-          {job.customers?.phone ? <Button label={copy.callCustomer} variant="ghost" icon={<Phone size={theme.scale(18)} color={theme.action.primary} />} onPress={() => void openLink(`tel:${job.customers!.phone}`)} /> : null}
+          {destination ? <Button label="الاتجاهات" variant="ghost" icon={<MapPin size={theme.scale(18)} color={theme.text.primary} />} onPress={() => openLink(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`)} /> : null}
+          {job.customers?.phone ? <Button label={copy.callCustomer} variant="ghost" icon={<Phone size={theme.scale(18)} color={theme.text.primary} />} onPress={() => openLink(`tel:${job.customers!.phone}`)} /> : null}
         </View>
       </View>
-      {evidencePhase ? <Card variant="booking" style={styles.block}>
-        <Txt variant="heading" weight="bold">{evidencePhase === 'before' ? copy.beforeEvidence : copy.afterEvidence}</Txt>
-        <Txt variant="small" tone="secondary">{copy.evidenceInstruction}</Txt>
-        <View style={styles.photoGrid}>
-          {ANGLES.map((angle) => <View key={angle} style={styles.angle}>
-            {has360 || capturedAngles.has(angle) ? <Check size={theme.scale(19)} color={theme.text.primary} /> : <Camera size={theme.scale(19)} color={theme.text.secondary} />}
-            <Txt variant="small" weight={capturedAngles.has(angle) || has360 ? 'bold' : 'regular'}>{copy.photoAngles[angle]}</Txt>
-            <Txt variant="caption" tone="secondary">{has360 || capturedAngles.has(angle) ? 'موثّق' : 'بانتظار الصورة'}</Txt>
-          </View>)}
-        </View>
-        {uploading ? <View style={styles.row}><ActivityIndicator /><Txt variant="small">الكاميرا والتوثيق قيد المعالجة</Txt></View> : null}
-        {!evidenceReady && nextAngle ? <>
-          <Button label={`صوّر ${copy.photoAngles[nextAngle]}`} fullWidth disabled={uploading || busy || !fresh} onPress={() => void capture('photo', nextAngle)} />
-          <Button label={copy.record360} variant="ghost" fullWidth disabled={uploading || busy || !fresh} icon={<Video size={theme.scale(18)} color={theme.action.primary} />} onPress={() => void capture('video', '360')} />
-        </> : <Txt variant="body" weight="bold">{copy.evidenceReady}</Txt>}
-        {has360 ? <Button label="إعادة تسجيل الفيديو" variant="ghost" disabled={uploading || busy || !fresh} onPress={() => void capture('video', '360')} /> : null}
-        {!has360 && capturedAngles.size > 0 ? <View style={styles.actions}>{ANGLES.filter((angle) => capturedAngles.has(angle)).map((angle) => <Button key={angle} label={`إعادة تصوير ${copy.photoAngles[angle]}`} size="sm" variant="ghost" disabled={uploading || busy || !fresh} onPress={() => void capture('photo', angle)} />)}</View> : null}
-        {next && canAdvance ? <Button label={busy ? copy.working : copy.actions[next]} size="lg" fullWidth disabled={busy || uploading || !fresh} onPress={() => void step()} /> : null}
-      </Card> : null}
       <View style={styles.block}>
         {!showIncident ? <Button label={copy.openReport} variant="ghost" onPress={() => setShowIncident(true)} /> : <>
           <Txt variant="heading" weight="bold">{copy.reportProblem}</Txt>
@@ -183,7 +185,7 @@ export default function JobScreen() {
             <Button label={copy.otherProblem} variant={incidentCategory === 'other' ? 'dark' : 'ghost'} onPress={() => setIncidentCategory('other')} />
           </View>
           <Input label={copy.problemDetails} value={incidentNote} onChangeText={setIncidentNote} placeholder={copy.problemPlaceholder} multiline maxLength={2000} />
-          <Button label={busy ? copy.working : copy.sendReport} fullWidth disabled={busy || uploading || !fresh || !incidentNote.trim()} onPress={() => void sendIncident()} />
+          <Button label={copy.sendReport} fullWidth disabled={busy || uploading || !fresh || !incidentNote.trim()} onPress={() => sendIncident()} />
           <Button label={copy.cancel} variant="ghost" disabled={busy || !fresh} onPress={() => setShowIncident(false)} />
         </>}
       </View>
@@ -197,10 +199,12 @@ const styles = StyleSheet.create((theme) => ({
   grow: { flex: 1 },
   destination: { gap: theme.spacing[2] },
   block: { gap: theme.spacing[3], boxShadow: undefined },
-  progress: { backgroundColor: theme.surface.bookingSoft, borderRadius: theme.radius.lg, padding: theme.spacing[5], gap: theme.spacing[3] },
+  progress: { gap: theme.spacing[3] },
+  evidence: { backgroundColor: theme.surface.card, borderRadius: theme.radius.md, padding: theme.spacing[4], gap: theme.spacing[3] },
+  mainAction: { minHeight: theme.scale(64) },
   notes: { gap: theme.spacing[2], padding: theme.spacing[4], borderRadius: theme.radius.md, backgroundColor: theme.surface.bookingSoft },
   actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: theme.spacing[2] },
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing[2] },
-  angle: { minWidth: '45%', flex: 1, paddingVertical: theme.spacing[3], gap: theme.spacing[1], alignItems: 'center' },
+  photoGrid: { gap: theme.spacing[2] },
+  angle: { flexDirection: 'row', paddingVertical: theme.spacing[2], gap: theme.spacing[3], alignItems: 'center' },
   error: { paddingVertical: theme.spacing[2] },
 }));

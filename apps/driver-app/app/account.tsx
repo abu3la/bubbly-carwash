@@ -21,7 +21,7 @@ export default function Account() {
   const requestSequence = useRef(0);
   const load = useCallback(async () => {
     const request = ++requestSequence.current;
-    setLoading(true); setError(null);
+    setLoading(true);
     try {
       const [account, work, history] = await Promise.allSettled([driverProfile(), jobs(), incidents()]);
       if (request !== requestSequence.current) return;
@@ -30,6 +30,7 @@ export default function Account() {
       if (history.status === 'fulfilled') setReports(history.value.incidents);
       const failed = [account, work, history].find((result) => result.status === 'rejected');
       if (failed?.status === 'rejected') setError(copy.errors[failed.reason instanceof ApiError ? failed.reason.code : 'unknown'] ?? copy.errors.unknown);
+      else setError(null);
     } catch (e) { setError(copy.errors[e instanceof ApiError ? e.code : 'unknown'] ?? copy.errors.unknown); }
     finally { if (request === requestSequence.current) setLoading(false); }
   }, []);
@@ -46,7 +47,7 @@ export default function Account() {
     <Screen scroll safeBottom={false} contentStyle={styles.page}>
       <Txt variant="title" weight="bold">حسابي</Txt>
       {loading ? <ActivityIndicator /> : null}
-      {error ? <View style={styles.block}><Txt variant="small" tone="danger">{error}</Txt><Button label="إعادة المحاولة" variant="ghost" disabled={loading} onPress={() => void load()} /></View> : null}
+      {error ? <View style={styles.block}><Txt variant="small" tone="danger">{error}</Txt><Button label="إعادة المحاولة" variant="ghost" disabled={loading} onPress={() => load()} /></View> : null}
       <View style={styles.identity}>
         <Txt variant="heading" weight="bold">{profile?.full_name || 'حساب السائق'}</Txt>
         <Num variant="body" tone="secondary">{profile?.phone || session?.phone}</Num>
@@ -63,7 +64,7 @@ export default function Account() {
           <Txt variant="caption" tone="secondary">{new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { dateStyle: 'medium', timeZone: 'Asia/Riyadh' }).format(new Date(report.created_at))}</Txt>
         </Card>)}
       </View>
-      <Button label={busy ? 'جارٍ تسجيل الخروج' : copy.signOut} variant="dark" fullWidth disabled={busy} onPress={() => void logout()} />
+      <Button label={copy.signOut} variant="dark" fullWidth disabled={busy} onPress={() => logout()} />
     </Screen>
     <DriverNav active="account" />
   </View>;

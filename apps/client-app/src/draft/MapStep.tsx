@@ -56,6 +56,7 @@ export default function MapStep() {
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [villa, setVilla] = useState('');
   const [checkingVilla, setCheckingVilla] = useState(false);
+  const [retryingCoverage, setRetryingCoverage] = useState(false);
   const ar = language === 'ar';
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -332,15 +333,11 @@ export default function MapStep() {
         <IconButton
           label={copy.onboarding.useCurrentLocation}
           size="lg"
-          disabled={locating}
+          loading={locating}
           onPress={goToCurrentLocation}
           style={styles.locate}
         >
-          {locating ? (
-            <ActivityIndicator size="small" color={theme.action.primary} />
-          ) : (
-            <LocateFixed size={theme.scale(22)} color={theme.action.primary} strokeWidth={2.2} />
-          )}
+          <LocateFixed size={theme.scale(22)} color={theme.action.primary} strokeWidth={2.2} />
         </IconButton>
       </View>
 
@@ -411,12 +408,16 @@ export default function MapStep() {
             },
           })}
         /> : inArea ? <Button
-          label={checkingVilla ? copy.common.verifying : (ar ? 'تحقق من الفيلا' : 'Check villa')}
+          label={ar ? 'تحقق من الفيلا' : 'Check villa'} loading={checkingVilla}
           size="lg" fullWidth disabled={busy || checkingVilla || !villa.trim()}
-          onPress={() => void verifyVilla()}
-        /> : checkState === 'error' ? <Button
+          onPress={() => verifyVilla()}
+        /> : checkState === 'error' || retryingCoverage ? <Button
           label={ar ? 'إعادة التحقق' : 'Retry coverage'} size="lg" fullWidth
-          onPress={() => { if (place) void inspect(place.lat, place.lng); }}
+          onPress={async () => {
+            if (!place) return;
+            setRetryingCoverage(true);
+            try { await inspect(place.lat, place.lng); } finally { setRetryingCoverage(false); }
+          }}
         /> : null}
         {!returnTo ? <Button label={ar ? 'متابعة دون حجز' : 'Continue without booking'} variant="ghost" fullWidth onPress={() => router.replace('/(tabs)/home')} /> : null}
       </ScrollView>

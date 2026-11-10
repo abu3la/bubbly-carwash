@@ -10,6 +10,7 @@
   },
   "scripts": {
     "lint": "eslint .",
+    "test": "node --test src/actions/*.test.cjs",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -17,18 +18,19 @@
     "@bubbles/types": "workspace:*"
   },
   "peerDependencies": {
+    "lucide-react-native": ">=1",
     "react": ">=19",
     "react-native": ">=0.76",
-    "react-native-unistyles": ">=3",
-    "react-native-reanimated": ">=4",
     "react-native-gesture-handler": ">=2.20",
+    "react-native-reanimated": ">=4",
     "react-native-safe-area-context": ">=5",
     "react-native-svg": ">=15",
-    "lucide-react-native": ">=1"
+    "react-native-unistyles": ">=3"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",
     "eslint": "^9.34.0",
+    "react-test-renderer": "19.1.0",
     "typescript": "^5.9.2"
   }
 }

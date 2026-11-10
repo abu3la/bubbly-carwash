@@ -17,20 +17,19 @@ export default function Vehicles() {
   const [error, setError] = useState('');
   const ar = language === 'ar';
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={ar ? 'سياراتي' : 'My vehicles'} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={ar ? 'سياراتي' : 'My vehicles'} onBack={() => router.back()} />}>
       <View style={styles.body}>
         {loading ? <Txt variant="small" tone="secondary">{ar ? 'نحمّل سياراتك…' : 'Loading your vehicles…'}</Txt> : null}
         {!loading && !vehicles.length ? <Txt variant="body">{ar ? 'أضف سيارتك ليتعرف عليها الفريق عند الوصول.' : 'Add your car so the team can identify it on arrival.'}</Txt> : null}
         {error ? <Txt variant="small" tone="danger">{error}</Txt> : null}
-        {loadError ? <Button label={ar ? 'إعادة المحاولة' : 'Try again'} variant="secondary" fullWidth onPress={() => void refresh()} /> : null}
+        {loadError ? <Button label={ar ? 'إعادة المحاولة' : 'Try again'} variant="secondary" fullWidth onPress={() => refresh()} /> : null}
         {vehicles.map((vehicle) => (
           <Card key={vehicle.id} selected={vehicle.is_default} style={styles.card}>
             <Car size={theme.scale(21)} color={theme.text.secondary} strokeWidth={2} />
             <View style={styles.text}>
               <Txt variant="body" weight="bold">{vehicle.make} {vehicle.model}</Txt>
               <Txt variant="caption" tone="secondary">{vehicle.color} · {vehicle.plate}</Txt>
-              {vehicle.is_default ? <Txt variant="caption" weight="semibold" tone="action">{ar ? 'السيارة الافتراضية' : 'Default vehicle'}</Txt> : null}
+              {vehicle.is_default ? <Txt variant="caption" weight="semibold" tone="secondary">{ar ? 'السيارة الافتراضية' : 'Default vehicle'}</Txt> : null}
             </View>
             <View style={styles.actions}>
               {!vehicle.is_default ? <Button label={ar ? 'اختيار' : 'Select'} size="sm" variant="secondary" disabled={busy !== null} onPress={async () => { setBusy(vehicle.id); setError(''); try { await setDefaultVehicle(vehicle.id); await refresh(); } catch { setError(ar ? 'تعذّر تحديث السيارة. قد تكون مرتبطة بحجز. حاول مرة أخرى.' : 'Could not update the vehicle. It may be linked to a booking. Try again.'); } finally { setBusy(null); } }} /> : null}

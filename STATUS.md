@@ -2,6 +2,53 @@
 
 Updated 2026-09-05. This file is the hand-off checkpoint after a restart.
 
+## Customer safeguards (2026-10-31, local)
+
+Not deployed. The API, the customer app and migration
+`20261031000021_customer_issues_account_deletion.sql` must ship together: the
+app calls `DELETE /me` and `POST /bookings/:id/issues`, which need that migration.
+
+- Account deletion lives under Profile. It erases personal data and the sign-in
+  identity, cancels the subscription and upcoming bookings, and keeps bookings,
+  payments and refunds without identifying details. `profiles` no longer has a
+  foreign key to `auth.users`, because those records must outlive the identity.
+  `account_deletions` retries the R2 and identity steps from the maintenance sweep.
+- Cancelling a booking needs confirmation and shows its effect on the money.
+  Approved rule (2026-11-10): a confirmed booking can be cancelled until 3 hours
+  before it starts (`CANCELLATION_NOTICE_HOURS` in `@bubbles/utils`), and a paid
+  one is refunded through Moyasar at once. Unpaid checkout holds can always be
+  released. A refund Moyasar refuses opens a `refund_review` case in Operations.
+  Account deletion applies the same rule to each paid upcoming booking. The
+  booking checkout page and review screen state the notice.
+- Customers report problems from a started booking. Reports join the driver
+  incidents in Operations (`operations_incidents.source`), and resolving one
+  notifies the customer.
+- Payment failures read from `apps/client-app/src/paymentFailure.ts`. Anything
+  unexplained after payment offers to check again, never to pay again.
+- Customer stage notifications are titled with the event. The reference moved to
+  the body.
+
+Checks: `pnpm --filter @bubbles/api test`, which runs every migration in PGlite.
+
+## Customer colour plan (2026-11-10, local)
+
+Approved by the owner and applied to the customer app only. No new hues: each
+approved colour has one job, exposed as `theme.tone` in `libs/ui-native`.
+
+- `BookingTicket` takes a `tone`: ice while scheduled, violet tint on arrival,
+  guava tint while washing, yellow tint when verified. Missed is guava tint and
+  cancelled is neutral. Bookings shows the `StatusBadge` seal on the stub and
+  colours calendar dots by status.
+- `MembershipSummary` sits on ink with the three beats lit.
+- `Screen` has `done` and `attention` grounds for the success and
+  payment-failure screens. Notifications take the tint of their event.
+- `onBeat.washed` is now ink: white on guava was 3.0:1 on the seal's small label.
+- Using guava for missed bookings and failures goes beyond the "three beats
+  only" status rule in the tokens. The owner accepted that with the plan.
+
+Not done: before/after photos on the booking card, a custom icon set, and the
+driver app.
+
 ## Today's saved progress
 
 - Customer home now leads with monthly subscription signup for nonmembers. For

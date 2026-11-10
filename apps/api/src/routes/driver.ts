@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { db } from '../db';
-import { notify } from '../notifications';
+import { notify, washStageMessage } from '../notifications';
 
 /**
  * The technician's app.
@@ -179,21 +179,12 @@ driverRoute.post('/jobs/:id/stage', async (c) => {
     body: { booking_id: id, stage, actor_id: caller.id, note: note?.trim() ?? '' },
   });
 
-  const messages: Record<Stage, { ar: string; en: string }> = {
-    booked: { ar: 'تم تأكيد حجزك.', en: 'Your booking is confirmed.' },
-    arrived: { ar: 'وصل فريق BubblesCarWash إلى موقعك.', en: 'Your BubblesCarWash team has arrived.' },
-    washed: { ar: 'اكتمل غسيل سيارتك وتجري مراجعة الجودة.', en: 'Your wash is complete and being checked.' },
-    verified: { ar: 'اكتملت غسلتك وتم حفظ توثيق قبل وبعد.', en: 'Your wash is complete and the evidence is ready.' },
-  };
   try {
     await notify(c.env, {
       profileId: booking.profile_id,
       bookingId: id,
       kind: `booking_${stage}`,
-      titleAr: booking.ref,
-      titleEn: booking.ref,
-      bodyAr: messages[stage].ar,
-      bodyEn: messages[stage].en,
+      ...washStageMessage(stage, booking.ref),
       data: { route: '/(tabs)/bookings' },
     });
   } catch (error) {

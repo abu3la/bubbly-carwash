@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import { BookingTicket, Button, Card, Checkbox, Radio, Screen, Tooltip, Txt } from '@bubbles/ui-native';
+import { BookingTicket, Button, Checkbox, Radio, Screen, Tooltip, Txt } from '@bubbles/ui-native';
 import { FlowHeader } from '../../src/components/FlowHeader';
 import { LedgerRow, SectionLabel } from '../../src/components/Bits';
 import { type AddOn } from '../../src/content';
@@ -50,18 +50,22 @@ export default function Review() {
   }, [clubAvailable, directAvailable, draft.source, draft.setSource]);
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={copy.booking.review} step={4} steps={5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={copy.booking.review} step={4} steps={5} onBack={() => router.back()} />}>
 
       <View style={styles.body}>
-        <BookingTicket
-          time={draft.slot}
-          meta={`${draft.day} · ${draft.vehicleLabel} · ${draft.addressLabel}`}
-        />
+        <View style={styles.summary}>
+          <BookingTicket label={language === 'ar' ? 'الموعد' : 'Appointment'} time={draft.slot} meta={draft.day} />
+          <View style={styles.summaryDetails}>
+            <Txt variant="small" tone="secondary">{copy.booking.vehicleSection}</Txt>
+            <Txt variant="body" weight="semibold">{draft.vehicleLabel}</Txt>
+            <Txt variant="small" tone="secondary">{copy.booking.locationSection}</Txt>
+            <Txt variant="body">{draft.addressLabel}</Txt>
+          </View>
+        </View>
 
         <View>
           <SectionLabel>{copy.booking.addOnsSection}</SectionLabel>
-          <Card style={styles.addOns}>
+          <View style={styles.addOns}>
             {addOns.map((addOn) => (
               <Checkbox
                 key={addOn.key}
@@ -70,14 +74,14 @@ export default function Review() {
                 onChange={() => draft.toggleAddOn(addOn.key)}
               />
             ))}
-          </Card>
+          </View>
         </View>
 
         {/* Keep the real membership and direct-payment choices explicit. */}
         {sources.length > 1 ? (
           <View>
             <SectionLabel>{copy.booking.paySourceSection}</SectionLabel>
-            <Card style={styles.sources}>
+            <View style={styles.sources}>
               {sources.map((source) => (
                 <Radio
                   key={source}
@@ -88,7 +92,7 @@ export default function Review() {
                   }
                 />
               ))}
-            </Card>
+            </View>
             {/* Long-press explains the rule the ledger below then shows —
                 this is the moment the question comes up. */}
             <Tooltip label={copy.booking.creditCoversWashOnly}>
@@ -133,6 +137,8 @@ export default function Review() {
           <LedgerRow label={copy.common.totalWithVat} amount={copy.common.money(draft.total)} strong />
         </View>
 
+        <Txt variant="caption" tone="secondary">{copy.booking.cancellationNote}</Txt>
+
         <Button
           label={draft.total === 0 ? copy.booking.confirmBooking : copy.booking.continueToPayment}
           size="lg"
@@ -148,6 +154,8 @@ export default function Review() {
 const styles = StyleSheet.create((theme) => ({
   page: { paddingBottom: theme.spacing[7] },
   body: { paddingHorizontal: theme.spacing[5], paddingTop: theme.spacing[4], gap: theme.spacing[5] },
+  summary: { gap: theme.spacing[4] },
+  summaryDetails: { gap: theme.spacing[2] },
   addOns: { gap: theme.spacing[2] },
   sources: { gap: theme.spacing[3] },
   sourceNote: { marginTop: theme.spacing[2] },

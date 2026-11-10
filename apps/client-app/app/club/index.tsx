@@ -23,14 +23,12 @@ export default function MonthlyPackages() {
   const weekly = frequencies.includes(selectedWeekly) ? selectedWeekly : frequencies[0];
   const choices = plans.filter((plan) => plan.weekly === weekly);
   if (membership) return <Redirect href="/club/dashboard" />;
-  if (customerLoading) return <Screen contentStyle={styles.page}>
-    <FlowHeader title={copy.club.title} onBack={() => router.back()} />
+  if (customerLoading) return <Screen contentStyle={styles.page} header={<FlowHeader title={copy.club.title} onBack={() => router.back()} />}>
     <View style={styles.body}><Txt variant="body" tone="secondary">{ar ? 'نحمّل بيانات اشتراكك…' : 'Loading your subscription…'}</Txt></View>
   </Screen>;
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={copy.club.title} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={copy.club.title} onBack={() => router.back()} />}>
       <View style={styles.body}>
         <View style={styles.intro}>
           <Txt variant="title" weight="bold">{ar ? 'غسيل منتظم، لمدة شهر' : 'Regular washes for a month'}</Txt>
@@ -39,7 +37,7 @@ export default function MonthlyPackages() {
         {loading ? <Txt variant="small" tone="secondary">{ar ? 'نحمّل الباقات والأسعار…' : 'Loading packages and prices…'}</Txt> : null}
         {error ? <View style={styles.intro}>
           <Txt variant="small" tone="danger">{ar ? 'تعذّر تحميل الأسعار. أعد المحاولة لعرض الباقات.' : 'Prices could not be loaded. Retry to view the packages.'}</Txt>
-          <Button label={ar ? 'إعادة تحميل الباقات' : 'Reload packages'} fullWidth onPress={() => void reload()} />
+          <Button label={ar ? 'إعادة تحميل الباقات' : 'Reload packages'} fullWidth onPress={() => reload()} />
         </View> : null}
         {!loading && !error && !plans.length ? <Txt variant="body" tone="secondary">{ar ? 'لا توجد باقات متاحة حاليًا.' : 'No packages are available right now.'}</Txt> : null}
         {!loading && !error && plans.length ? <>

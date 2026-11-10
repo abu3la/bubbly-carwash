@@ -15,7 +15,7 @@ interface SuccessScreenProps {
 export function SuccessScreen({ title, sub, children, actions }: SuccessScreenProps) {
 
   return (
-    <Screen contentStyle={styles.screen}>
+    <Screen ground="done" contentStyle={styles.screen}>
       <View style={styles.top}>
         {/* The seal is the brand mark with every beat lit, which is what the
             same mark means on the tracking screen: finished. A tick dropped on

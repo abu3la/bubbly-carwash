@@ -43,8 +43,9 @@ checkoutRoute.get('/:invoice', async (c) => {
     const kind = payment.membership_id ? 'membership' : 'booking';
     const target = payment.membership_id ?? payment.booking_id!;
     // App explicitly opts in; the same URL otherwise stays a normal web page.
+    const declined = page.status !== 'paid' && Boolean(invoice.payments?.length) && invoice.payments!.every((p) => p.status === 'failed');
     page.returnUrl = base.searchParams.get('app') === '1'
-      ? `${origin}/payments/return?kind=${kind}&id=${target}&result=${page.status === 'paid' ? 'success' : 'cancel'}`
+      ? `${origin}/payments/return?kind=${kind}&id=${target}&result=${page.status === 'paid' ? 'success' : 'cancel'}${declined ? '&reason=declined' : ''}`
       : undefined;
     page.statusUrl = action('status'); page.consentUrl = action('prepare');
     page.fallbackUrl = invoice.url;

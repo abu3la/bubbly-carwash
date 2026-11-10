@@ -262,10 +262,15 @@ p {
   margin-top: 4px;
 }
 .order-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
   font-size: 13px;
   padding: 0 6px;
   color: var(--secondary);
 }
+.order-note svg { flex: none; margin-top: 2px; }
 .payment-card {
   padding: 26px 28px;
   background: var(--card);

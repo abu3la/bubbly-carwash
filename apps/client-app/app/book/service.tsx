@@ -34,12 +34,11 @@ export default function ChooseService() {
     : [];
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={copy.booking.chooseService} step={1} steps={5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={copy.booking.chooseService} step={1} steps={5} onBack={() => router.back()} />}>
 
       <View style={styles.body}>
         {loading ? <Txt variant="small" tone="secondary" center>{language === 'ar' ? 'جارٍ تحميل الخدمات والأسعار…' : 'Loading services and prices…'}</Txt> : null}
-        {error ? <Button label={language === 'ar' ? 'إعادة تحميل الأسعار' : 'Retry prices'} variant="secondary" fullWidth onPress={() => void reload()} /> : null}
+        {error ? <Button label={language === 'ar' ? 'إعادة تحميل الأسعار' : 'Retry prices'} variant="secondary" fullWidth onPress={() => reload()} /> : null}
         <View style={styles.services}>
           {services.map((option) => (
             <Card
@@ -49,7 +48,7 @@ export default function ChooseService() {
               variant={option.key === draft.serviceKey ? 'booking' : 'default'}
               style={styles.service}
             >
-              <Droplets size={theme.scale(26)} color={theme.action.primary} strokeWidth={2} />
+              <Droplets size={theme.scale(26)} color={theme.text.secondary} strokeWidth={2} />
               <Txt variant="heading" weight="bold">
                 {option.name}
               </Txt>
@@ -70,11 +69,11 @@ export default function ChooseService() {
 
         <View>
           <SectionLabel>{copy.booking.whatsIncluded}</SectionLabel>
-          <Card style={styles.includes}>
+          <View style={styles.includes}>
             {selected.includes.map((line) => (
               <TickRow key={line}>{line}</TickRow>
             ))}
-          </Card>
+          </View>
         </View>
 
         <Button label={copy.booking.continueBooking} size="lg" fullWidth disabled={loading || error || services.length === 0} onPress={() => router.push('/book/vehicle')} />

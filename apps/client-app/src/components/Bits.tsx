@@ -4,10 +4,10 @@ import { Check } from 'lucide-react-native';
 import { useUnistyles, StyleSheet } from 'react-native-unistyles';
 import { Num, Reveal, Txt } from '@bubbles/ui-native';
 
-/** The one small tracked-out label in the system, above a group. */
+/** A readable heading for a related group. */
 export function SectionLabel({ children }: { children: string }) {
   return (
-    <Txt variant="label" weight="bold" tone="muted" style={styles.sectionLabel}>
+    <Txt variant="body" weight="semibold" tone="primary" style={styles.sectionLabel}>
       {children}
     </Txt>
   );
@@ -51,9 +51,7 @@ export function TickRow({ children }: { children: string }) {
   const { theme } = useUnistyles();
   return (
     <View style={styles.tickRow}>
-      <View style={styles.tickDisc}>
-        <Check size={theme.scale(11)} strokeWidth={3} color={theme.action.primary} />
-      </View>
+      <Check size={18} strokeWidth={2} color={theme.text.secondary} />
       <Txt variant="small" style={styles.tickText}>
         {children}
       </Txt>
@@ -90,14 +88,5 @@ const styles = StyleSheet.create((theme) => ({
   // instead of pushing the amount off its shared end edge.
   ledgerLabel: { flexShrink: 1 },
   tickRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing[2] + 2 },
-  tickDisc: {
-    width: theme.scale(20),
-    height: theme.scale(20),
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.action.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
   tickText: { flex: 1 },
 }));

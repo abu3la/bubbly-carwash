@@ -12,7 +12,7 @@ export type CardVariant = 'default' | 'booking' | 'dark' | 'stack';
 
 interface CardProps {
   children: ReactNode;
-  /** booking = flat ice · dark = deep ink · stack = hard ice offset (promo). */
+  /** Surface hierarchy: booking uses ice; ordinary content stays on white. */
   variant?: CardVariant;
   onPress?: () => void;
   /** Draws the violet selection ring used by pickable cards. */
@@ -32,6 +32,7 @@ export function Card({ children, variant = 'default', onPress, selected, style }
   return (
     <AnimatedPressable
       accessibilityRole="button"
+      accessibilityState={selected === undefined ? undefined : { selected }}
       onPress={onPress}
       onPressIn={() => {
         // A card settles slightly inward under the thumb. It never lifts.
@@ -58,15 +59,6 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.lg,
     borderCurve: 'continuous',
     padding: theme.layout.cardPad,
-    // A selected card is ringed, not glowing; the booking card is deliberately
-    // flat, so tone alone separates it from the page.
-    boxShadow: selected
-      ? `0 0 0 2px ${theme.action.primary}`
-      : {
-          default: theme.shadow.card,
-          booking: undefined,
-          dark: theme.shadow.card,
-          stack: theme.shadow.stackIce,
-        }[variant],
+    boxShadow: selected ? `inset 0 0 0 2px ${theme.action.primary}` : undefined,
   }),
 }));

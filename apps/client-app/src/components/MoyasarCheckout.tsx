@@ -6,7 +6,7 @@ import { BeatIcon, Button, Screen, Txt, useLocale } from '@bubbles/ui-native';
 import { API_ORIGIN } from '../api';
 import { FlowHeader } from './FlowHeader';
 
-type CheckoutResult = 'success' | 'cancel';
+export type CheckoutResult = 'success' | 'cancel' | 'declined';
 
 interface MoyasarCheckoutProps {
   checkoutUrl: string;
@@ -15,6 +15,12 @@ interface MoyasarCheckoutProps {
 
 const localPreview = __DEV__ && process.env.EXPO_PUBLIC_CHECKOUT_PREVIEW === '1';
 const isLocalPreview = (url: URL) => localPreview && url.origin === 'http://localhost:4189';
+
+function resultOf(url: URL): CheckoutResult {
+  const result = url.searchParams.get('result');
+  if (result === 'success') return 'success';
+  return result === 'declined' || url.searchParams.get('reason') === 'declined' ? 'declined' : 'cancel';
+}
 
 function isMoyasarCheckoutUrl(value: string) {
   try {
@@ -63,11 +69,11 @@ export function MoyasarCheckout({ checkoutUrl, onResult }: MoyasarCheckoutProps)
     try {
       const parsed = new URL(url);
       if (parsed.protocol === 'bubblescarwash:') {
-        finish(parsed.searchParams.get('result') === 'success' ? 'success' : 'cancel');
+        finish(resultOf(parsed));
         return false;
       }
       if (parsed.origin === API_ORIGIN && parsed.pathname === '/payments/return') {
-        finish(parsed.searchParams.get('result') === 'success' ? 'success' : 'cancel');
+        finish(resultOf(parsed));
         return false;
       }
       return isLocalPreview(parsed) || parsed.protocol === 'https:' || parsed.protocol === 'about:';
@@ -102,11 +108,10 @@ export function MoyasarCheckout({ checkoutUrl, onResult }: MoyasarCheckoutProps)
   }
 
   return (
-    <Screen contentStyle={styles.screen}>
-      <FlowHeader
+    <Screen contentStyle={styles.screen} header={<FlowHeader
         title={ar ? 'الدفع' : 'Payment'}
         onBack={() => finish('cancel')}
-      />
+      />}>
       <View style={styles.browser}>
         <WebView
           key={reloadKey}

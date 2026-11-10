@@ -73,13 +73,12 @@ export default function SaveAddress() {
   };
 
   return (
-    <Screen scroll contentStyle={styles.screen}>
-      <FlowHeader
+    <Screen scroll contentStyle={styles.screen} header={<FlowHeader
         title={copy.onboarding.addressTitle}
         step={picked.returnTo ? undefined : 4}
         steps={picked.returnTo ? undefined : 5}
         onBack={() => router.back()}
-      />
+      />}>
 
       <View style={styles.body}>
         <View style={styles.head}>
@@ -130,9 +129,7 @@ export default function SaveAddress() {
         ) : null}
 
         <Button
-          label={saving
-            ? copy.common.sending
-            : picked.returnTo
+          label={picked.returnTo
               ? copy.onboarding.saveLocation
               : copy.onboarding.saveAndContinue}
           size="lg"

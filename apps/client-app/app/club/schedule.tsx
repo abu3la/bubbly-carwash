@@ -52,9 +52,9 @@ export default function ClubSchedule() {
   useEffect(() => {
     if (address?.lat == null || address.lng == null || !address.villa_number) { setAvailability(null); setLoading(false); return; }
     let live = true;
-    setLoading(true); setFailed(false); setAvailability(null);
+    setLoading(true); setAvailability(null);
     fetchAvailability(address.lat, address.lng, date, address.villa_number)
-      .then((value) => { if (live) setAvailability(value); })
+      .then((value) => { if (live) { setAvailability(value); setFailed(false); } })
       .catch(() => { if (live) { setAvailability(null); setFailed(true); } })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
@@ -83,8 +83,7 @@ export default function ClubSchedule() {
   marked[date] = { ...marked[date], selected: true, selectedColor: theme.action.primary } as never;
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={ar ? 'مواعيد الاشتراك' : 'Subscription appointments'} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={ar ? 'مواعيد الاشتراك' : 'Subscription appointments'} onBack={() => router.back()} />}>
       <View style={styles.body}>
         <Txt variant="small" tone="secondary">
           {ar ? `اختر ${quota} أيام لجدولك الأسبوعي. سنكرر نفس المواعيد كل 7 أيام طوال دورة الـ30 يومًا.` : `Choose ${quota} days for your weekly schedule. The same appointments repeat every 7 days through the 30-day cycle.`}
@@ -182,7 +181,7 @@ export default function ClubSchedule() {
 
         {failed ? <View style={styles.section}>
           <Txt variant="small" tone="danger">{ar ? 'تعذّر تحميل المواعيد. تحقق من اتصالك وحاول مرة أخرى.' : 'Could not load appointments. Check your connection and try again.'}</Txt>
-          <Button label={ar ? 'إعادة المحاولة' : 'Try again'} variant="secondary" fullWidth onPress={() => setRetry((value) => value + 1)} />
+          <Button label={ar ? 'إعادة المحاولة' : 'Try again'} variant="secondary" fullWidth loading={loading} onPress={() => setRetry((value) => value + 1)} />
         </View> : null}
         {!hasVillaAddress(address) ? <Txt variant="small" tone="secondary">{ar ? 'تحقق من موقع الفيلا ورقمها أولًا لعرض المواعيد.' : 'Verify your villa location and number first to see appointments.'}</Txt> : null}
         {draft.slots.length ? (

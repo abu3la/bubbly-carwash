@@ -28,5 +28,5 @@ const styles = StyleSheet.create((theme) => ({
   row: { flexDirection: 'row', gap: theme.spacing[3], paddingVertical: theme.spacing[2] },
   step: { flex: 1, gap: theme.spacing[1] },
   track: { height: theme.scale(6), borderRadius: theme.radius.pill, backgroundColor: theme.palette.ink16, marginBottom: theme.spacing[2] },
-  fill: { height: '100%', borderRadius: theme.radius.pill, backgroundColor: theme.action.primary },
+  fill: { height: '100%', borderRadius: theme.radius.pill, backgroundColor: theme.text.primary },
 }));

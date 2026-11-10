@@ -104,7 +104,7 @@ export default function Home() {
           label={language === 'ar' ? 'التنبيهات' : 'Alerts'}
           variant="ghost"
           size="sm"
-          icon={<Bell size={theme.scale(16)} color={theme.action.primary} strokeWidth={2} />}
+          icon={<Bell size={theme.scale(16)} color={theme.text.primary} strokeWidth={2} />}
           onPress={() => router.push('/notifications')}
         />
       </View>
@@ -127,6 +127,7 @@ export default function Home() {
             label={appointment.day}
             time={appointment.time}
             meta={appointment.date}
+            tone={booking.stage}
             stub={<View style={styles.washState}>
               <BeatIcon size="sm" active={progress} />
               <Txt variant="caption" weight="semibold" center>{status}</Txt>
@@ -140,7 +141,7 @@ export default function Home() {
             <Txt variant="small" tone="secondary">{booking.addresses.line}</Txt>
           </View>
           <Button label={copy.home.viewWash} size="lg" fullWidth onPress={openAppointment} />
-          {error ? <View style={styles.washDetails}><Txt variant="small" tone="secondary">{copy.home.refreshWash}</Txt><Button label={copy.home.retryWash} variant="ghost" size="sm" onPress={() => void refresh()} /></View> : null}
+          {error ? <View style={styles.washDetails}><Txt variant="small" tone="secondary">{copy.home.refreshWash}</Txt><Button label={copy.home.retryWash} variant="ghost" size="sm" onPress={() => refresh()} /></View> : null}
         </Stagger>
       ) : membership ? (
         <Card variant="booking" style={styles.nextWash}>
@@ -149,10 +150,11 @@ export default function Home() {
             {loading ? copy.home.loadingWash : error ? copy.home.washLoadError : copy.home.noUpcomingWash}
           </Txt>
           {!loading && !error ? <Txt variant="small" tone="secondary">{copy.home.chooseWashTime}</Txt> : null}
-          {!loading ? <Button
+          {(!loading || error) ? <Button
+            loading={loading && error}
             label={error ? copy.home.retryWash : copy.home.scheduleWash}
             size="lg" fullWidth
-            onPress={error ? () => void refresh() : scheduleWash}
+            onPress={error ? () => refresh() : scheduleWash}
           /> : null}
         </Card>
       ) : null}

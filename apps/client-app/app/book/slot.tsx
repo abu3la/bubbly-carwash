@@ -62,11 +62,11 @@ export default function ChooseSlot() {
       setAvailability(null); setFailed(true); setLoading(false); return;
     }
     let alive = true;
-    setLoading(true); setFailed(false); setAvailability(null);
+    setLoading(true); setAvailability(null);
     fetchAvailability(draft.addressLat, draft.addressLng, selectedDate, draft.villaNumber)
       .then((result) => {
         if (!alive) return;
-        setAvailability(result);
+        setAvailability(result); setFailed(false);
         const first = result.slots[0];
         if (first) draft.setSlot(first.period, first.startsAt, first.endsAt);
       })
@@ -86,8 +86,7 @@ export default function ChooseSlot() {
         : null;
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={copy.booking.slot} step={3} steps={5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={copy.booking.slot} step={3} steps={5} onBack={() => router.back()} />}>
       <View style={styles.body}>
         <View style={styles.calendarBlock}>
           <SectionLabel>{copy.booking.day}</SectionLabel>
@@ -156,7 +155,7 @@ export default function ChooseSlot() {
           label={language === 'ar' ? 'تحقق من عنوانك' : 'Verify your address'} variant="secondary" fullWidth
           onPress={() => router.push({ pathname: '/onboarding/map', params: { returnTo: 'booking' } })}
         /> : null}
-        {failed ? <Button label={language === 'ar' ? 'إعادة المحاولة' : 'Try again'} variant="ghost" fullWidth onPress={() => setRetry((value) => value + 1)} /> : null}
+        {failed ? <Button label={language === 'ar' ? 'إعادة المحاولة' : 'Try again'} variant="ghost" fullWidth loading={loading} onPress={() => setRetry((value) => value + 1)} /> : null}
         <View style={styles.hold}>
           <Clock size={theme.scale(14)} color={theme.text.muted} strokeWidth={2} />
           <Txt variant="caption" tone="muted" style={styles.holdText}>{copy.booking.holdNote}</Txt>

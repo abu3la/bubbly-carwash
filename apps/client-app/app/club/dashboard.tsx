@@ -19,8 +19,7 @@ export default function ClubDashboard() {
   if (!membership) return <Redirect href="/club" />;
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={ar ? 'اشتراكي' : 'My subscription'} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={ar ? 'اشتراكي' : 'My subscription'} onBack={() => router.back()} />}>
       <View style={styles.body}>
         <MembershipSummary membership={membership} showValidity />
         {membership.renewal ? <View style={styles.renewal}>
@@ -47,7 +46,7 @@ export default function ClubDashboard() {
         onClose={() => setConfirmCancel(false)}
         actions={<>
           <Button label={ar ? 'الاحتفاظ به' : 'Keep it'} variant="secondary" onPress={() => setConfirmCancel(false)} />
-          <Button label={busy ? (ar ? 'جارٍ الإلغاء…' : 'Cancelling…') : (ar ? 'تأكيد الإلغاء' : 'Confirm cancellation')} disabled={busy} onPress={async () => {
+          <Button label={ar ? 'تأكيد الإلغاء' : 'Confirm cancellation'} disabled={busy} onPress={async () => {
             setBusy(true); setError(false);
             try { await cancelMembership(); await refresh(); setConfirmCancel(false); router.replace('/(tabs)/home'); }
             catch { setError(true); setConfirmCancel(false); }

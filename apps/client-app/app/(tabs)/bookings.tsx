@@ -4,8 +4,9 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, LocaleConfig, type DateData } from 'react-native-calendars';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { BookingTicket, Button, Card, Num, Screen, Tabs, Txt, useLocale } from '@bubbles/ui-native';
-import { bookingMediaSource, cancelBooking, type RealBooking } from '../../src/api';
+import { BookingTicket, Button, Card, Dialog, Num, Screen, StatusBadge, Tabs, Txt, useLocale, useToast, type TicketTone } from '@bubbles/ui-native';
+import { CANCELLATION_NOTICE_HOURS, cancellationOpen } from '@bubbles/utils';
+import { ApiError, bookingMediaSource, cancelBooking, type RealBooking } from '../../src/api';
 import { useCustomerData } from '../../src/customerData';
 import { addCalendarDays, isFriday, riyadhDateKey } from '../../src/dates';
 
@@ -18,6 +19,10 @@ LocaleConfig.locales.ar = {
 };
 
 type TabKey = 'upcoming' | 'active' | 'past';
+
+/** A live booking takes its stage; a closed one takes how it ended. */
+const toneOf = (booking: RealBooking): TicketTone =>
+  booking.status === 'cancelled' ? 'quiet' : booking.status === 'missed' ? 'attention' : booking.stage;
 
 export default function Bookings() {
   const { theme } = useUnistyles();
@@ -66,9 +71,17 @@ export default function Bookings() {
       const key = addCalendarDays(currentMonth, offset);
       if (isFriday(key)) marked[key] = { disabled: true, disableTouchEvent: true };
     }
-    paid.forEach((booking) => {
+    const dot: Record<RealBooking['status'], string> = {
+      scheduled: theme.action.primary,
+      active: theme.action.primary,
+      done: theme.text.onTintYellow,
+      missed: theme.palette.guava600,
+      cancelled: theme.text.faint,
+    };
+    // Cancelled first, so a live booking on the same day keeps its colour.
+    [...paid].sort((a, b) => Number(b.status === 'cancelled') - Number(a.status === 'cancelled')).forEach((booking) => {
       const key = riyadhDateKey(new Date(booking.scheduled_at));
-      marked[key] = { ...marked[key], marked: true, dotColor: theme.action.primary };
+      marked[key] = { ...marked[key], marked: true, dotColor: dot[booking.status] };
     });
     if (selectedDate) {
       marked[selectedDate] = {
@@ -76,7 +89,7 @@ export default function Bookings() {
       };
     }
     return marked;
-  }, [currentMonth, paid, selectedDate, theme.action.primary]);
+  }, [currentMonth, paid, selectedDate, theme]);
 
   return (
     <Screen scroll contentStyle={styles.page}>
@@ -121,7 +134,7 @@ export default function Bookings() {
         setSelectedDate(null);
       }} />
       {loading && rows.length === 0 ? <Txt variant="small" tone="secondary">{ar ? 'جارٍ تحميل الحجوزات…' : 'Loading bookings…'}</Txt> : null}
-      {error ? <Button label={ar ? 'إعادة المحاولة' : 'Retry'} variant="secondary" onPress={() => void refresh()} /> : null}
+      {error ? <Button label={ar ? 'إعادة المحاولة' : 'Retry'} variant="secondary" onPress={() => refresh()} /> : null}
       {!loading && !error && rows.length === 0 ? <Empty ar={ar} tab={tab} filtered={selectedDate !== null} subscribed={!!membership} /> : null}
       <View style={styles.stack}>{rows.map((booking) => <BookingRow key={booking.id} booking={booking} onRefresh={refresh} />)}</View>
     </Screen>
@@ -130,7 +143,10 @@ export default function Bookings() {
 
 function BookingRow({ booking, onRefresh }: { booking: RealBooking; onRefresh: () => Promise<void> }) {
   const { language } = useLocale();
-  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const toast = useToast();
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelError, setCancelError] = useState('');
   const [showEvidence, setShowEvidence] = useState(false);
   const ar = language === 'ar';
   const date = new Intl.DateTimeFormat(ar ? 'ar-SA-u-ca-gregory' : 'en-GB', {
@@ -143,9 +159,50 @@ function BookingRow({ booking, onRefresh }: { booking: RealBooking; onRefresh: (
   const state = ar
     ? ({ scheduled: 'مجدول', active: 'قيد التنفيذ', done: 'مكتمل', cancelled: 'ملغى', missed: 'فات الموعد' } as const)[booking.status]
     : ({ scheduled: 'Scheduled', active: 'In progress', done: 'Completed', cancelled: 'Cancelled', missed: 'Missed' } as const)[booking.status];
+  const issue = booking.customer_issues?.[0];
+  // A late team shows as scheduled until someone arrives, so the status alone
+  // cannot decide this. The window opening can.
+  const canReport = booking.status !== 'cancelled' && issue?.status !== 'open' && Date.parse(booking.scheduled_at) <= Date.now();
+  const paid = booking.payment_confirmed ? booking.total_minor / 100 : 0;
+  const cancelOpen = !booking.payment_confirmed || cancellationOpen(booking.scheduled_at);
+  const noticeClosed = ar
+    ? `انتهت مهلة الإلغاء، وهي ${CANCELLATION_NOTICE_HOURS} ساعات قبل الموعد.`
+    : `Cancellation closed ${CANCELLATION_NOTICE_HOURS} hours before the appointment.`;
+  const cancelEffect = [
+    booking.source === 'club' ? (ar ? 'يمكن حجز موعد بديل في الأسبوع نفسه، ولا ترحل الغسلة إلى أسبوع آخر.' : 'Another time can be booked in the same week. The wash does not carry over to a later week.') : null,
+    paid > 0 ? (ar ? `يعاد مبلغ ${paid} ر.س إلى وسيلة الدفع تلقائيًا.` : `SAR ${paid} returns to the payment method automatically.`) : null,
+  ].filter(Boolean).join(' ');
+  const cancel = async () => {
+    setCancelError('');
+    try {
+      const { refund } = await cancelBooking(booking.id);
+      setConfirmCancel(false);
+      toast.show(refund === 'sent'
+        ? (ar ? 'تم إلغاء الحجز واسترجاع المبلغ' : 'Booking cancelled and refunded')
+        : refund === 'review'
+          ? (ar ? 'تم إلغاء الحجز، والاسترجاع قيد المراجعة' : 'Booking cancelled. The refund is under review')
+          : (ar ? 'تم إلغاء الحجز' : 'Booking cancelled'), 'washed');
+      await onRefresh();
+    } catch (caught) {
+      const code = caught instanceof ApiError ? caught.code : 'unknown';
+      if (code === 'alreadyStarted') {
+        setCancelError(ar ? 'بدأت الغسلة، ولا يمكن إلغاء الحجز الآن.' : 'The wash has started, so this booking can no longer be cancelled.');
+        await onRefresh();
+      } else if (code === 'cancelWindowClosed') {
+        setCancelError(noticeClosed);
+        await onRefresh();
+      } else if (code === 'offline') setCancelError(ar ? 'لا يوجد اتصال بالإنترنت.' : 'No internet connection.');
+      else setCancelError(ar ? 'تعذر إلغاء الحجز. يمكن إعادة المحاولة.' : 'Could not cancel the booking. Try again.');
+    }
+  };
   return (
     <View style={styles.booking}>
-      <BookingTicket time={time} meta={`${date} · ${service} · ${booking.addresses.line}`} />
+      <BookingTicket
+        time={time}
+        meta={`${date} · ${service} · ${booking.addresses.line}`}
+        tone={toneOf(booking)}
+        stub={booking.stage !== 'booked' && (booking.status === 'active' || booking.status === 'done') ? <StatusBadge status={booking.stage} size="sm" /> : undefined}
+      />
       <Card style={styles.details}>
         <Detail label={ar ? 'السيارة' : 'Vehicle'} value={`${booking.vehicles.make} ${booking.vehicles.model} · ${booking.vehicles.plate}`} />
         <Detail label={ar ? 'العنوان' : 'Address'} value={[booking.addresses.line, booking.addresses.district, booking.addresses.city].filter(Boolean).join(' · ')} />
@@ -153,16 +210,30 @@ function BookingRow({ booking, onRefresh }: { booking: RealBooking; onRefresh: (
         <Detail label={ar ? 'الدفع' : 'Payment'} value={booking.source === 'club' ? (ar ? 'ضمن الاشتراك' : 'Subscription') : `${booking.total_minor / 100} ${ar ? 'ر.س' : 'SAR'}`} />
         <Detail label={ar ? 'الحالة' : 'Status'} value={state} />
         {(before + after > 0) ? <Detail label={ar ? 'توثيق الغسلة' : 'Wash evidence'} value={ar ? `قبل ${before} · بعد ${after}` : `Before ${before} · after ${after}`} /> : null}
+        {issue ? <Detail label={ar ? 'البلاغ' : 'Report'} value={issue.status === 'open' ? (ar ? 'قيد المراجعة' : 'Under review') : (ar ? 'تمت المعالجة' : 'Resolved')} /> : null}
       </Card>
       {(before + after > 0) ? <Button label={showEvidence ? (ar ? 'إخفاء التوثيق' : 'Hide evidence') : (ar ? 'عرض الصور والفيديو' : 'View photos and video')} variant="secondary" fullWidth onPress={() => setShowEvidence(!showEvidence)} /> : null}
       {showEvidence ? <View style={styles.evidence}>{booking.booking_media.map((item) => <EvidenceItem key={item.id} bookingId={booking.id} item={item} ar={ar} />)}</View> : null}
-      {booking.status === 'scheduled' ? (
-        <Button label={busy ? (ar ? 'جارٍ الإلغاء…' : 'Cancelling…') : (ar ? 'إلغاء الحجز' : 'Cancel booking')} variant="ghost" fullWidth disabled={busy} onPress={async () => {
-          setBusy(true);
-          try { await cancelBooking(booking.id); await onRefresh(); } finally { setBusy(false); }
-        }} />
+      {canReport ? <Button label={ar ? 'الإبلاغ عن مشكلة' : 'Report a problem'} variant="ghost" fullWidth onPress={() => router.push({ pathname: '/account/report-issue', params: { bookingId: booking.id } })} /> : null}
+      {booking.status === 'scheduled' && cancelOpen ? (
+        <Button label={ar ? 'إلغاء الحجز' : 'Cancel booking'} variant="ghost" fullWidth onPress={() => { setCancelError(''); setConfirmCancel(true); }} />
       ) : null}
+      {booking.status === 'scheduled' && !cancelOpen ? <Txt variant="small" tone="secondary" center>{noticeClosed}</Txt> : null}
       <Num variant="caption" tone="muted">{booking.ref}</Num>
+      <Dialog
+        open={confirmCancel}
+        title={ar ? 'إلغاء الحجز؟' : 'Cancel this booking?'}
+        body={`${date}${ar ? '،' : ','} ${time}`}
+        dismissLabel={ar ? 'إغلاق' : 'Close'}
+        onClose={() => setConfirmCancel(false)}
+        actions={<>
+          <Button label={ar ? 'إبقاء الحجز' : 'Keep it'} variant="secondary" onPress={() => setConfirmCancel(false)} />
+          <Button label={ar ? 'تأكيد الإلغاء' : 'Cancel booking'} onPress={cancel} />
+        </>}
+      >
+        {cancelEffect ? <Txt variant="small">{cancelEffect}</Txt> : null}
+        {cancelError ? <Txt accessibilityLiveRegion="polite" variant="small" tone="danger">{cancelError}</Txt> : null}
+      </Dialog>
     </View>
   );
 }

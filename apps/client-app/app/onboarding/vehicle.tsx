@@ -60,8 +60,7 @@ export default function RegisterVehicle() {
   };
 
   return (
-    <Screen scroll contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.vehicleTitle} step={returnTo ? undefined : 5} steps={returnTo ? undefined : 5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.screen} header={<FlowHeader title={copy.onboarding.vehicleTitle} step={returnTo ? undefined : 5} steps={returnTo ? undefined : 5} onBack={() => router.back()} />}>
 
       <View style={styles.body}>
         <View style={styles.head}>
@@ -100,7 +99,7 @@ export default function RegisterVehicle() {
         ) : null}
 
         <Button
-          label={saving ? copy.common.sending : copy.onboarding.saveAndContinue}
+          label={copy.onboarding.saveAndContinue}
           size="lg"
           fullWidth
           disabled={!ready || saving}

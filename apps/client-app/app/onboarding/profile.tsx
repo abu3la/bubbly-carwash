@@ -33,8 +33,7 @@ export default function CustomerProfile() {
   };
 
   return (
-    <Screen scroll contentStyle={styles.screen}>
-      <FlowHeader title={copy.onboarding.profileTitle} step={3} steps={5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.screen} header={<FlowHeader title={copy.onboarding.profileTitle} step={3} steps={5} onBack={() => router.back()} />}>
       <View style={styles.body}>
         <View style={styles.head}>
           <Txt variant="title" weight="bold">{copy.onboarding.profileHeading}</Txt>
@@ -53,7 +52,7 @@ export default function CustomerProfile() {
         <View style={styles.spacer} />
         {error ? <Txt variant="small" tone="danger" center>{copy.authErrors.unknown}</Txt> : null}
         <Button
-          label={saving ? copy.common.sending : copy.common.continue}
+          label={copy.common.continue}
           size="lg"
           fullWidth
           disabled={saving || name.trim().length < 2}

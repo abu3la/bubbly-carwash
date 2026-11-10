@@ -24,7 +24,7 @@ export default function History() {
       <Txt variant="title" weight="bold">سجل العمل</Txt>
       <Txt variant="small" tone="secondary">آخر 50 مهمة أنهيتها بعد مراجعة الجودة.</Txt>
       {loading ? <ActivityIndicator /> : null}
-      {error ? <View style={styles.job}><Txt variant="small" tone="danger">تعذّر تحميل السجل.</Txt><Button label="إعادة المحاولة" disabled={loading} variant="ghost" onPress={() => void load()} /></View> : null}
+      {error ? <View style={styles.job}><Txt variant="small" tone="danger">تعذّر تحميل السجل.</Txt><Button label="إعادة المحاولة" disabled={loading} variant="ghost" onPress={() => load()} /></View> : null}
       {rows?.length === 0 ? <View style={styles.empty}><BeatIcon size="lg" active={0} /><Txt variant="heading" weight="bold" center>{copy.noHistory}</Txt><Txt variant="small" tone="secondary" center>تظهر المهمة هنا بعد توثيق الغسيل ومراجعة الجودة.</Txt></View> : null}
       {(rows ?? []).map((job) => <Card key={job.id} style={styles.job}>
         <View style={styles.row}><Num variant="body" weight="bold">{job.ref}</Num><BeatIcon size="sm" active={3} /></View>

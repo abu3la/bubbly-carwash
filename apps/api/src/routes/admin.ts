@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import type { Env } from '../env';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { db } from '../db';
-import { refundInvoice } from '../moyasar';
 import { notify } from '../notifications';
+import { refundPayment } from '../refunds';
 import { coverageAdminRoute } from './coverage-admin';
 
 /**
@@ -329,7 +329,7 @@ adminRoute.get('/bookings/:id/media/:mediaId/content', async (c) => {
 adminRoute.get('/incidents', async (c) => {
   const rows = await db(
     c.env,
-    'operations_incidents?select=id,booking_id,category,note,status,created_at,resolved_at,' +
+    'operations_incidents?select=id,booking_id,category,source,note,status,created_at,resolved_at,' +
       'bookings(ref,team_id),profiles!operations_incidents_reported_by_fkey(full_name,phone)' +
       '&order=created_at.desc&limit=200',
   );
@@ -338,12 +338,28 @@ adminRoute.get('/incidents', async (c) => {
 
 adminRoute.patch('/incidents/:id/resolve', async (c) => {
   const caller = c.get('caller');
-  const [row] = await db(c.env, `operations_incidents?id=eq.${c.req.param('id')}`, {
-    method: 'PATCH',
-    prefer: 'return=representation',
-    body: { status: 'resolved', resolved_by: caller.id, resolved_at: new Date().toISOString() },
-  });
+  const [row] = await db<{ id: string; booking_id: string; reported_by: string; source: string; bookings: { ref: string } }>(
+    c.env,
+    `operations_incidents?id=eq.${c.req.param('id')}&status=eq.open&select=*,bookings(ref)`,
+    {
+      method: 'PATCH',
+      prefer: 'return=representation',
+      body: { status: 'resolved', resolved_by: caller.id, resolved_at: new Date().toISOString() },
+    },
+  );
   if (!row) return c.json({ error: { code: 'notFound' } }, 404);
+  if (row.source === 'customer') {
+    await notify(c.env, {
+      profileId: row.reported_by,
+      bookingId: row.booking_id,
+      kind: 'customer_issue_resolved',
+      titleAr: 'تمت معالجة البلاغ',
+      titleEn: 'Your report was resolved',
+      bodyAr: `راجع الدعم البلاغ على الحجز ${row.bookings.ref}.`,
+      bodyEn: `Support reviewed your report on booking ${row.bookings.ref}.`,
+      data: { route: '/(tabs)/bookings' },
+    }).catch((error) => console.warn('[admin] issue notification failed', error));
+  }
   return c.json({ incident: row });
 });
 
@@ -387,19 +403,7 @@ adminRoute.post('/payments/:id/refund', async (c) => {
   if (payment.state !== 'paid') return c.json({ error: { code: 'paymentNotRefundable' } }, 409);
 
   try {
-    const refunded = await refundInvoice(c.env, payment.provider_ref);
-    await db(c.env, 'payment_refunds', {
-      method: 'POST', prefer: 'return=minimal', body: {
-        payment_id: payment.id,
-        provider_payment_ref: refunded.paymentId,
-        amount_minor: refunded.amount,
-        reason: body.reason.trim(),
-        requested_by: caller.id,
-      },
-    });
-    await db(c.env, `payments?id=eq.${payment.id}`, {
-      method: 'PATCH', prefer: 'return=minimal', body: { state: 'refunded', updated_at: new Date().toISOString() },
-    });
+    const refunded = await refundPayment(c.env, payment, body.reason.trim(), caller.id);
     if (payment.booking_id) {
       await db(c.env, `bookings?id=eq.${payment.booking_id}`, {
         method: 'PATCH', prefer: 'return=minimal', body: { status: 'cancelled', cancelled_at: new Date().toISOString() },

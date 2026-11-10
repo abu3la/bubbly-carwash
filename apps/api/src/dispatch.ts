@@ -13,6 +13,20 @@ interface AssignedBooking {
   status: string;
 }
 
+/** Tell the driver holding a job that it has gone. Losing this alert never undoes the cancellation. */
+export async function notifyJobCancelled(env: Env, technicianId: string, bookingId: string, ref: string) {
+  await notify(env, {
+    profileId: technicianId,
+    bookingId,
+    kind: 'job_cancelled',
+    titleAr: 'أُلغيت المهمة',
+    titleEn: 'Job cancelled',
+    bodyAr: `أُلغي الحجز ${ref}`,
+    bodyEn: `${ref} was cancelled`,
+    data: { route: '/jobs' },
+  }).catch((error) => console.warn('[dispatch] cancellation notification failed', error));
+}
+
 /** Notify every available member of the team selected by location/capacity. */
 export async function notifyTeamOfBooking(env: Env, bookingId: string) {
   const [booking] = await db<AssignedBooking>(

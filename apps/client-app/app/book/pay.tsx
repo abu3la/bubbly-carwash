@@ -17,8 +17,7 @@ export default function Pay() {
   const ar = language === 'ar';
 
   return (
-    <Screen scroll contentStyle={styles.page}>
-      <FlowHeader title={copy.booking.payment} step={5} steps={5} onBack={() => router.back()} />
+    <Screen scroll contentStyle={styles.page} header={<FlowHeader title={copy.booking.payment} step={5} steps={5} onBack={() => router.back()} />}>
 
       <View style={styles.body}>
         <Card style={styles.gateway}>

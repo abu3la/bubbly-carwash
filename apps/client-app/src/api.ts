@@ -137,6 +137,7 @@ export interface Profile {
 export const fetchMe = (): Promise<{ profile: Profile }> => call('/me');
 export const updateProfile = (fullName: string, language: 'ar' | 'en'): Promise<{ profile: Profile }> =>
   call('/me', { method: 'PATCH', body: JSON.stringify({ fullName, language }) });
+export const deleteAccount = (): Promise<{ deleted: true }> => call('/me', { method: 'DELETE' });
 
 /* ---------------------------------------------------------------- catalogue */
 
@@ -282,7 +283,11 @@ export interface RealBooking {
   services: { key: string; name_ar: string; name_en: string };
   teams: { id: string; name_ar: string; name_en: string } | null;
   booking_media: Array<{ id: string; phase: 'before' | 'after'; kind: 'photo' | 'video'; angle: string }>;
+  /** Newest first; omitted by older API versions. */
+  customer_issues?: Array<{ id: string; category: IssueCategory; status: 'open' | 'resolved'; created_at: string }>;
 }
+
+export type IssueCategory = 'wash_quality' | 'team_late' | 'team_no_show' | 'vehicle_damage' | 'other';
 
 export const listBookings = (): Promise<{ bookings: RealBooking[] }> => call('/bookings');
 export const createBooking = (input: {
@@ -296,8 +301,11 @@ export const createBooking = (input: {
   call('/bookings', { method: 'POST', body: JSON.stringify(input) });
 export const confirmBooking = (id: string): Promise<{ booking: RealBooking }> =>
   call(`/bookings/${id}/confirm`, { method: 'POST' });
-export const cancelBooking = (id: string): Promise<{ cancelled: true }> =>
+/** `refund` is omitted by API versions before the cancellation notice. */
+export const cancelBooking = (id: string): Promise<{ cancelled: true; refund?: 'none' | 'sent' | 'review' }> =>
   call(`/bookings/${id}/cancel`, { method: 'POST' });
+export const reportBookingIssue = (id: string, input: { category: IssueCategory; note: string }): Promise<{ issue: { id: string } }> =>
+  call(`/bookings/${id}/issues`, { method: 'POST', body: JSON.stringify(input) });
 
 export async function bookingMediaSource(bookingId: string, mediaId: string) {
   const session = await loadSession();

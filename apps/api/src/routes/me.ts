@@ -3,11 +3,15 @@ import type { Env } from '../env';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../db';
 import { checkCoverage, coverageError, normalizeVilla, validVilla } from '../coverage';
+import { CANCELLATION_NOTICE_MS } from '@bubbles/utils';
+import { finishAccountDeletion } from '../accountDeletion';
+import { notifyJobCancelled } from '../dispatch';
+import { refundCancelledBooking } from '../refunds';
 
 export const meRoute = new Hono<{ Bindings: Env }>();
 meRoute.use('*', requireAuth());
 meRoute.onError((error, c) => {
-  const code = ['outsideServiceArea', 'villaRequired', 'villaUnavailable', 'coverageUnavailable'].find((candidate) => error.message.includes(candidate));
+  const code = ['outsideServiceArea', 'villaRequired', 'villaUnavailable', 'coverageUnavailable', 'washInProgress', 'accountNotDeletable'].find((candidate) => error.message.includes(candidate));
   if (code) return c.json({ error: { code } }, 409);
   console.error('[me]', error);
   return c.json({ error: { code: 'unknown' } }, 500);
@@ -36,6 +40,39 @@ meRoute.patch('/', async (c) => {
   });
   if (!profile) return c.json({ error: { code: 'notFound' } }, 404);
   return c.json({ profile });
+});
+
+/**
+ * Deletes the caller's own account. Drivers and administrators are managed from
+ * the dashboard; removing one here would pull them out of live operations.
+ */
+meRoute.delete('/', async (c) => {
+  const caller = c.get('caller');
+  if (caller.role !== 'customer') return c.json({ error: { code: 'accountNotDeletable' } }, 409);
+
+  const [deleted] = await db<{
+    jobs: Array<{ bookingId: string; ref: string; technicianId: string }>;
+    refunds: Array<{ bookingId: string; totalMinor: number }>;
+    mediaKeys: string[];
+  }>(c.env, 'rpc/delete_customer_account', {
+    method: 'POST',
+    body: { p_profile: caller.id, p_refund_cutoff: new Date(Date.now() + CANCELLATION_NOTICE_MS).toISOString() },
+  });
+
+  await Promise.all(deleted.jobs.map((job) => notifyJobCancelled(c.env, job.technicianId, job.bookingId, job.ref)));
+  // Same rule as a cancellation. Nobody is left to notify.
+  await Promise.all(deleted.refunds.map((refund) => refundCancelledBooking(
+    c.env,
+    { id: refund.bookingId, total_minor: refund.totalMinor },
+    caller.id,
+    { reason: 'حذف الحساب قبل مهلة الإلغاء', notifyCustomer: false },
+  )));
+  // The account is already erased. What remains is retried by the maintenance
+  // sweep, so a failure here is not the customer's to see.
+  await finishAccountDeletion(c.env, caller.id, deleted.mediaKeys).catch((error) => {
+    console.error('[account] deletion will retry', { id: caller.id, error });
+  });
+  return c.json({ deleted: true });
 });
 
 /* ------------------------------------------------------------ notifications */

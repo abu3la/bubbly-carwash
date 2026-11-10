@@ -26,6 +26,7 @@ export function checkoutPage(p: CheckoutPage) {
   const t = (a: string, e: string) => ar ? a : e;
   const money = (minor: number) => `<span class="money"><bdi>${(minor / 100).toFixed(2)}</bdi><span>${t('ر.س', 'SAR')}</span></span>`;
   const h = escapeHtml;
+  const clock = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
   const lock = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
   const paid = p.status === 'paid';
   const unavailable = p.status === 'unavailable';
@@ -55,6 +56,7 @@ ${p.lines.length > 1 ? p.lines.map((l) => `<div class="ledger-row"><span>${h(l.l
 ${p.renewal ? `<div class="renewal-row"><div><span>${t('التجديد التلقائي التالي', 'Next automatic renewal')}</span><time>${h(p.renewal.date)}</time></div>${money(p.renewal.amount)}</div>` : ''}
 </div>
 </section>
+${p.mode === 'booking' ? `<p class="order-note">${clock}<span>${t('الإلغاء مجاني قبل الموعد بـ 3 ساعات.', 'Free cancellation up to 3 hours before the appointment.')}</span></p>` : ''}
 </aside>
 <section class="payment-card" aria-labelledby="payment-title">
 ${paid ? `<div class="result-mark" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><h2 id="payment-title">${t('تم تأكيد الدفع', 'Payment confirmed')}</h2><p>${t('يمكن متابعة حالة الطلب من الحساب.', 'You can follow your order from your account.')}</p>${p.returnUrl ? `<a class="primary-action" href="${h(p.returnUrl)}">${t('العودة إلى الطلب', 'Return to order')}</a>` : ''}` : unavailable ? `<h2 id="payment-title">${t('رابط الدفع غير متاح', 'Checkout unavailable')}</h2><p>${t('انتهت مهلة الدفع أو أُلغي الطلب. يمكن العودة إلى الطلب للتحقق من حالته.', 'The checkout expired or the order was cancelled. Return to the order to check its status.')}</p>${p.returnUrl ? `<a class="primary-action" href="${h(p.returnUrl)}">${t('العودة إلى الطلب', 'Return to order')}</a>` : ''}` : `

@@ -37,6 +37,12 @@ test('checkout HTML escapes customer/plan data and script-closing input', () => 
   assert.ok(!html.includes('<img src=x')); assert.ok(html.includes('&lt;img'));
   assert.ok(html.includes('\\u003c/script>')); assert.ok(!html.includes('<script>alert(1)'));
 });
+test('a single booking states the free cancellation notice, a subscription does not', () => {
+  const { checkoutPage } = load('page.ts');
+  const page = (mode) => checkoutPage({ language: 'ar', mode, title: 'غسيل', description: '', amount: 4000, reference: 'BK-1', lines: [], schedule: [] });
+  assert.ok(page('booking').includes('الإلغاء مجاني قبل الموعد بـ 3 ساعات.'));
+  assert.ok(!page('membership').includes('الإلغاء مجاني'));
+});
 test('server uses saved invoice amount and database plan name, without handoff placeholders', async () => {
   const calls = [];
   const db = async (_env, query) => {

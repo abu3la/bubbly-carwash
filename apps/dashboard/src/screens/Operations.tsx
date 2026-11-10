@@ -4,7 +4,11 @@ import { admin, type Incident, type OperationsSnapshot } from '../api';
 const CATEGORY: Record<string, string> = {
   customer_absent: 'العميل غير موجود', access: 'تعذّر الوصول', vehicle: 'مشكلة في السيارة',
   safety: 'سلامة', equipment: 'المعدات', other: 'أخرى',
+  wash_quality: 'جودة الغسيل', team_late: 'تأخر الفريق', team_no_show: 'لم يصل الفريق',
+  vehicle_damage: 'ضرر في السيارة', refund_review: 'مراجعة استرجاع',
 };
+
+const SOURCE: Record<Incident['source'], string> = { driver: 'سائق', customer: 'عميل', system: 'النظام' };
 
 export function Operations() {
   const [snapshot, setSnapshot] = useState<OperationsSnapshot | null>(null);
@@ -37,9 +41,9 @@ export function Operations() {
     </div> : null}
 
     <section className="sheet incidents">
-      <div className="section-head"><h2>بلاغات السائقين</h2><button className="ghost" onClick={() => void load()}>تحديث</button></div>
-      {incidents.length === 0 ? <p className="empty">لا توجد بلاغات.</p> : <table><thead><tr><th>الحجز</th><th>السائق</th><th>النوع</th><th>التفاصيل</th><th>الحالة</th></tr></thead><tbody>{incidents.map((incident) => <tr key={incident.id} className={incident.status === 'resolved' ? 'off' : ''}>
-        <td className="headline num">{incident.bookings.ref}</td><td>{incident.profiles.full_name}<div className="note num">{incident.profiles.phone}</div></td><td>{CATEGORY[incident.category] ?? incident.category}</td><td>{incident.note}</td><td>{incident.status === 'open' ? <button disabled={busy === incident.id} onClick={async () => { setBusy(incident.id); try { await admin.resolveIncident(incident.id); await load(); } finally { setBusy(null); } }}>تمت المعالجة</button> : 'مغلق'}</td>
+      <div className="section-head"><h2>البلاغات</h2><button className="ghost" onClick={() => void load()}>تحديث</button></div>
+      {incidents.length === 0 ? <p className="empty">لا توجد بلاغات.</p> : <table><thead><tr><th>الحجز</th><th>مقدم البلاغ</th><th>النوع</th><th>التفاصيل</th><th>الحالة</th></tr></thead><tbody>{incidents.map((incident) => <tr key={incident.id} className={incident.status === 'resolved' ? 'off' : ''}>
+        <td className="headline num">{incident.bookings.ref}</td><td>{incident.profiles.full_name || 'حساب محذوف'}<div className="note">{SOURCE[incident.source]}</div>{incident.profiles.phone ? <div className="note num">{incident.profiles.phone}</div> : null}</td><td>{CATEGORY[incident.category] ?? incident.category}</td><td>{incident.note}</td><td>{incident.status === 'open' ? <button disabled={busy === incident.id} onClick={async () => { setBusy(incident.id); try { await admin.resolveIncident(incident.id); await load(); } finally { setBusy(null); } }}>تمت المعالجة</button> : 'مغلق'}</td>
       </tr>)}</tbody></table>}
     </section>
     {error ? <p className="err" role="alert">{error}</p> : null}

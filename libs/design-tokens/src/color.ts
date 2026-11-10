@@ -54,6 +54,6 @@ export type BeatKey = keyof typeof beat;
 /** Ink that sits legibly on each beat colour. */
 export const onBeat: Record<BeatKey, string> = {
   arrived: palette.white,
-  washed: palette.white,
+  washed: palette.ink,
   verified: palette.ink,
 };
